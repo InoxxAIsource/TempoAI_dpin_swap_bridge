@@ -1,5 +1,43 @@
+import { useMemo } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import '@rainbow-me/rainbowkit/styles.css';
+import '@solana/wallet-adapter-react-ui/styles.css';
 
-createRoot(document.getElementById("root")!).render(<App />);
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { WagmiProvider } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { config } from './config/wagmi';
+import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from '@solana/wallet-adapter-react';
+import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { clusterApiUrl } from '@solana/web3.js';
+
+const queryClient = new QueryClient();
+
+const RootApp = () => {
+  const solanaEndpoint = useMemo(() => clusterApiUrl('mainnet-beta'), []);
+  const solanaWallets = useMemo(
+    () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
+    []
+  );
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <WagmiProvider config={config}>
+        <RainbowKitProvider>
+          <ConnectionProvider endpoint={solanaEndpoint}>
+            <SolanaWalletProvider wallets={solanaWallets} autoConnect>
+              <WalletModalProvider>
+                <App />
+              </WalletModalProvider>
+            </SolanaWalletProvider>
+          </ConnectionProvider>
+        </RainbowKitProvider>
+      </WagmiProvider>
+    </QueryClientProvider>
+  );
+};
+
+createRoot(document.getElementById("root")!).render(<RootApp />);

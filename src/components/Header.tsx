@@ -1,11 +1,39 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
-import { Wallet } from 'lucide-react';
+import { Wallet, ChevronDown } from 'lucide-react';
+import { useWalletContext } from '@/contexts/WalletContext';
+import WalletModal from './WalletModal';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 const Header = () => {
   const location = useLocation();
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const { 
+    isAnyWalletConnected, 
+    evmAddress, 
+    solanaAddress,
+    evmBalance,
+    solanaBalance,
+    disconnectEvm,
+    disconnectSolana 
+  } = useWalletContext();
   
   const isActive = (path: string) => location.pathname === path;
+  
+  const formatAddress = (address: string) => {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const handleDisconnectAll = () => {
+    if (evmAddress) disconnectEvm();
+    if (solanaAddress) disconnectSolana();
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
@@ -62,10 +90,52 @@ const Header = () => {
         </nav>
 
         {/* Wallet Connection Button */}
-        <Button className="rounded-full shrink-0" size="sm">
-          <Wallet className="w-4 h-4" />
-          <span className="hidden sm:inline ml-2">Connect</span>
-        </Button>
+        {!isAnyWalletConnected ? (
+          <Button 
+            className="rounded-full shrink-0" 
+            size="sm"
+            onClick={() => setWalletModalOpen(true)}
+          >
+            <Wallet className="w-4 h-4" />
+            <span className="hidden sm:inline ml-2">Connect</span>
+          </Button>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="rounded-full shrink-0" size="sm" variant="outline">
+                <Wallet className="w-4 h-4" />
+                <span className="hidden sm:inline ml-2">
+                  {evmAddress ? formatAddress(evmAddress) : formatAddress(solanaAddress!)}
+                </span>
+                <ChevronDown className="w-3 h-3 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {evmAddress && (
+                <DropdownMenuItem className="flex flex-col items-start">
+                  <span className="text-xs text-muted-foreground">EVM</span>
+                  <span className="font-mono text-sm">{formatAddress(evmAddress)}</span>
+                  {evmBalance && <span className="text-xs text-muted-foreground">{evmBalance} ETH</span>}
+                </DropdownMenuItem>
+              )}
+              {solanaAddress && (
+                <DropdownMenuItem className="flex flex-col items-start">
+                  <span className="text-xs text-muted-foreground">Solana</span>
+                  <span className="font-mono text-sm">{formatAddress(solanaAddress)}</span>
+                  {solanaBalance && <span className="text-xs text-muted-foreground">{solanaBalance} SOL</span>}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem 
+                onClick={handleDisconnectAll}
+                className="text-destructive cursor-pointer"
+              >
+                Disconnect All
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        
+        <WalletModal open={walletModalOpen} onOpenChange={setWalletModalOpen} />
       </div>
     </header>
   );
