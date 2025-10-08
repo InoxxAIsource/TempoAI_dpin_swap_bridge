@@ -26,27 +26,29 @@ const Index = () => {
           <Hero />
           
           <div className="px-6 md:px-12 py-12">
-            <Tabs defaultValue="overview" className="w-full max-w-7xl mx-auto">
-              <TabsList className="grid w-full grid-cols-3 mb-12 h-auto p-2 bg-background/80 backdrop-blur-sm shadow-lg border border-border relative z-50">
-                <TabsTrigger 
-                  value="overview" 
-                  className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                >
-                  Overview
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="start-earning" 
-                  className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                >
-                  Start Earning
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="about" 
-                  className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                >
-                  About Protocol
-                </TabsTrigger>
-              </TabsList>
+            <Tabs defaultValue="overview" className="w-full max-w-7xl mx-auto" onValueChange={(value) => console.log('Tab changed to:', value)}>
+              <div className="sticky top-20 z-50 bg-background/95 backdrop-blur-sm pb-4 -mx-6 px-6 md:-mx-12 md:px-12">
+                <TabsList className="grid w-full max-w-7xl mx-auto grid-cols-3 h-auto p-2 bg-muted shadow-lg border border-border">
+                  <TabsTrigger 
+                    value="overview" 
+                    className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="start-earning" 
+                    className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
+                    Start Earning
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="about" 
+                    className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
+                    About Protocol
+                  </TabsTrigger>
+                </TabsList>
+              </div>
               
               <TabsContent value="overview">
                 <StatsSection />
