@@ -13,6 +13,7 @@ import SecuritySection from '@/components/SecuritySection';
 import FAQSection from '@/components/FAQSection';
 import CTASection from '@/components/CTASection';
 import Footer from '@/components/Footer';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Index = () => {
   return (
@@ -22,17 +23,36 @@ const Index = () => {
         <Header />
         <main>
           <Hero />
-          <StatsSection />
-          <WhySection />
-          <HowItWorksSection />
-          <YieldStrategiesSection />
-          <OptimizedSection />
-          <TransformSection />
-          <FeaturesGridSection />
-          <ComparisonSection />
-          <SecuritySection />
-          <FAQSection />
-          <CTASection />
+          
+          <div className="px-6 md:px-12 py-12">
+            <Tabs defaultValue="overview" className="w-full max-w-7xl mx-auto">
+              <TabsList className="grid w-full grid-cols-3 mb-12">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="start-earning">Start Earning</TabsTrigger>
+                <TabsTrigger value="about">About Protocol</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview">
+                <StatsSection />
+                <WhySection />
+                <HowItWorksSection />
+                <YieldStrategiesSection />
+              </TabsContent>
+              
+              <TabsContent value="start-earning">
+                <OptimizedSection />
+                <TransformSection />
+                <FeaturesGridSection />
+                <CTASection />
+              </TabsContent>
+              
+              <TabsContent value="about">
+                <ComparisonSection />
+                <SecuritySection />
+                <FAQSection />
+              </TabsContent>
+            </Tabs>
+          </div>
         </main>
         <Footer />
       </div>
