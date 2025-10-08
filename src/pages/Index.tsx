@@ -4,6 +4,7 @@ import Hero from '@/components/Hero';
 import WhySection from '@/components/WhySection';
 import OptimizedSection from '@/components/OptimizedSection';
 import TransformSection from '@/components/TransformSection';
+import Footer from '@/components/Footer';
 
 const Index = () => {
   return (
@@ -17,6 +18,7 @@ const Index = () => {
           <OptimizedSection />
           <TransformSection />
         </main>
+        <Footer />
       </div>
     </div>
   );

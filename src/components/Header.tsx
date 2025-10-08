@@ -9,13 +9,13 @@ const Header = () => {
 
         <nav className="hidden md:flex items-center gap-8">
           <a href="#" className="text-sm hover:text-primary transition-colors">
-            Blog
+            Yield Vaults
           </a>
           <a href="#" className="text-sm hover:text-primary transition-colors">
-            Ecosystem
+            AI Strategies
           </a>
           <a href="#" className="text-sm hover:text-primary transition-colors">
-            Jobs
+            Documentation
           </a>
         </nav>
       </div>

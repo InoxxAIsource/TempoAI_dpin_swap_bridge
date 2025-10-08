@@ -2,18 +2,18 @@ const TransformSection = () => {
   const features = [
     {
       number: '01',
-      title: 'Purpose-built payments capabilities',
-      description: 'Optimize your financial flows with embedded payment features, including memo fields and batch transfers.',
+      title: 'AI-powered yield optimization',
+      description: 'Our machine learning algorithms scan thousands of yield opportunities across DeFi protocols, automatically allocating capital to maximize returns while managing risk exposure in real-time.',
     },
     {
       number: '02',
-      title: 'Fast and cost-effective',
-      description: 'Process transactions at scale with sub-second finality and fees measured in fractions of a cent.',
+      title: 'Auto-compounding & rebalancing',
+      description: 'Set it and forget it. Tempo automatically compounds your yields and rebalances your portfolio based on market conditions, saving you gas fees and maximizing long-term growth.',
     },
     {
       number: '03',
-      title: 'Enterprise-grade security',
-      description: 'Built with the highest security standards, audited by leading firms, and designed for regulatory compliance.',
+      title: 'Multi-chain liquidity aggregation',
+      description: 'Access the best yields across Ethereum, Arbitrum, Optimism, Polygon, and more. Our protocol aggregates liquidity from top DEXs and lending platforms for optimal capital efficiency.',
     },
   ];
 
@@ -22,8 +22,8 @@ const TransformSection = () => {
       <div className="max-w-6xl mx-auto">
         <h2 className="text-5xl md:text-7xl font-bold leading-tight mb-20">
           Transform how{' '}
-          <span className="block">your business</span>
-          <span className="block">moves money</span>
+          <span className="block">you generate</span>
+          <span className="block">passive income</span>
         </h2>
 
         <div className="space-y-20">
