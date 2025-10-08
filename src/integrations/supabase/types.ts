@@ -14,16 +14,194 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      portfolio_snapshots: {
+        Row: {
+          created_at: string | null
+          id: string
+          snapshot_data: Json
+          total_value_usd: number
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          snapshot_data: Json
+          total_value_usd: number
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          snapshot_data?: Json
+          total_value_usd?: number
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          id: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_connections: {
+        Row: {
+          chain_name: string
+          chain_type: Database["public"]["Enums"]["chain_type"]
+          connected_at: string | null
+          id: string
+          is_primary: boolean | null
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          chain_name: string
+          chain_type: Database["public"]["Enums"]["chain_type"]
+          connected_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          chain_name?: string
+          chain_type?: Database["public"]["Enums"]["chain_type"]
+          connected_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      wormhole_transactions: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string | null
+          from_chain: string
+          from_token: string
+          id: string
+          status: Database["public"]["Enums"]["transaction_status"] | null
+          to_chain: string
+          to_token: string
+          tx_hash: string | null
+          user_id: string
+          wormhole_vaa: string | null
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string | null
+          from_chain: string
+          from_token: string
+          id?: string
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          to_chain: string
+          to_token: string
+          tx_hash?: string | null
+          user_id: string
+          wormhole_vaa?: string | null
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string | null
+          from_chain?: string
+          from_token?: string
+          id?: string
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          to_chain?: string
+          to_token?: string
+          tx_hash?: string | null
+          user_id?: string
+          wormhole_vaa?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      chain_type: "EVM" | "SOLANA"
+      transaction_status: "pending" | "completed" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +328,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      chain_type: ["EVM", "SOLANA"],
+      transaction_status: ["pending", "completed", "failed"],
+    },
   },
 } as const
