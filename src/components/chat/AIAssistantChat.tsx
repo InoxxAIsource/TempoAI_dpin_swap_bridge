@@ -141,10 +141,22 @@ export default function AIAssistantChat() {
           </Button>
         </div>
         <div className="flex items-center gap-2 mt-3">
-          <button className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full bg-muted hover:bg-muted/70">
+          <button 
+            onClick={() => {
+              setInput('Explain yield strategies');
+              inputRef.current?.focus();
+            }}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full bg-muted hover:bg-muted/70"
+          >
             Explain yield strategies
           </button>
-          <button className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full bg-muted hover:bg-muted/70">
+          <button 
+            onClick={() => {
+              setInput('How to get started?');
+              inputRef.current?.focus();
+            }}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full bg-muted hover:bg-muted/70"
+          >
             How to get started?
           </button>
         </div>
