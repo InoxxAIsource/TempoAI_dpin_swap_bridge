@@ -25,12 +25,27 @@ const Index = () => {
         <main>
           <Hero />
           
-          <div className="px-6 md:px-12 py-12 relative z-20">
+          <div className="px-6 md:px-12 py-12">
             <Tabs defaultValue="overview" className="w-full max-w-7xl mx-auto">
-              <TabsList className="grid w-full grid-cols-3 mb-12 h-auto p-2 bg-muted/50 backdrop-blur-sm">
-                <TabsTrigger value="overview" className="py-3 text-base">Overview</TabsTrigger>
-                <TabsTrigger value="start-earning" className="py-3 text-base">Start Earning</TabsTrigger>
-                <TabsTrigger value="about" className="py-3 text-base">About Protocol</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 mb-12 h-auto p-2 bg-background/80 backdrop-blur-sm shadow-lg border border-border relative z-50">
+                <TabsTrigger 
+                  value="overview" 
+                  className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="start-earning" 
+                  className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  Start Earning
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="about" 
+                  className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  About Protocol
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="overview">
