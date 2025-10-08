@@ -1,1 +1,13 @@
 project_id = "fhmyhvrejofybzdgzxdc"
+
+[functions.fetch-wallet-balances]
+verify_jwt = true
+
+[functions.fetch-token-prices]
+verify_jwt = false
+
+[functions.fetch-yield-opportunities]
+verify_jwt = false
+
+[functions.ai-defi-assistant]
+verify_jwt = true

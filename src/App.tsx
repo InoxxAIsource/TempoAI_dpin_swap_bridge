@@ -7,6 +7,7 @@ import Chat from "./pages/Chat";
 import Portfolio from "./pages/Portfolio";
 import Bridge from "./pages/Bridge";
 import Transactions from "./pages/Transactions";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -20,6 +21,7 @@ const App = () => (
         <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/bridge" element={<Bridge />} />
         <Route path="/transactions" element={<Transactions />} />
+        <Route path="/auth" element={<Auth />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
