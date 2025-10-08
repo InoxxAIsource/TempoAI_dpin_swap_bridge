@@ -40,20 +40,13 @@ const Index = () => {
               className="w-full max-w-7xl mx-auto"
             >
               <div className="sticky top-20 z-[100] bg-background/95 backdrop-blur-sm pb-4 -mx-6 px-6 md:-mx-12 md:px-12 mb-8">
-                <TabsList className="grid w-full max-w-7xl mx-auto grid-cols-3 h-auto p-2 bg-muted shadow-lg border border-border">
+                <TabsList className="grid w-full max-w-7xl mx-auto grid-cols-2 h-auto p-2 bg-muted shadow-lg border border-border">
                   <TabsTrigger 
                     value="overview" 
                     className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50"
                     onClick={() => console.log('Overview tab clicked')}
                   >
                     Overview
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="start-earning" 
-                    className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50"
-                    onClick={() => console.log('Start Earning tab clicked')}
-                  >
-                    Start Earning
                   </TabsTrigger>
                   <TabsTrigger 
                     value="about" 
@@ -70,13 +63,6 @@ const Index = () => {
                 <WhySection />
                 <HowItWorksSection />
                 <YieldStrategiesSection />
-              </TabsContent>
-              
-              <TabsContent value="start-earning" className="m-0">
-                <div className="border-4 border-green-500 p-4 mb-4">
-                  <p className="text-2xl font-bold text-green-500">START EARNING TAB IS ACTIVE!</p>
-                </div>
-                <StartEarningChat />
                 <OptimizedSection />
                 <TransformSection />
                 <FeaturesGridSection />
