@@ -13,6 +13,7 @@ import SecuritySection from '@/components/SecuritySection';
 import FAQSection from '@/components/FAQSection';
 import CTASection from '@/components/CTASection';
 import Footer from '@/components/Footer';
+import StartEarningChat from '@/components/StartEarningChat';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Index = () => {
@@ -40,6 +41,7 @@ const Index = () => {
               </TabsContent>
               
               <TabsContent value="start-earning">
+                <StartEarningChat />
                 <OptimizedSection />
                 <TransformSection />
                 <FeaturesGridSection />
