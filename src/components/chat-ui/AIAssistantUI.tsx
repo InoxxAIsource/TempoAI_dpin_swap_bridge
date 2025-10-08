@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ChatPane from "./ChatPane";
 import ChatHeader from "./ChatHeader";
+import Sidebar from "./Sidebar";
 import { INITIAL_CONVERSATIONS } from "./mockData";
 import type { Conversation } from "./mockData";
 
@@ -136,17 +137,33 @@ export default function AIAssistantUI() {
 
   return (
     <div className="h-screen w-full bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-      <div className="mx-auto flex h-full max-w-[1400px] flex-col">
-        <ChatHeader createNewChat={createNewChat} sidebarCollapsed={sidebarCollapsed} setSidebarOpen={setSidebarOpen} />
-        <ChatPane
-          ref={composerRef}
-          conversation={selected}
-          onSend={(content) => selected && sendMessage(selected.id, content)}
-          onEditMessage={(messageId, newContent) => selected && editMessage(selected.id, messageId, newContent)}
-          onResendMessage={(messageId) => selected && resendMessage(selected.id, messageId)}
-          isThinking={isThinking && thinkingConvId === selected?.id}
-          onPauseThinking={pauseThinking}
+      <div className="flex h-full w-full">
+        <Sidebar
+          conversations={conversations}
+          selectedId={selectedId}
+          onSelectConversation={setSelectedId}
+          onNewChat={createNewChat}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
+        <div className="flex flex-1 flex-col">
+          <ChatHeader
+            createNewChat={createNewChat}
+            sidebarCollapsed={sidebarCollapsed}
+            setSidebarOpen={setSidebarOpen}
+            theme={theme}
+            setTheme={setTheme}
+          />
+          <ChatPane
+            ref={composerRef}
+            conversation={selected}
+            onSend={(content) => selected && sendMessage(selected.id, content)}
+            onEditMessage={(messageId, newContent) => selected && editMessage(selected.id, messageId, newContent)}
+            onResendMessage={(messageId) => selected && resendMessage(selected.id, messageId)}
+            isThinking={isThinking && thinkingConvId === selected?.id}
+            onPauseThinking={pauseThinking}
+          />
+        </div>
       </div>
     </div>
   );

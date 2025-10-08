@@ -1,14 +1,17 @@
 import { Asterisk, MoreHorizontal, Menu, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import GhostIconButton from "./GhostIconButton";
+import ThemeToggle from "./ThemeToggle";
 
 interface ChatHeaderProps {
   createNewChat: () => void;
   sidebarCollapsed: boolean;
   setSidebarOpen: (open: boolean) => void;
+  theme: string;
+  setTheme: (theme: string) => void;
 }
 
-export default function ChatHeader({ createNewChat, sidebarCollapsed, setSidebarOpen }: ChatHeaderProps) {
+export default function ChatHeader({ createNewChat, sidebarCollapsed, setSidebarOpen, theme, setTheme }: ChatHeaderProps) {
   const [selectedBot, setSelectedBot] = useState("GPT-5");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -65,6 +68,7 @@ export default function ChatHeader({ createNewChat, sidebarCollapsed, setSidebar
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <ThemeToggle theme={theme} setTheme={setTheme} />
         <GhostIconButton label="More">
           <MoreHorizontal className="h-4 w-4" />
         </GhostIconButton>
