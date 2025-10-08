@@ -13,6 +13,7 @@ import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from '@sol
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
+import { WalletProvider } from './contexts/WalletContext';
 
 const queryClient = new QueryClient();
 
@@ -30,7 +31,9 @@ const RootApp = () => {
           <ConnectionProvider endpoint={solanaEndpoint}>
             <SolanaWalletProvider wallets={solanaWallets} autoConnect>
               <WalletModalProvider>
-                <App />
+                <WalletProvider>
+                  <App />
+                </WalletProvider>
               </WalletModalProvider>
             </SolanaWalletProvider>
           </ConnectionProvider>
