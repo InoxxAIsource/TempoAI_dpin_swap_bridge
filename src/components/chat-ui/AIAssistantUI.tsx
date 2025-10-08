@@ -139,9 +139,6 @@ export default function AIAssistantUI() {
     <div className="h-screen w-full bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <div className="flex h-full w-full">
         <Sidebar
-          conversations={conversations}
-          selectedId={selectedId}
-          onSelectConversation={setSelectedId}
           onNewChat={createNewChat}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
