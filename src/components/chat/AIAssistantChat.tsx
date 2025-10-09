@@ -37,40 +37,114 @@ export default function AIAssistantChat() {
       createdAt: new Date().toISOString(),
     };
 
+    const userInput = input;
     setMessages((prev) => [...prev, userMessage]);
     setLastUserMessage(input);
     setInput('');
     setIsThinking(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: `m${Date.now() + 1}`,
-        role: 'assistant',
-        content: getDemoResponse(input),
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsThinking(false);
-    }, 1500);
-  };
+    try {
+      // Call the AI edge function with streaming
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-defi-assistant`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: [...messages, userMessage].map(m => ({
+              role: m.role,
+              content: m.content,
+            })),
+          }),
+        }
+      );
 
-  const getDemoResponse = (query: string): string => {
-    const lowerQuery = query.toLowerCase();
-    
-    if (lowerQuery.includes('yield') || lowerQuery.includes('apy')) {
-      return 'Our AI-powered yield optimization strategies currently offer up to 18.7% APY across multiple DeFi protocols. Would you like me to explain how our AI automatically rebalances your portfolio for maximum returns?';
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      // Handle streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantContent = '';
+      let assistantId = `m${Date.now() + 1}`;
+      
+      setIsThinking(false);
+      
+      // Add initial empty assistant message
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantId,
+          role: 'assistant',
+          content: '',
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+
+      let textBuffer = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        textBuffer += decoder.decode(value, { stream: true });
+        
+        // Process line-by-line
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') break;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              assistantContent += content;
+              
+              // Update the assistant message with new content
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId
+                    ? { ...m, content: assistantContent }
+                    : m
+                )
+              );
+            }
+          } catch (e) {
+            console.error('Error parsing SSE:', e);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error calling AI:', error);
+      setIsThinking(false);
+      
+      // Add error message
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `m${Date.now() + 1}`,
+          role: 'assistant',
+          content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
     }
-    
-    if (lowerQuery.includes('start') || lowerQuery.includes('begin') || lowerQuery.includes('deposit')) {
-      return 'Getting started with Tempo is simple! You can deposit any amount to start earning optimized yields. Our AI will automatically allocate your funds across the best performing strategies. Would you like to know about our supported assets?';
-    }
-    
-    if (lowerQuery.includes('risk') || lowerQuery.includes('safe')) {
-      return 'Tempo employs multiple security layers: smart contract audits by leading firms, AI risk monitoring, and diversified strategies. We automatically adjust allocations based on real-time risk assessment. What specific security aspect would you like to learn more about?';
-    }
-    
-    return 'I can help you with yield optimization strategies, getting started with deposits, understanding our AI algorithms, or answering questions about security and risk management. What interests you most?';
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

@@ -12,39 +12,15 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, conversationId } = await req.json();
+    const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY is not configured');
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Get user from auth header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Unauthorized');
-    }
-
-    console.log(`Processing chat for user ${user.id}, conversation ${conversationId}`);
-
-    // Save user message
-    await supabase.from('chat_messages').insert({
-      user_id: user.id,
-      conversation_id: conversationId,
-      role: 'user',
-      content: messages[messages.length - 1].content,
-    });
+    console.log(`Processing chat request with ${messages.length} messages`);
 
     // Call Lovable AI
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -116,14 +92,7 @@ serve(async (req) => {
             }
           }
 
-          // Save assistant message
-          await supabase.from('chat_messages').insert({
-            user_id: user.id,
-            conversation_id: conversationId,
-            role: 'assistant',
-            content: assistantMessage,
-          });
-
+          console.log(`Completed streaming response: ${assistantMessage.length} chars`);
           controller.close();
         } catch (error) {
           console.error('Stream error:', error);
