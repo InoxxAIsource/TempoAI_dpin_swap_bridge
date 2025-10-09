@@ -77,6 +77,8 @@ const WormholeConnectWidget = () => {
       OptimismSepolia: 'https://sepolia.optimism.io',
       PolygonSepolia: 'https://rpc-amoy.polygon.technology',
     },
+    // Required for wallet functionality - enables WalletConnect support
+    walletConnectProjectId: '7cb724bf60c8e3b1b67fdadd7bafcace',
   }), []);
 
   useEffect(() => {
@@ -90,13 +92,11 @@ const WormholeConnectWidget = () => {
   return (
     <ThemeProvider theme={muiTheme}>
       <div className="w-full">
-        {!isAnyWalletConnected && (
-          <div className="mb-4 p-4 border border-warning rounded-xl bg-warning/10">
-            <p className="text-sm text-warning">
-              Please connect your wallet to use the bridge
-            </p>
-          </div>
-        )}
+        <div className="mb-4 p-4 border border-blue-500/50 rounded-xl bg-blue-500/10">
+          <p className="text-sm text-blue-400">
+            💡 <strong>Note:</strong> The Advanced Bridge has its own wallet connection. Click "Connect Wallet" inside the widget below.
+          </p>
+        </div>
         <div className="mb-4 p-3 border border-blue-500/50 rounded-xl bg-blue-500/10">
           <p className="text-sm text-blue-400 font-medium">
             🧪 Testnet Mode: Sepolia • Solana Devnet • Arbitrum Sepolia • Base Sepolia
