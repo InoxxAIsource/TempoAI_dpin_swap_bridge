@@ -1,8 +1,9 @@
 interface MessageContentProps {
   content: string;
+  onPromptClick?: (prompt: string) => void;
 }
 
-export default function MessageContent({ content }: MessageContentProps) {
+export default function MessageContent({ content, onPromptClick }: MessageContentProps) {
   // Parse markdown-like formatting
   const parseContent = (text: string) => {
     const lines = text.split('\n');
@@ -74,12 +75,29 @@ export default function MessageContent({ content }: MessageContentProps) {
       
       // Check if it's a list item
       if (line.trim().startsWith('-') || line.trim().startsWith('•')) {
-        elements.push(
-          <div key={idx} className="flex gap-2 mb-1">
-            <span className="text-zinc-400">•</span>
-            <span>{finalParts}</span>
-          </div>
-        );
+        const itemText = line.trim().replace(/^[•\-]\s*/, '');
+        const isClickable = onPromptClick && itemText.startsWith('[') && itemText.endsWith(']');
+        
+        if (isClickable) {
+          const promptText = itemText.slice(1, -1);
+          elements.push(
+            <button
+              key={idx}
+              onClick={() => onPromptClick(promptText)}
+              className="flex gap-2 mb-1 text-left hover:bg-zinc-800/50 px-2 py-1 rounded transition-colors w-full"
+            >
+              <span className="text-zinc-400">•</span>
+              <span className="text-blue-400 hover:text-blue-300">{promptText}</span>
+            </button>
+          );
+        } else {
+          elements.push(
+            <div key={idx} className="flex gap-2 mb-1">
+              <span className="text-zinc-400">•</span>
+              <span>{finalParts}</span>
+            </div>
+          );
+        }
       } else if (line.trim() === '') {
         elements.push(<div key={idx} className="h-2" />);
       } else {
