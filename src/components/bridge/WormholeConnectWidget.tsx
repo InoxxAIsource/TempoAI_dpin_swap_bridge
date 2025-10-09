@@ -53,13 +53,6 @@ const WormholeConnectWidget = () => {
     chains: ['Ethereum', 'Polygon', 'Arbitrum', 'Avalanche', 'Solana', 'Optimism', 'Bsc', 'Base'],
   };
 
-  const customTheme: any = {
-    mode: theme === 'dark' ? 'dark' : 'light',
-    background: {
-      default: theme === 'dark' ? 'hsl(224 71% 4%)' : 'hsl(0 0% 100%)',
-    },
-  };
-
   return (
     <div className="w-full">
       {!isAnyWalletConnected && (
@@ -70,7 +63,7 @@ const WormholeConnectWidget = () => {
         </div>
       )}
       <div className="border border-border rounded-2xl overflow-hidden bg-card">
-        <WormholeConnect config={config} theme={customTheme} />
+        <WormholeConnect config={config} />
       </div>
       <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <span>Powered by</span>
