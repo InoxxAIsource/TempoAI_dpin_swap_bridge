@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import WormholeConnect from '@wormhole-foundation/wormhole-connect';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useWalletContext } from '@/contexts/WalletContext';
@@ -8,7 +8,6 @@ import { toast } from '@/hooks/use-toast';
 const WormholeConnectWidget = () => {
   const { theme } = useTheme();
   const { isAnyWalletConnected } = useWalletContext();
-  const widgetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Listen for Wormhole transaction events
@@ -49,25 +48,20 @@ const WormholeConnectWidget = () => {
     };
   }, []);
 
-  const wormholeConfig = {
-    env: 'mainnet' as const,
-    networks: ['ethereum', 'polygon', 'arbitrum', 'avalanche', 'solana', 'optimism', 'bsc', 'base'],
-    tokens: ['ETH', 'WETH', 'USDC', 'USDT', 'WBTC', 'DAI'],
+  const config: any = {
+    network: 'Mainnet',
+    chains: ['Ethereum', 'Polygon', 'Arbitrum', 'Avalanche', 'Solana', 'Optimism', 'Bsc', 'Base'],
+  };
+
+  const customTheme: any = {
     mode: theme === 'dark' ? 'dark' : 'light',
-    customTheme: {
-      primary: 'hsl(var(--primary))',
-      secondary: 'hsl(var(--secondary))',
-      text: 'hsl(var(--foreground))',
-      textSecondary: 'hsl(var(--muted-foreground))',
-      error: 'hsl(var(--destructive))',
-      success: 'hsl(var(--primary))',
-      badge: 'hsl(var(--secondary))',
-      font: 'inherit',
+    background: {
+      default: theme === 'dark' ? 'hsl(224 71% 4%)' : 'hsl(0 0% 100%)',
     },
   };
 
   return (
-    <div ref={widgetRef} className="w-full">
+    <div className="w-full">
       {!isAnyWalletConnected && (
         <div className="mb-4 p-4 border border-warning rounded-xl bg-warning/10">
           <p className="text-sm text-warning">
@@ -76,7 +70,7 @@ const WormholeConnectWidget = () => {
         </div>
       )}
       <div className="border border-border rounded-2xl overflow-hidden bg-card">
-        <WormholeConnect config={wormholeConfig} />
+        <WormholeConnect config={config} theme={customTheme} />
       </div>
       <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <span>Powered by</span>
