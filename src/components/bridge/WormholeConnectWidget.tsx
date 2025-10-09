@@ -59,6 +59,14 @@ const WormholeConnectWidget = () => {
   const config: any = {
     network: 'Testnet',
     chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
+    rpcs: {
+      Sepolia: 'https://rpc.ankr.com/eth_sepolia',
+      Solana: 'https://api.devnet.solana.com',
+      ArbitrumSepolia: 'https://sepolia-rollup.arbitrum.io/rpc',
+      BaseSepolia: 'https://sepolia.base.org',
+      OptimismSepolia: 'https://sepolia.optimism.io',
+      PolygonSepolia: 'https://rpc-amoy.polygon.technology',
+    },
   };
 
   return (
