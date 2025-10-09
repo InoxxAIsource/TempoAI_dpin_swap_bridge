@@ -69,32 +69,47 @@ const WormholeConnectWidget = () => {
   }), [theme]);
 
   // Memoize config to prevent unnecessary recreations
-  const wormholeConfig: config.WormholeConnectConfig = useMemo(() => ({
-    network: 'Testnet',
-    chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
+  const wormholeConfig: config.WormholeConnectConfig = useMemo(() => {
+    const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
     
-    // FIX 2: Specify supported testnet tokens (widget uses defaults)
-    tokens: ['ETH', 'WETH', 'USDC'],
-    
-    // FIX 1: Use most reliable RPC endpoints for testnet
-    rpcs: {
-      Sepolia: 'https://ethereum-sepolia-rpc.publicnode.com',
-      Solana: 'https://api.devnet.solana.com',
-      ArbitrumSepolia: 'https://sepolia-rollup.arbitrum.io/rpc',
-      BaseSepolia: 'https://sepolia.base.org',
-      OptimismSepolia: 'https://sepolia.optimism.io',
-      PolygonSepolia: 'https://rpc-amoy.polygon.technology',
-    },
-    
-    // Required for wallet functionality - enables WalletConnect support
-    walletConnectProjectId: '7cb724bf60c8e3b1b67fdadd7bafcace',
-  }), []);
+    return {
+      network: 'Testnet',
+      chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
+      
+      // Specify supported testnet tokens
+      tokens: ['ETH', 'WETH', 'USDC'],
+      
+      // Use Alchemy RPC for Sepolia with fallback to public RPCs
+      rpcs: {
+        Sepolia: alchemyKey 
+          ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
+          : 'https://ethereum-sepolia-rpc.publicnode.com',
+        Solana: 'https://api.devnet.solana.com',
+        ArbitrumSepolia: 'https://sepolia-rollup.arbitrum.io/rpc',
+        BaseSepolia: 'https://sepolia.base.org',
+        OptimismSepolia: 'https://sepolia.optimism.io',
+        PolygonSepolia: 'https://rpc-amoy.polygon.technology',
+      },
+      
+      // Required for wallet functionality - enables WalletConnect support
+      walletConnectProjectId: '7cb724bf60c8e3b1b67fdadd7bafcace',
+    };
+  }, []);
 
-  // FIX 4: RPC Health Check
+  // RPC Health Check using Alchemy
   useEffect(() => {
     const testRPC = async () => {
+      const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
+      
+      if (!alchemyKey) {
+        console.warn('⚠️ Alchemy API key not configured. Using fallback RPC.');
+        setRpcHealthy(null);
+        setRpcError('Alchemy API key not configured. Token balances may be slow to load.');
+        return;
+      }
+
       try {
-        const response = await fetch('https://ethereum-sepolia-rpc.publicnode.com', {
+        const response = await fetch(`https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -106,16 +121,18 @@ const WormholeConnectWidget = () => {
         });
         const data = await response.json();
         if (data.result) {
-          console.log('✅ Sepolia RPC Health Check: Block', parseInt(data.result, 16));
+          console.log('✅ Alchemy Sepolia RPC: Block', parseInt(data.result, 16));
           setRpcHealthy(true);
+          setRpcError(null);
         } else {
-          console.error('❌ Sepolia RPC Failed: No result');
+          console.error('❌ Alchemy RPC Failed: No result');
           setRpcHealthy(false);
+          setRpcError('RPC connection issue. Trying alternative endpoints...');
         }
       } catch (error) {
-        console.error('❌ Sepolia RPC Failed:', error);
+        console.error('❌ Alchemy RPC Failed:', error);
         setRpcHealthy(false);
-        setRpcError('RPC connection issue detected. Widget will try fallback endpoints automatically.');
+        setRpcError('RPC connection issue detected. Using fallback endpoints.');
       }
     };
     
@@ -125,7 +142,7 @@ const WormholeConnectWidget = () => {
       network: 'Testnet',
       chains: wormholeConfig.chains,
       tokens: wormholeConfig.tokens,
-      rpcs: 'Configured with reliable endpoints',
+      rpc: import.meta.env.VITE_ALCHEMY_API_KEY ? 'Alchemy RPC' : 'Public RPC',
       timestamp: new Date().toISOString()
     });
   }, [wormholeConfig]);
@@ -143,6 +160,8 @@ const WormholeConnectWidget = () => {
     return () => window.removeEventListener('wormhole-rpc-error', handleRpcError);
   }, []);
 
+  const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
+
   return (
     <ThemeProvider theme={muiTheme}>
       <div className="w-full">
@@ -152,17 +171,27 @@ const WormholeConnectWidget = () => {
           </p>
         </div>
         
-        {/* FIX 5: Display RPC status and errors */}
-        {rpcHealthy === false && (
+        {/* Warning if Alchemy API key is missing */}
+        {!alchemyKey && (
           <div className="mb-4 p-3 border border-yellow-500/50 rounded-xl bg-yellow-500/10 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-yellow-400">
-              Primary RPC slow or unavailable. Using fallback endpoints for better reliability.
+              ⚠️ Alchemy API key not configured. Token balances may load slowly. Configure in Settings → Secrets.
             </p>
           </div>
         )}
         
-        {rpcError && (
+        {/* Display RPC status and errors */}
+        {rpcHealthy === false && (
+          <div className="mb-4 p-3 border border-yellow-500/50 rounded-xl bg-yellow-500/10 flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-yellow-400">
+              RPC connection issue. Using fallback endpoints for better reliability.
+            </p>
+          </div>
+        )}
+        
+        {rpcError && rpcHealthy !== false && (
           <div className="mb-4 p-3 border border-yellow-500/50 rounded-xl bg-yellow-500/10 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-yellow-400">{rpcError}</p>
@@ -174,7 +203,7 @@ const WormholeConnectWidget = () => {
             🧪 Testnet Mode: Sepolia • Solana Devnet • Arbitrum Sepolia • Base Sepolia • More
           </p>
           <p className="text-xs text-blue-300/80 mt-1">
-            Supported tokens: ETH, WETH, USDC {rpcHealthy && '• RPC Connected ✓'}
+            Supported tokens: ETH, WETH, USDC {rpcHealthy && alchemyKey && '• Alchemy RPC Connected ✓'}
           </p>
         </div>
         <div className="border border-border rounded-2xl overflow-hidden bg-card">
