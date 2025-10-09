@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Send, Loader2, Plus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import ThinkingMessages from './ThinkingMessages';
 
 interface Message {
   id: string;
@@ -23,6 +24,7 @@ export default function AIAssistantChat() {
   const [messages, setMessages] = useState<Message[]>(DEMO_MESSAGES);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [lastUserMessage, setLastUserMessage] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = async () => {
@@ -36,6 +38,7 @@ export default function AIAssistantChat() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    setLastUserMessage(input);
     setInput('');
     setIsThinking(true);
 
@@ -97,19 +100,7 @@ export default function AIAssistantChat() {
         ))}
         
         {isThinking && (
-          <div className="flex items-start gap-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-bold">
-              AI
-            </div>
-            <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-muted border border-border">
-              <div className="flex items-center gap-1">
-                <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]"></div>
-                <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]"></div>
-                <div className="h-2 w-2 animate-bounce rounded-full bg-primary"></div>
-              </div>
-              <span className="text-sm text-muted-foreground">AI is thinking...</span>
-            </div>
-          </div>
+          <ThinkingMessages lastUserMessage={lastUserMessage} />
         )}
       </div>
 

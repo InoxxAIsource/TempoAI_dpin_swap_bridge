@@ -1,30 +1,10 @@
 import { useState, forwardRef, useImperativeHandle, useRef } from "react";
-import { Pencil, RefreshCw, Check, X, Square } from "lucide-react";
+import { Pencil, RefreshCw, Check, X } from "lucide-react";
 import Message from "./Message";
 import Composer from "./Composer";
 import { cls, timeAgo } from "./utils";
 import { Conversation, Message as MessageType } from "./mockData";
-
-function ThinkingMessage({ onPause }: { onPause: () => void }) {
-  return (
-    <Message role="assistant">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1">
-          <div className="h-2 w-2 animate-bounce rounded-full bg-zinc-400 [animation-delay:-0.3s]"></div>
-          <div className="h-2 w-2 animate-bounce rounded-full bg-zinc-400 [animation-delay:-0.15s]"></div>
-          <div className="h-2 w-2 animate-bounce rounded-full bg-zinc-400"></div>
-        </div>
-        <span className="text-sm text-zinc-500">AI is thinking...</span>
-        <button
-          onClick={onPause}
-          className="ml-auto inline-flex items-center gap-1 rounded-full border border-zinc-300 px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-        >
-          <Square className="h-3 w-3" /> Pause
-        </button>
-      </div>
-    </Message>
-  );
-}
+import ThinkingMessages from "../chat/ThinkingMessages";
 
 interface ChatPaneProps {
   conversation: Conversation | null;
@@ -153,7 +133,11 @@ const ChatPane = forwardRef<{ insertTemplate: (content: string) => void }, ChatP
                   )}
                 </div>
               ))}
-              {isThinking && <ThinkingMessage onPause={onPauseThinking || (() => {})} />}
+              {isThinking && (
+                <Message role="assistant">
+                  <ThinkingMessages onPause={onPauseThinking} />
+                </Message>
+              )}
             </>
           )}
         </div>
