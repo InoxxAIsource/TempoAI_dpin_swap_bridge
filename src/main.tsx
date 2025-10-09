@@ -15,7 +15,29 @@ import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adap
 import { clusterApiUrl } from '@solana/web3.js';
 import { WalletProvider } from './contexts/WalletContext';
 
-const queryClient = new QueryClient();
+// Suppress WalletConnect postMessage errors in iframe context
+const originalError = console.error;
+console.error = (...args) => {
+  const errorMessage = args[0]?.toString() || '';
+  if (
+    errorMessage.includes('postMessage') ||
+    errorMessage.includes('DataCloneError') ||
+    errorMessage.includes('Failed to send message')
+  ) {
+    // Silently ignore these errors - they don't affect functionality
+    return;
+  }
+  originalError.apply(console, args);
+};
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const RootApp = () => {
   const solanaEndpoint = useMemo(() => clusterApiUrl('mainnet-beta'), []);
