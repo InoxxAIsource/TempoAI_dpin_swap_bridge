@@ -31,6 +31,7 @@ const BridgeCard = () => {
     setToChain(temp);
   };
 
+  // FIX 3: Switch to Advanced Bridge for testnet support
   const handleBridge = () => {
     if (!isAnyWalletConnected) {
       toast.error('Please connect your wallet first');
@@ -45,14 +46,14 @@ const BridgeCard = () => {
       return;
     }
     
-    toast.success('Bridge transaction initiated! This will redirect to Wormhole Connect.', {
-      description: 'Opening Wormhole bridge interface...',
+    toast.info('Switching to Advanced Bridge', {
+      description: 'The Advanced Bridge supports Sepolia and all testnet chains with lower fees.',
     });
     
-    // Redirect to Wormhole Connect with pre-filled data
+    // Emit custom event to switch to advanced bridge tab
     setTimeout(() => {
-      window.open('https://portalbridge.com/', '_blank');
-    }, 1500);
+      window.dispatchEvent(new CustomEvent('switch-to-advanced-bridge'));
+    }, 800);
   };
 
   return (

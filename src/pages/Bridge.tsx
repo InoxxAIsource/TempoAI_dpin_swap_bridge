@@ -14,6 +14,7 @@ const Bridge = () => {
   const { evmAddress, solanaAddress, isAnyWalletConnected } = useWalletContext();
   const [recentTransfers, setRecentTransfers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('simple');
 
   // Fetch real transaction history from database
   useEffect(() => {
@@ -56,6 +57,16 @@ const Bridge = () => {
 
     fetchTransactions();
   }, [isAnyWalletConnected, evmAddress, solanaAddress]);
+  
+  // FIX 3: Listen for switch to advanced bridge event
+  useEffect(() => {
+    const handleSwitchToAdvanced = () => {
+      setActiveTab('advanced');
+    };
+    
+    window.addEventListener('switch-to-advanced-bridge', handleSwitchToAdvanced);
+    return () => window.removeEventListener('switch-to-advanced-bridge', handleSwitchToAdvanced);
+  }, []);
 
   const formatTimeAgo = (date: Date) => {
     const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
@@ -77,7 +88,7 @@ const Bridge = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Bridge Interface with Tabs */}
             <div className="lg:col-span-2">
-              <Tabs defaultValue="simple" className="w-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-6">
                   <TabsTrigger value="simple" className="flex items-center gap-2">
                     <Zap className="w-4 h-4" />
