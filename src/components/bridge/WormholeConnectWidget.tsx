@@ -69,6 +69,8 @@ const WormholeConnectWidget = () => {
     },
   };
 
+  console.log('🌉 Wormhole Bridge Config:', config);
+
   return (
     <ThemeProvider theme={muiTheme}>
       <div className="w-full">
@@ -79,8 +81,13 @@ const WormholeConnectWidget = () => {
             </p>
           </div>
         )}
+        <div className="mb-4 p-3 border border-blue-500/50 rounded-xl bg-blue-500/10">
+          <p className="text-sm text-blue-400 font-medium">
+            🧪 Testnet Mode Active - Sepolia ↔ Solana Devnet
+          </p>
+        </div>
         <div className="border border-border rounded-2xl overflow-hidden bg-card">
-          <WormholeConnect config={config} />
+          <WormholeConnect key="testnet-bridge" config={config} />
         </div>
         <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <span>Powered by</span>
