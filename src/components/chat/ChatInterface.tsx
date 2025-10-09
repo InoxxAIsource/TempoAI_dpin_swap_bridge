@@ -90,6 +90,7 @@ export default function ChatInterface() {
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       
       if (!supabaseUrl) {
         throw new Error('VITE_SUPABASE_URL is not configured');
@@ -104,6 +105,7 @@ export default function ChatInterface() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
         },
         body: JSON.stringify({
           messages: allMessages.map(m => ({
