@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import WormholeConnect from '@wormhole-foundation/wormhole-connect';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,35 +49,44 @@ const WormholeConnectWidget = () => {
     };
   }, []);
 
+  // Create a proper MUI theme
+  const muiTheme = createTheme({
+    palette: {
+      mode: theme === 'dark' ? 'dark' : 'light',
+    },
+  });
+
   const config: any = {
     network: 'Mainnet',
     chains: ['Ethereum', 'Polygon', 'Arbitrum', 'Avalanche', 'Solana', 'Optimism', 'Bsc', 'Base'],
   };
 
   return (
-    <div className="w-full">
-      {!isAnyWalletConnected && (
-        <div className="mb-4 p-4 border border-warning rounded-xl bg-warning/10">
-          <p className="text-sm text-warning">
-            Please connect your wallet to use the bridge
-          </p>
+    <ThemeProvider theme={muiTheme}>
+      <div className="w-full">
+        {!isAnyWalletConnected && (
+          <div className="mb-4 p-4 border border-warning rounded-xl bg-warning/10">
+            <p className="text-sm text-warning">
+              Please connect your wallet to use the bridge
+            </p>
+          </div>
+        )}
+        <div className="border border-border rounded-2xl overflow-hidden bg-card">
+          <WormholeConnect config={config} />
         </div>
-      )}
-      <div className="border border-border rounded-2xl overflow-hidden bg-card">
-        <WormholeConnect config={config} />
+        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <span>Powered by</span>
+          <a 
+            href="https://wormhole.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary hover:underline font-medium"
+          >
+            Wormhole
+          </a>
+        </div>
       </div>
-      <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <span>Powered by</span>
-        <a 
-          href="https://wormhole.com" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-primary hover:underline font-medium"
-        >
-          Wormhole
-        </a>
-      </div>
-    </div>
+    </ThemeProvider>
   );
 };
 
