@@ -55,10 +55,10 @@ const BridgeCard = () => {
   };
 
   return (
-    <div className="border border-border rounded-2xl p-8 bg-card max-w-2xl mx-auto">
+    <div className="border border-border rounded-2xl p-6 md:p-8 bg-card max-w-2xl mx-auto overflow-hidden">
       {/* FROM Section */}
       <div className="space-y-4 mb-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <label className="text-sm text-muted-foreground">From</label>
           <div className="flex items-center gap-2">
             {isAnyWalletConnected ? (
@@ -74,10 +74,10 @@ const BridgeCard = () => {
           </div>
         </div>
         
-        <div className="border border-border rounded-xl p-4 space-y-3">
-          <div className="flex items-center gap-3">
+        <div className="border border-border rounded-xl p-4 space-y-3 overflow-hidden">
+          <div className="flex items-center gap-3 overflow-x-auto">
             <ChainBadge chain={fromChain} />
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           </div>
           
           <div className="flex items-center gap-4">
@@ -86,10 +86,11 @@ const BridgeCard = () => {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              className="flex-1 text-3xl font-bold bg-transparent border-none outline-none"
+              className="flex-1 text-3xl font-bold bg-transparent border-none outline-none min-w-0 w-full"
+              style={{ appearance: 'textfield' }}
             />
-            <div className="flex items-center gap-2 px-4 py-2 border border-border rounded-full cursor-pointer hover:border-primary/50 transition-all duration-300">
-              <span className="font-medium">{token}</span>
+            <div className="flex items-center gap-2 px-4 py-2 border border-border rounded-full cursor-pointer hover:border-primary/50 transition-all duration-300 flex-shrink-0">
+              <span className="font-medium whitespace-nowrap">{token}</span>
               <ChevronDown className="w-4 h-4" />
             </div>
           </div>

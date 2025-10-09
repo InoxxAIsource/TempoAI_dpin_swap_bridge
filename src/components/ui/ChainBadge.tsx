@@ -4,18 +4,18 @@ interface ChainBadgeProps {
 }
 
 const chainLogos: Record<string, string> = {
-  'Ethereum': '⟠',
-  'Polygon': '◇',
+  'Ethereum': 'Ξ',
+  'Polygon': '⬡',
   'Arbitrum': '◆',
   'Avalanche': '▲',
   'Solana': '◎',
-  'Optimism': '🔴',
-  'BNB Chain': '◆',
-  'Base': '🔵',
-  'Fantom': '👻',
-  'Celo': '🌱',
-  'Moonbeam': '🌙',
-  'Aurora': '🌈',
+  'Optimism': 'Ⓞ',
+  'BNB Chain': '◈',
+  'Base': '⬢',
+  'Fantom': 'Ⓕ',
+  'Celo': '⬢',
+  'Moonbeam': '◐',
+  'Aurora': '⬢',
 };
 
 const chainColors: Record<string, string> = {
@@ -38,9 +38,9 @@ const ChainBadge = ({ chain, className = '' }: ChainBadgeProps) => {
   const color = chainColors[chain] || 'text-primary';
   
   return (
-    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border border-border bg-card ${className}`}>
-      <span className={`text-lg ${color}`}>{logo}</span>
-      <span>{chain}</span>
+    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border border-border bg-card/80 backdrop-blur-sm ${className}`}>
+      <span className={`text-xl font-bold ${color} flex-shrink-0`}>{logo}</span>
+      <span className="whitespace-nowrap">{chain}</span>
     </span>
   );
 };
