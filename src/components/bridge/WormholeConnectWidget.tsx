@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import WormholeConnect from '@wormhole-foundation/wormhole-connect';
+import { useEffect, useState, useMemo } from 'react';
+import WormholeConnect, { type config } from '@wormhole-foundation/wormhole-connect';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useWalletContext } from '@/contexts/WalletContext';
@@ -9,6 +9,15 @@ import { toast } from '@/hooks/use-toast';
 const WormholeConnectWidget = () => {
   const { theme } = useTheme();
   const { isAnyWalletConnected } = useWalletContext();
+  const [widgetKey, setWidgetKey] = useState(0);
+
+  // Force widget remount on initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setWidgetKey(prev => prev + 1);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     // Listen for Wormhole transaction events
@@ -50,13 +59,14 @@ const WormholeConnectWidget = () => {
   }, []);
 
   // Create a proper MUI theme
-  const muiTheme = createTheme({
+  const muiTheme = useMemo(() => createTheme({
     palette: {
       mode: theme === 'dark' ? 'dark' : 'light',
     },
-  });
+  }), [theme]);
 
-  const config: any = {
+  // Memoize config to prevent unnecessary recreations
+  const wormholeConfig: config.WormholeConnectConfig = useMemo(() => ({
     network: 'Testnet',
     chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
     rpcs: {
@@ -67,9 +77,15 @@ const WormholeConnectWidget = () => {
       OptimismSepolia: 'https://sepolia.optimism.io',
       PolygonSepolia: 'https://rpc-amoy.polygon.technology',
     },
-  };
+  }), []);
 
-  console.log('🌉 Wormhole Bridge Config:', config);
+  useEffect(() => {
+    console.log('🌉 Wormhole Bridge Config Applied:', {
+      network: wormholeConfig.network,
+      chains: wormholeConfig.chains,
+      timestamp: new Date().toISOString()
+    });
+  }, [wormholeConfig]);
 
   return (
     <ThemeProvider theme={muiTheme}>
@@ -83,11 +99,16 @@ const WormholeConnectWidget = () => {
         )}
         <div className="mb-4 p-3 border border-blue-500/50 rounded-xl bg-blue-500/10">
           <p className="text-sm text-blue-400 font-medium">
-            🧪 Testnet Mode Active - Sepolia ↔ Solana Devnet
+            🧪 Testnet Mode: Sepolia • Solana Devnet • Arbitrum Sepolia • Base Sepolia
           </p>
         </div>
         <div className="border border-border rounded-2xl overflow-hidden bg-card">
-          <WormholeConnect key="testnet-bridge" config={config} />
+          {widgetKey > 0 && (
+            <WormholeConnect 
+              key={`testnet-bridge-${widgetKey}`} 
+              config={wormholeConfig}
+            />
+          )}
         </div>
         <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <span>Powered by</span>
