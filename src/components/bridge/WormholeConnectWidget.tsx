@@ -67,10 +67,10 @@ const WormholeConnectWidget = () => {
 
   // Memoize config to prevent unnecessary recreations
   const wormholeConfig: config.WormholeConnectConfig = useMemo(() => ({
-    network: 'Testnet',
+    env: 'testnet',
     chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
     rpcs: {
-      Sepolia: 'https://rpc.ankr.com/eth_sepolia',
+      Sepolia: 'https://rpc2.sepolia.org',
       Solana: 'https://api.devnet.solana.com',
       ArbitrumSepolia: 'https://sepolia-rollup.arbitrum.io/rpc',
       BaseSepolia: 'https://sepolia.base.org',
@@ -81,7 +81,7 @@ const WormholeConnectWidget = () => {
 
   useEffect(() => {
     console.log('🌉 Wormhole Bridge Config Applied:', {
-      network: wormholeConfig.network,
+      env: 'testnet',
       chains: wormholeConfig.chains,
       timestamp: new Date().toISOString()
     });
