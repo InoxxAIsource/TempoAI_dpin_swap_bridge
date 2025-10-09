@@ -31,7 +31,7 @@ const TransactionRow = ({ hash, type, from, to, amount, status, timestamp }: Tra
           </div>
           
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <code className="bg-muted px-2 py-1 rounded">{shortHash}</code>
+            <code className="bg-muted text-foreground px-2 py-1 rounded font-mono">{shortHash}</code>
             <a 
               href={`https://wormholescan.io/#/tx/${hash}`}
               target="_blank"

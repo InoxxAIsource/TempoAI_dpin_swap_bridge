@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
-import { Wallet, ChevronDown } from 'lucide-react';
+import { Wallet, ChevronDown, Moon, Sun } from 'lucide-react';
 import { useWalletContext } from '@/contexts/WalletContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import WalletModal from './WalletModal';
 import {
   DropdownMenu,
@@ -14,6 +15,7 @@ import {
 const Header = () => {
   const location = useLocation();
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
   const { 
     isAnyWalletConnected, 
     evmAddress, 
@@ -89,6 +91,17 @@ const Header = () => {
           </div>
         </nav>
 
+        {/* Theme Toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleTheme}
+          className="rounded-full shrink-0 mr-2"
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </Button>
+
         {/* Wallet Connection Button */}
         {!isAnyWalletConnected ? (
           <Button 
@@ -114,14 +127,14 @@ const Header = () => {
               {evmAddress && (
                 <DropdownMenuItem className="flex flex-col items-start">
                   <span className="text-xs text-muted-foreground">EVM</span>
-                  <span className="font-mono text-sm">{formatAddress(evmAddress)}</span>
+                  <span className="font-mono text-sm text-foreground">{formatAddress(evmAddress)}</span>
                   {evmBalance && <span className="text-xs text-muted-foreground">{evmBalance} ETH</span>}
                 </DropdownMenuItem>
               )}
               {solanaAddress && (
                 <DropdownMenuItem className="flex flex-col items-start">
                   <span className="text-xs text-muted-foreground">Solana</span>
-                  <span className="font-mono text-sm">{formatAddress(solanaAddress)}</span>
+                  <span className="font-mono text-sm text-foreground">{formatAddress(solanaAddress)}</span>
                   {solanaBalance && <span className="text-xs text-muted-foreground">{solanaBalance} SOL</span>}
                 </DropdownMenuItem>
               )}
