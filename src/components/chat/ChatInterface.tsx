@@ -5,6 +5,9 @@ import { cn } from '@/lib/utils';
 import ThinkingMessages from './ThinkingMessages';
 import MessageContent from './MessageContent';
 import WalletModal from '@/components/WalletModal';
+import { useWalletContext } from '@/contexts/WalletContext';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import oliviaAvatar from '@/assets/olivia-avatar.png';
 
 interface Message {
   id: string;
@@ -35,6 +38,7 @@ export default function ChatInterface() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { isAnyWalletConnected, evmAddress, solanaAddress } = useWalletContext();
 
   const currentChat = chats.find(c => c.id === currentChatId);
   const hasMessages = currentChat && currentChat.messages.length > 0;
@@ -313,7 +317,9 @@ export default function ChatInterface() {
             size="sm"
             className="bg-transparent border-zinc-700 hover:bg-zinc-800 hover:text-white text-white"
           >
-            Connect Wallet
+            {isAnyWalletConnected 
+              ? `${(evmAddress || solanaAddress)?.slice(0, 6)}...${(evmAddress || solanaAddress)?.slice(-4)}`
+              : 'Connect Wallet'}
           </Button>
         </div>
 
@@ -365,9 +371,10 @@ export default function ChatInterface() {
               {currentChat?.messages.map((message) => (
                 <div key={message.id} className={cn('mb-6 flex gap-4', message.role === 'user' ? 'justify-end' : 'justify-start')}>
                   {message.role === 'assistant' && (
-                    <div className="flex items-start justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-bold shrink-0 mt-1">
-                      YS
-                    </div>
+                    <Avatar className="w-8 h-8 shrink-0 mt-1">
+                      <AvatarImage src={oliviaAvatar} alt="Olivia" />
+                      <AvatarFallback className="bg-blue-600 text-white text-xs font-bold">OL</AvatarFallback>
+                    </Avatar>
                   )}
                   <div className={cn('max-w-[85%]', message.role === 'user' && 'flex items-start gap-4')}>
                     <div
@@ -395,9 +402,10 @@ export default function ChatInterface() {
               
               {isThinking && (
                 <div className="mb-6 flex gap-4 justify-start">
-                  <div className="flex items-start justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-bold shrink-0 mt-1">
-                    YS
-                  </div>
+                  <Avatar className="w-8 h-8 shrink-0 mt-1">
+                    <AvatarImage src={oliviaAvatar} alt="Olivia" />
+                    <AvatarFallback className="bg-blue-600 text-white text-xs font-bold">OL</AvatarFallback>
+                  </Avatar>
                   <div className="max-w-[85%]">
                     <ThinkingMessages lastUserMessage={currentChat?.messages[currentChat.messages.length - 1]?.content || ''} />
                   </div>
