@@ -1,12 +1,14 @@
 import PageLayout from '../components/layout/PageLayout';
 import PageHero from '../components/layout/PageHero';
 import BridgeCard from '../components/bridge/BridgeCard';
+import WormholeConnectWidget from '../components/bridge/WormholeConnectWidget';
 import ChainBadge from '../components/ui/ChainBadge';
-import { ArrowRight, ExternalLink } from 'lucide-react';
+import { ArrowRight, ExternalLink, Zap, Settings } from 'lucide-react';
 import StatusBadge from '../components/ui/StatusBadge';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useWalletContext } from '@/contexts/WalletContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Bridge = () => {
   const { evmAddress, solanaAddress, isAnyWalletConnected } = useWalletContext();
@@ -73,9 +75,28 @@ const Bridge = () => {
       <section className="px-6 md:px-12 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Bridge Interface */}
+            {/* Bridge Interface with Tabs */}
             <div className="lg:col-span-2">
-              <BridgeCard />
+              <Tabs defaultValue="simple" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="simple" className="flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Simple Bridge
+                  </TabsTrigger>
+                  <TabsTrigger value="advanced" className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    Advanced Bridge
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="simple" className="mt-0">
+                  <BridgeCard />
+                </TabsContent>
+                
+                <TabsContent value="advanced" className="mt-0">
+                  <WormholeConnectWidget />
+                </TabsContent>
+              </Tabs>
             </div>
 
             {/* Recent Transfers */}
