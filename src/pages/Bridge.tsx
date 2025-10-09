@@ -1,15 +1,66 @@
 import PageLayout from '../components/layout/PageLayout';
 import PageHero from '../components/layout/PageHero';
 import BridgeCard from '../components/bridge/BridgeCard';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ExternalLink } from 'lucide-react';
 import StatusBadge from '../components/ui/StatusBadge';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useWalletContext } from '@/contexts/WalletContext';
 
 const Bridge = () => {
-  const recentTransfers = [
-    { from: 'Ethereum', to: 'Polygon', amount: '500 USDC', status: 'completed' as const, time: '2m ago' },
-    { from: 'Arbitrum', to: 'Avalanche', amount: '1.5 ETH', status: 'pending' as const, time: '5m ago' },
-    { from: 'Solana', to: 'Ethereum', amount: '100 SOL', status: 'completed' as const, time: '1h ago' },
-  ];
+  const { evmAddress, solanaAddress, isAnyWalletConnected } = useWalletContext();
+  const [recentTransfers, setRecentTransfers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch real transaction history from database
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!isAnyWalletConnected) {
+        setRecentTransfers([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('wormhole_transactions')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const formattedTransfers = data.map((tx: any) => ({
+            from: tx.from_chain,
+            to: tx.to_chain,
+            amount: `${tx.amount} ${tx.from_token}`,
+            status: tx.status,
+            time: formatTimeAgo(new Date(tx.created_at)),
+            txHash: tx.tx_hash,
+          }));
+          setRecentTransfers(formattedTransfers);
+        } else {
+          setRecentTransfers([]);
+        }
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+        setRecentTransfers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, [isAnyWalletConnected, evmAddress, solanaAddress]);
+
+  const formatTimeAgo = (date: Date) => {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    if (seconds < 60) return `${seconds}s ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
+  };
 
   return (
     <PageLayout>
@@ -30,20 +81,45 @@ const Bridge = () => {
             <div className="border border-border rounded-2xl p-6 bg-card h-fit">
               <h3 className="text-xl font-bold mb-6">Recent Transfers</h3>
               <div className="space-y-4">
-                {recentTransfers.map((transfer, index) => (
-                  <div key={index} className="border border-border rounded-xl p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="font-medium">{transfer.from}</span>
-                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">{transfer.to}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold">{transfer.amount}</span>
-                      <StatusBadge status={transfer.status} />
-                    </div>
-                    <div className="text-xs text-muted-foreground">{transfer.time}</div>
+                {loading ? (
+                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                ) : !isAnyWalletConnected ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>Connect wallet to view history</p>
                   </div>
-                ))}
+                ) : recentTransfers.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No transfers yet</p>
+                    <p className="text-xs mt-2">Your bridge history will appear here</p>
+                  </div>
+                ) : (
+                  recentTransfers.map((transfer, index) => (
+                    <div key={index} className="border border-border rounded-xl p-4 space-y-3 hover:border-primary/50 transition-all duration-300">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-medium">{transfer.from}</span>
+                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium">{transfer.to}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold">{transfer.amount}</span>
+                        <StatusBadge status={transfer.status} />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-muted-foreground">{transfer.time}</div>
+                        {transfer.txHash && (
+                          <a 
+                            href={`https://wormholescan.io/#/tx/${transfer.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                          >
+                            View <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

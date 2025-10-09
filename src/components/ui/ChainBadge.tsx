@@ -3,11 +3,44 @@ interface ChainBadgeProps {
   className?: string;
 }
 
+const chainLogos: Record<string, string> = {
+  'Ethereum': '⟠',
+  'Polygon': '◇',
+  'Arbitrum': '◆',
+  'Avalanche': '▲',
+  'Solana': '◎',
+  'Optimism': '🔴',
+  'BNB Chain': '◆',
+  'Base': '🔵',
+  'Fantom': '👻',
+  'Celo': '🌱',
+  'Moonbeam': '🌙',
+  'Aurora': '🌈',
+};
+
+const chainColors: Record<string, string> = {
+  'Ethereum': 'text-[#627EEA]',
+  'Polygon': 'text-[#8247E5]',
+  'Arbitrum': 'text-[#28A0F0]',
+  'Avalanche': 'text-[#E84142]',
+  'Solana': 'text-[#14F195]',
+  'Optimism': 'text-[#FF0420]',
+  'BNB Chain': 'text-[#F3BA2F]',
+  'Base': 'text-[#0052FF]',
+  'Fantom': 'text-[#1969FF]',
+  'Celo': 'text-[#FCFF52]',
+  'Moonbeam': 'text-[#53CBC9]',
+  'Aurora': 'text-[#70D44B]',
+};
+
 const ChainBadge = ({ chain, className = '' }: ChainBadgeProps) => {
+  const logo = chainLogos[chain] || '○';
+  const color = chainColors[chain] || 'text-primary';
+  
   return (
-    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border border-border bg-card ${className}`}>
-      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-      {chain}
+    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border border-border bg-card ${className}`}>
+      <span className={`text-lg ${color}`}>{logo}</span>
+      <span>{chain}</span>
     </span>
   );
 };

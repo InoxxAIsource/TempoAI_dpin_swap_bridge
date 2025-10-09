@@ -1,18 +1,57 @@
-import { ArrowDownUp, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowDownUp, ChevronDown, Wallet } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import ChainBadge from '../ui/ChainBadge';
 import { Button } from '../ui/button';
+import { useWalletContext } from '@/contexts/WalletContext';
+import { toast } from 'sonner';
 
 const BridgeCard = () => {
+  const { evmAddress, evmBalance, solanaAddress, solanaBalance, isAnyWalletConnected } = useWalletContext();
   const [fromChain, setFromChain] = useState('Ethereum');
   const [toChain, setToChain] = useState('Polygon');
   const [amount, setAmount] = useState('');
   const [token, setToken] = useState('USDC');
+  const [realBalance, setRealBalance] = useState<string>('0.00');
+
+  // Update real balance based on selected chain
+  useEffect(() => {
+    if (fromChain === 'Solana' && solanaBalance) {
+      setRealBalance(solanaBalance);
+    } else if (evmBalance) {
+      setRealBalance(evmBalance);
+    } else {
+      setRealBalance('0.00');
+    }
+  }, [fromChain, evmBalance, solanaBalance]);
 
   const handleSwapChains = () => {
     const temp = fromChain;
     setFromChain(toChain);
     setToChain(temp);
+  };
+
+  const handleBridge = () => {
+    if (!isAnyWalletConnected) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+    if (!amount || parseFloat(amount) <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+    if (parseFloat(amount) > parseFloat(realBalance)) {
+      toast.error('Insufficient balance');
+      return;
+    }
+    
+    toast.success('Bridge transaction initiated! This will redirect to Wormhole Connect.', {
+      description: 'Opening Wormhole bridge interface...',
+    });
+    
+    // Redirect to Wormhole Connect with pre-filled data
+    setTimeout(() => {
+      window.open('https://portalbridge.com/', '_blank');
+    }, 1500);
   };
 
   return (
@@ -21,7 +60,18 @@ const BridgeCard = () => {
       <div className="space-y-4 mb-6">
         <div className="flex items-center justify-between">
           <label className="text-sm text-muted-foreground">From</label>
-          <span className="text-sm text-muted-foreground">Balance: 1,000 {token}</span>
+          <div className="flex items-center gap-2">
+            {isAnyWalletConnected ? (
+              <span className="text-sm text-muted-foreground">
+                Balance: <span className="font-medium text-foreground">{realBalance}</span> {fromChain === 'Solana' ? 'SOL' : 'ETH'}
+              </span>
+            ) : (
+              <span className="text-sm text-muted-foreground flex items-center gap-1">
+                <Wallet className="w-3 h-3" />
+                Connect wallet
+              </span>
+            )}
+          </div>
         </div>
         
         <div className="border border-border rounded-xl p-4 space-y-3">
@@ -98,9 +148,22 @@ const BridgeCard = () => {
       </div>
 
       {/* Bridge Button */}
-      <Button className="w-full rounded-full h-12 text-base font-medium" size="lg">
-        Bridge Assets
+      <Button 
+        className="w-full rounded-full h-12 text-base font-medium" 
+        size="lg"
+        onClick={handleBridge}
+        disabled={!isAnyWalletConnected || !amount || parseFloat(amount) <= 0}
+      >
+        {isAnyWalletConnected ? 'Bridge Assets' : 'Connect Wallet to Bridge'}
       </Button>
+      
+      {isAnyWalletConnected && (
+        <div className="mt-4 p-3 rounded-xl bg-muted/30 border border-border">
+          <p className="text-xs text-muted-foreground text-center">
+            Connected: {fromChain === 'Solana' ? solanaAddress?.slice(0, 4) + '...' + solanaAddress?.slice(-4) : evmAddress?.slice(0, 6) + '...' + evmAddress?.slice(-4)}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
