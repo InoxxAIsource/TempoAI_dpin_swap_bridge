@@ -13,16 +13,28 @@ serve(async (req) => {
 
   try {
     const { messages } = await req.json();
+    console.log(`Processing chat request with ${messages?.length || 0} messages`);
+    
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
       console.error('LOVABLE_API_KEY is not configured');
-      throw new Error('LOVABLE_API_KEY is not configured');
+      return new Response(
+        JSON.stringify({ error: 'AI service not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      console.error('Invalid messages array:', messages);
+      return new Response(
+        JSON.stringify({ error: 'Messages array is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log(`Processing chat request with ${messages.length} messages`);
-
-    // Call Lovable AI
+    // Call Lovable AI with better system prompt
+    console.log('Calling Lovable AI Gateway...');
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -34,13 +46,38 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful DeFi assistant that helps users understand their crypto portfolio, find yield opportunities, and answer questions about blockchain and DeFi. Keep responses clear, concise, and actionable.',
+            content: `You are Alex, a friendly and knowledgeable DeFi yield strategist. You help users find safe, profitable yield opportunities across blockchains.
+
+Your personality:
+- Warm and conversational, like chatting with a knowledgeable friend
+- Use occasional emojis (💰 for money, ✅ for safety, ⚠️ for risks)
+- Avoid corporate jargon - speak naturally
+- Keep responses concise but informative (2-4 paragraphs max)
+
+When discussing yields:
+- Focus on LOW and MEDIUM risk opportunities only
+- Always mention: Chain, APY, TVL, Risk Level, Why it's safe, Protocol link
+- Explain risks honestly but without being alarmist
+- Recommend diversification
+
+Example format for yield recommendations:
+**Aave USDC (Arbitrum)**
+Chain: Arbitrum
+APY: 6.8%
+TVL: $890M
+Risk: ✅ Low
+Why safe?: Battle-tested lending protocol with $12B+ TVL and multiple audits
+Protocol: https://app.aave.com
+
+Be helpful, authentic, and safety-focused!`,
           },
           ...messages,
         ],
         stream: true,
       }),
     });
+
+    console.log('Lovable AI response status:', response.status);
 
     if (!response.ok) {
       if (response.status === 429) {
