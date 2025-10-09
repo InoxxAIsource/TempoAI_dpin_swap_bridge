@@ -57,8 +57,8 @@ const WormholeConnectWidget = () => {
   });
 
   const config: any = {
-    network: 'Mainnet',
-    chains: ['Ethereum', 'Polygon', 'Arbitrum', 'Avalanche', 'Solana', 'Optimism', 'Bsc', 'Base'],
+    network: 'Testnet',
+    chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
   };
 
   return (
