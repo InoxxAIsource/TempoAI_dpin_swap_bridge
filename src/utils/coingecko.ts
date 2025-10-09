@@ -43,11 +43,41 @@ const tokenToCoinGeckoId: Record<string, string> = {
 // Cache for logos to avoid repeated API calls
 const logoCache: Record<string, string> = {};
 
+// Import local fallback logos
+import ethereumLogo from '@/assets/chains/ethereum.png';
+import polygonLogo from '@/assets/chains/polygon.png';
+import arbitrumLogo from '@/assets/chains/arbitrum.png';
+import avalancheLogo from '@/assets/chains/avalanche.png';
+import solanaLogo from '@/assets/chains/solana.png';
+import optimismLogo from '@/assets/chains/optimism.png';
+import bnbLogo from '@/assets/chains/bnb.png';
+import baseLogo from '@/assets/chains/base.png';
+import fantomLogo from '@/assets/chains/fantom.png';
+import celoLogo from '@/assets/chains/celo.png';
+import moonbeamLogo from '@/assets/chains/moonbeam.png';
+import auroraLogo from '@/assets/chains/aurora.png';
+
+// Fallback logos map
+const fallbackLogos: Record<string, string> = {
+  'Ethereum': ethereumLogo,
+  'Polygon': polygonLogo,
+  'Arbitrum': arbitrumLogo,
+  'Avalanche': avalancheLogo,
+  'Solana': solanaLogo,
+  'Optimism': optimismLogo,
+  'BNB Chain': bnbLogo,
+  'Base': baseLogo,
+  'Fantom': fantomLogo,
+  'Celo': celoLogo,
+  'Moonbeam': moonbeamLogo,
+  'Aurora': auroraLogo,
+};
+
 export const fetchChainLogo = async (chainName: string): Promise<string> => {
   const coinGeckoId = chainToCoinGeckoId[chainName];
   
   if (!coinGeckoId) {
-    return '';
+    return fallbackLogos[chainName] || '';
   }
 
   // Check cache first
@@ -57,7 +87,8 @@ export const fetchChainLogo = async (chainName: string): Promise<string> => {
 
   try {
     const response = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${coinGeckoId}`
+      `https://api.coingecko.com/api/v3/coins/${coinGeckoId}`,
+      { signal: AbortSignal.timeout(5000) } // 5 second timeout
     );
     
     if (!response.ok) {
@@ -72,8 +103,9 @@ export const fetchChainLogo = async (chainName: string): Promise<string> => {
     
     return logo;
   } catch (error) {
-    console.error(`Error fetching logo for ${chainName}:`, error);
-    return '';
+    console.warn(`Using fallback logo for ${chainName}:`, error);
+    // Return local fallback logo on error
+    return fallbackLogos[chainName] || '';
   }
 };
 
@@ -91,7 +123,8 @@ export const fetchTokenLogo = async (tokenSymbol: string): Promise<string> => {
 
   try {
     const response = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${coinGeckoId}`
+      `https://api.coingecko.com/api/v3/coins/${coinGeckoId}`,
+      { signal: AbortSignal.timeout(5000) } // 5 second timeout
     );
     
     if (!response.ok) {
@@ -106,7 +139,7 @@ export const fetchTokenLogo = async (tokenSymbol: string): Promise<string> => {
     
     return logo;
   } catch (error) {
-    console.error(`Error fetching logo for ${tokenSymbol}:`, error);
+    console.warn(`Error fetching logo for ${tokenSymbol}:`, error);
     return '';
   }
 };

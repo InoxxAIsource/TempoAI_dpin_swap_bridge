@@ -1,6 +1,7 @@
 import PageLayout from '../components/layout/PageLayout';
 import PageHero from '../components/layout/PageHero';
 import BridgeCard from '../components/bridge/BridgeCard';
+import ChainBadge from '../components/ui/ChainBadge';
 import { ArrowRight, ExternalLink } from 'lucide-react';
 import StatusBadge from '../components/ui/StatusBadge';
 import { useEffect, useState } from 'react';
@@ -131,12 +132,9 @@ const Bridge = () => {
         <div className="max-w-6xl mx-auto">
           <div className="border border-border rounded-2xl p-8 bg-card">
             <h2 className="text-3xl font-bold mb-6">Supported Chains</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
               {['Ethereum', 'Polygon', 'Arbitrum', 'Avalanche', 'Solana', 'Optimism', 'BNB Chain', 'Base', 'Fantom', 'Celo', 'Moonbeam', 'Aurora'].map((chain) => (
-                <div key={chain} className="flex items-center gap-2 p-3 border border-border rounded-xl hover:border-primary/50 transition-all duration-300 cursor-pointer">
-                  <span className="w-2 h-2 rounded-full bg-primary" />
-                  <span className="text-sm font-medium">{chain}</span>
-                </div>
+                <ChainBadge key={chain} chain={chain} />
               ))}
             </div>
           </div>
