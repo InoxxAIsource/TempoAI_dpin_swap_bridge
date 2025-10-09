@@ -95,50 +95,8 @@ Be helpful, authentic, and safety-focused!`,
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
-    // Stream the response back
-    const reader = response.body?.getReader();
-    const stream = new ReadableStream({
-      async start(controller) {
-        const decoder = new TextDecoder();
-        let assistantMessage = '';
-
-        try {
-          while (true) {
-            const { done, value } = await reader!.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') continue;
-
-                try {
-                  const parsed = JSON.parse(data);
-                  const content = parsed.choices?.[0]?.delta?.content;
-                  if (content) {
-                    assistantMessage += content;
-                    controller.enqueue(value);
-                  }
-                } catch (e) {
-                  console.error('Error parsing SSE:', e);
-                }
-              }
-            }
-          }
-
-          console.log(`Completed streaming response: ${assistantMessage.length} chars`);
-          controller.close();
-        } catch (error) {
-          console.error('Stream error:', error);
-          controller.error(error);
-        }
-      },
-    });
-
-    return new Response(stream, {
+    // Stream the response directly back to client
+    return new Response(response.body, {
       headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
     });
   } catch (error) {
