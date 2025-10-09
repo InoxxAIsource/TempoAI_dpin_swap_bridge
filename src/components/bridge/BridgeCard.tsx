@@ -1,6 +1,7 @@
-import { ArrowDownUp, ChevronDown, Wallet } from 'lucide-react';
+import { ArrowDownUp, Wallet } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import ChainBadge from '../ui/ChainBadge';
+import ChainSelector from './ChainSelector';
+import TokenSelector from './TokenSelector';
 import { Button } from '../ui/button';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { toast } from 'sonner';
@@ -74,11 +75,12 @@ const BridgeCard = () => {
           </div>
         </div>
         
-        <div className="border border-border rounded-xl p-4 space-y-3">
-          <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin">
-            <ChainBadge chain={fromChain} />
-            <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-          </div>
+        <div className="border border-border rounded-xl p-4 space-y-4">
+          <ChainSelector 
+            selectedChain={fromChain} 
+            onSelectChain={setFromChain}
+            excludeChain={toChain}
+          />
           
           <div className="flex items-center gap-4">
             <input
@@ -89,10 +91,10 @@ const BridgeCard = () => {
               className="flex-1 text-3xl font-bold bg-transparent border-none outline-none min-w-0 w-full"
               style={{ appearance: 'textfield' }}
             />
-            <div className="flex items-center gap-2 px-4 py-2 border border-border rounded-full cursor-pointer hover:border-primary/50 transition-all duration-300 flex-shrink-0">
-              <span className="font-medium whitespace-nowrap">{token}</span>
-              <ChevronDown className="w-4 h-4" />
-            </div>
+            <TokenSelector 
+              selectedToken={token} 
+              onSelectToken={setToken}
+            />
           </div>
         </div>
       </div>
@@ -111,11 +113,12 @@ const BridgeCard = () => {
       <div className="space-y-4 mt-6 mb-8">
         <label className="text-sm text-muted-foreground">To</label>
         
-        <div className="border border-border rounded-xl p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <ChainBadge chain={toChain} />
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          </div>
+        <div className="border border-border rounded-xl p-4 space-y-4">
+          <ChainSelector 
+            selectedChain={toChain} 
+            onSelectChain={setToChain}
+            excludeChain={fromChain}
+          />
           
           <div className="text-3xl font-bold text-muted-foreground">
             {amount || '0.00'}
