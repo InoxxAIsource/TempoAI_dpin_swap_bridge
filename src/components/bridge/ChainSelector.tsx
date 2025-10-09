@@ -1,6 +1,16 @@
-import { useEffect, useState } from 'react';
-import { fetchChainLogo, getSupportedChains } from '@/utils/coingecko';
 import { cn } from '@/lib/utils';
+import ethereumLogo from '@/assets/chains/ethereum.png';
+import polygonLogo from '@/assets/chains/polygon.png';
+import arbitrumLogo from '@/assets/chains/arbitrum.png';
+import avalancheLogo from '@/assets/chains/avalanche.png';
+import solanaLogo from '@/assets/chains/solana.png';
+import optimismLogo from '@/assets/chains/optimism.png';
+import bnbLogo from '@/assets/chains/bnb.png';
+import baseLogo from '@/assets/chains/base.png';
+import fantomLogo from '@/assets/chains/fantom.png';
+import celoLogo from '@/assets/chains/celo.png';
+import moonbeamLogo from '@/assets/chains/moonbeam.png';
+import auroraLogo from '@/assets/chains/aurora.png';
 
 interface ChainSelectorProps {
   selectedChain: string;
@@ -8,33 +18,28 @@ interface ChainSelectorProps {
   excludeChain?: string;
 }
 
+const chainLogos: Record<string, string> = {
+  'Ethereum': ethereumLogo,
+  'Polygon': polygonLogo,
+  'Arbitrum': arbitrumLogo,
+  'Avalanche': avalancheLogo,
+  'Solana': solanaLogo,
+  'Optimism': optimismLogo,
+  'BNB Chain': bnbLogo,
+  'Base': baseLogo,
+  'Fantom': fantomLogo,
+  'Celo': celoLogo,
+  'Moonbeam': moonbeamLogo,
+  'Aurora': auroraLogo,
+};
+
+const supportedChains = [
+  'Ethereum', 'Polygon', 'Arbitrum', 'Avalanche', 'Solana', 'Optimism',
+  'BNB Chain', 'Base', 'Fantom', 'Celo', 'Moonbeam', 'Aurora'
+];
+
 const ChainSelector = ({ selectedChain, onSelectChain, excludeChain }: ChainSelectorProps) => {
-  const [chainLogos, setChainLogos] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-  
-  const chains = getSupportedChains().filter(chain => chain !== excludeChain);
-
-  useEffect(() => {
-    const loadLogos = async () => {
-      setLoading(true);
-      const logos: Record<string, string> = {};
-      
-      // Load all logos in parallel
-      await Promise.all(
-        chains.map(async (chain) => {
-          const logo = await fetchChainLogo(chain);
-          if (logo) {
-            logos[chain] = logo;
-          }
-        })
-      );
-      
-      setChainLogos(logos);
-      setLoading(false);
-    };
-
-    loadLogos();
-  }, []);
+  const chains = supportedChains.filter(chain => chain !== excludeChain);
 
   return (
     <div className="relative">
@@ -50,15 +55,11 @@ const ChainSelector = ({ selectedChain, onSelectChain, excludeChain }: ChainSele
                 : "border-border bg-card/80 hover:border-primary/50"
             )}
           >
-            {loading || !chainLogos[chain] ? (
-              <div className="w-6 h-6 rounded-full bg-muted animate-pulse" />
-            ) : (
-              <img
-                src={chainLogos[chain]}
-                alt={chain}
-                className="w-6 h-6 rounded-full object-cover"
-              />
-            )}
+            <img
+              src={chainLogos[chain]}
+              alt={chain}
+              className="w-6 h-6 rounded-full object-cover"
+            />
             <span className="whitespace-nowrap">{chain}</span>
           </button>
         ))}
