@@ -74,8 +74,8 @@ const BridgeCard = () => {
           </div>
         </div>
         
-        <div className="border border-border rounded-xl p-4 space-y-3 overflow-hidden">
-          <div className="flex items-center gap-3 overflow-x-auto">
+        <div className="border border-border rounded-xl p-4 space-y-3">
+          <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin">
             <ChainBadge chain={fromChain} />
             <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           </div>

@@ -1,45 +1,48 @@
+import ethereumLogo from '@/assets/chains/ethereum.png';
+import polygonLogo from '@/assets/chains/polygon.png';
+import arbitrumLogo from '@/assets/chains/arbitrum.png';
+import avalancheLogo from '@/assets/chains/avalanche.png';
+import solanaLogo from '@/assets/chains/solana.png';
+import optimismLogo from '@/assets/chains/optimism.png';
+import bnbLogo from '@/assets/chains/bnb.png';
+import baseLogo from '@/assets/chains/base.png';
+import fantomLogo from '@/assets/chains/fantom.png';
+import celoLogo from '@/assets/chains/celo.png';
+import moonbeamLogo from '@/assets/chains/moonbeam.png';
+import auroraLogo from '@/assets/chains/aurora.png';
+
 interface ChainBadgeProps {
   chain: string;
   className?: string;
 }
 
 const chainLogos: Record<string, string> = {
-  'Ethereum': 'Ξ',
-  'Polygon': '⬡',
-  'Arbitrum': '◆',
-  'Avalanche': '▲',
-  'Solana': '◎',
-  'Optimism': 'Ⓞ',
-  'BNB Chain': '◈',
-  'Base': '⬢',
-  'Fantom': 'Ⓕ',
-  'Celo': '⬢',
-  'Moonbeam': '◐',
-  'Aurora': '⬢',
-};
-
-const chainColors: Record<string, string> = {
-  'Ethereum': 'text-[#627EEA]',
-  'Polygon': 'text-[#8247E5]',
-  'Arbitrum': 'text-[#28A0F0]',
-  'Avalanche': 'text-[#E84142]',
-  'Solana': 'text-[#14F195]',
-  'Optimism': 'text-[#FF0420]',
-  'BNB Chain': 'text-[#F3BA2F]',
-  'Base': 'text-[#0052FF]',
-  'Fantom': 'text-[#1969FF]',
-  'Celo': 'text-[#FCFF52]',
-  'Moonbeam': 'text-[#53CBC9]',
-  'Aurora': 'text-[#70D44B]',
+  'Ethereum': ethereumLogo,
+  'Polygon': polygonLogo,
+  'Arbitrum': arbitrumLogo,
+  'Avalanche': avalancheLogo,
+  'Solana': solanaLogo,
+  'Optimism': optimismLogo,
+  'BNB Chain': bnbLogo,
+  'Base': baseLogo,
+  'Fantom': fantomLogo,
+  'Celo': celoLogo,
+  'Moonbeam': moonbeamLogo,
+  'Aurora': auroraLogo,
 };
 
 const ChainBadge = ({ chain, className = '' }: ChainBadgeProps) => {
-  const logo = chainLogos[chain] || '○';
-  const color = chainColors[chain] || 'text-primary';
+  const logo = chainLogos[chain];
   
   return (
     <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border border-border bg-card/80 backdrop-blur-sm ${className}`}>
-      <span className={`text-xl font-bold ${color} flex-shrink-0`}>{logo}</span>
+      {logo && (
+        <img 
+          src={logo} 
+          alt={chain} 
+          className="w-6 h-6 rounded-full flex-shrink-0 object-cover"
+        />
+      )}
       <span className="whitespace-nowrap">{chain}</span>
     </span>
   );
