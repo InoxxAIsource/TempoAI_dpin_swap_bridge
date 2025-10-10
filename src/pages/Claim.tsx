@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
 import PageHero from '@/components/layout/PageHero';
 import ClaimFlowDiagram from '@/components/claim/ClaimFlowDiagram';
@@ -11,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWalletContext } from '@/contexts/WalletContext';
-import { Button } from '@/components/ui/button';
+import WalletModal from '@/components/WalletModal';
 import { Wallet } from 'lucide-react';
 
 interface ClaimableTransfer {
@@ -32,33 +31,31 @@ interface ClaimableTransfer {
 const Claim = () => {
   const [transfers, setTransfers] = useState<ClaimableTransfer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const { evmAddress, solanaAddress } = useWalletContext();
+  const { evmAddress, solanaAddress, isAnyWalletConnected } = useWalletContext();
   const currentWallet = evmAddress || solanaAddress;
 
   useEffect(() => {
     fetchClaimableTransfers();
-    setupRealtimeSubscription();
-  }, []);
+    const cleanup = setupRealtimeSubscription();
+    return cleanup;
+  }, [currentWallet]);
 
   const fetchClaimableTransfers = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      setLoading(true);
       
-      if (!user) {
-        setIsAuthenticated(false);
+      if (!currentWallet) {
+        setTransfers([]);
         setLoading(false);
         return;
       }
 
-      setIsAuthenticated(true);
-
       const { data, error } = await supabase
         .from('wormhole_transactions')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('wallet_address', currentWallet.toLowerCase())
         .or('status.eq.pending,needs_redemption.eq.true')
         .order('created_at', { ascending: false });
 
@@ -77,6 +74,8 @@ const Claim = () => {
   };
 
   const setupRealtimeSubscription = () => {
+    if (!currentWallet) return () => {};
+    
     const channel = supabase
       .channel('claim-updates')
       .on('postgres_changes', {
@@ -124,16 +123,20 @@ const Claim = () => {
               <Skeleton className="h-48 w-full" />
               <Skeleton className="h-48 w-full" />
             </div>
-          ) : !isAuthenticated ? (
+          ) : !isAnyWalletConnected ? (
             <div className="text-center py-16 border border-border rounded-2xl bg-card">
               <Wallet className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-2xl font-semibold mb-2">Sign In Required</h3>
+              <h3 className="text-2xl font-semibold mb-2">Connect Your Wallet</h3>
               <p className="text-muted-foreground mb-6">
-                Please sign in to view your pending claims
+                Connect your wallet to view pending claims
               </p>
-              <Button onClick={() => navigate('/auth')}>
-                Sign In to View Claims
-              </Button>
+              <button
+                onClick={() => setWalletModalOpen(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+              >
+                <Wallet className="w-4 h-4" />
+                Connect Wallet
+              </button>
             </div>
           ) : transfers.length === 0 ? (
             <EmptyClaimState />
@@ -210,6 +213,8 @@ const Claim = () => {
           </Accordion>
         </div>
       </section>
+      
+      <WalletModal open={walletModalOpen} onOpenChange={setWalletModalOpen} />
     </PageLayout>
   );
 };

@@ -27,32 +27,40 @@ const WormholeConnectWidget = () => {
     const handleWormholeEvent = async (event: any) => {
       if (event.detail?.type === 'transfer' && event.detail?.txHash) {
         try {
-          const { data: { user } } = await supabase.auth.getUser();
+          const walletAddress = (evmAddress || solanaAddress || '').toLowerCase();
           
-          if (user) {
-            const txData = event.detail;
-            const walletAddress = evmAddress || solanaAddress || '';
-            
-            await supabase.from('wormhole_transactions').insert({
-              user_id: user.id,
-              from_chain: txData.fromChain || 'Unknown',
-              to_chain: txData.toChain || 'Unknown',
-              from_token: txData.token || 'Unknown',
-              to_token: txData.token || 'Unknown',
-              amount: txData.amount || 0,
-              tx_hash: txData.txHash,
-              status: 'pending',
-              wormhole_vaa: txData.vaa || null,
-              wallet_address: walletAddress,
-            });
-
-            toast({
-              title: "Transaction Submitted",
-              description: "Your bridge transaction has been submitted and is being tracked.",
-            });
+          if (!walletAddress) {
+            console.error('No wallet connected');
+            return;
           }
+          
+          const { data: { user } } = await supabase.auth.getUser();
+          const txData = event.detail;
+          
+          await supabase.from('wormhole_transactions').insert({
+            user_id: user?.id || null,
+            from_chain: txData.fromChain || 'Unknown',
+            to_chain: txData.toChain || 'Unknown',
+            from_token: txData.token || 'Unknown',
+            to_token: txData.token || 'Unknown',
+            amount: txData.amount || 0,
+            tx_hash: txData.txHash,
+            status: 'pending',
+            wormhole_vaa: txData.vaa || null,
+            wallet_address: walletAddress,
+          });
+
+          toast({
+            title: "Transaction Submitted",
+            description: "Your bridge transaction is being tracked. Check the Claims page to monitor progress.",
+          });
         } catch (error) {
           console.error('Error saving transaction:', error);
+          toast({
+            title: "Error",
+            description: "Failed to save transaction. Please note your transaction hash.",
+            variant: "destructive"
+          });
         }
       }
     };
@@ -62,7 +70,7 @@ const WormholeConnectWidget = () => {
     return () => {
       window.removeEventListener('wormhole-transfer', handleWormholeEvent as EventListener);
     };
-  }, []);
+  }, [evmAddress, solanaAddress]);
 
   // Create a proper MUI theme
   const muiTheme = useMemo(() => createTheme({

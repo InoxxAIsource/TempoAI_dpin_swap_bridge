@@ -155,7 +155,7 @@ export type Database = {
           to_chain: string
           to_token: string
           tx_hash: string | null
-          user_id: string
+          user_id: string | null
           wallet_address: string
           wormhole_vaa: string | null
         }
@@ -173,7 +173,7 @@ export type Database = {
           to_chain: string
           to_token: string
           tx_hash?: string | null
-          user_id: string
+          user_id?: string | null
           wallet_address?: string
           wormhole_vaa?: string | null
         }
@@ -191,7 +191,7 @@ export type Database = {
           to_chain?: string
           to_token?: string
           tx_hash?: string | null
-          user_id?: string
+          user_id?: string | null
           wallet_address?: string
           wormhole_vaa?: string | null
         }
