@@ -85,7 +85,7 @@ const Composer = forwardRef<{ insertTemplate: (content: string) => void; focus: 
               placeholder="How can I help you today?"
               rows={1}
               className={cls(
-                "w-full resize-none bg-transparent text-sm outline-none placeholder:text-zinc-400 transition-all duration-200",
+                "w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground transition-all duration-200",
                 "px-0 py-2 min-h-[40px] text-left"
               )}
               style={{
@@ -103,7 +103,7 @@ const Composer = forwardRef<{ insertTemplate: (content: string) => void; focus: 
 
           <div className="flex items-center justify-between mt-2">
             <button
-              className="inline-flex shrink-0 items-center justify-center rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 transition-colors"
+              className="inline-flex shrink-0 items-center justify-center rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
               title="Add attachment"
             >
               <Plus className="h-4 w-4" />
@@ -111,7 +111,7 @@ const Composer = forwardRef<{ insertTemplate: (content: string) => void; focus: 
 
             <div className="flex items-center gap-1 shrink-0">
               <button
-                className="inline-flex items-center justify-center rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 transition-colors"
+                className="inline-flex items-center justify-center rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                 title="Voice input"
               >
                 <Mic className="h-4 w-4" />
@@ -120,7 +120,7 @@ const Composer = forwardRef<{ insertTemplate: (content: string) => void; focus: 
                 onClick={handleSend}
                 disabled={sending || busy || !value.trim()}
                 className={cls(
-                  "inline-flex shrink-0 items-center gap-2 rounded-full bg-zinc-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-white dark:text-zinc-900",
+                  "inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   (sending || busy || !value.trim()) && "opacity-50 cursor-not-allowed"
                 )}
               >
@@ -130,7 +130,7 @@ const Composer = forwardRef<{ insertTemplate: (content: string) => void; focus: 
           </div>
         </div>
 
-        <div className="mx-auto mt-2 max-w-3xl px-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+        <div className="mx-auto mt-2 max-w-3xl px-1 text-[11px] text-muted-foreground">
           Press{" "}
           <kbd className="rounded border border-zinc-300 bg-zinc-50 px-1 dark:border-zinc-600 dark:bg-zinc-800">
             Enter

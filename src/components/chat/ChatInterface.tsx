@@ -280,7 +280,7 @@ export default function ChatInterface() {
                   'w-full text-left px-3 py-2 text-sm rounded-lg mb-1 transition-colors truncate',
                   currentChatId === chat.id
                     ? 'bg-zinc-800 text-white'
-                    : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-white'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 )}
               >
                 {chat.title}
@@ -346,7 +346,7 @@ export default function ChatInterface() {
                   <button
                     onClick={() => handleSend()}
                     disabled={!input.trim() || isThinking}
-                    className="absolute right-3 bottom-3 p-2 rounded-lg bg-white text-black hover:bg-gray-200 disabled:bg-gray-600 disabled:text-gray-400 transition-colors"
+                    className="absolute right-3 bottom-3 p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -430,7 +430,7 @@ export default function ChatInterface() {
                 <button
                   onClick={() => handleSend()}
                   disabled={!input.trim() || isThinking}
-                  className="absolute right-3 bottom-3 p-2 rounded-lg bg-white text-black hover:bg-gray-200 disabled:bg-gray-600 disabled:text-gray-400 transition-colors"
+                  className="absolute right-3 bottom-3 p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors"
                 >
                   {isThinking ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

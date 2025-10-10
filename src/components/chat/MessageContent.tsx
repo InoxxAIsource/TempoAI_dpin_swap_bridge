@@ -86,14 +86,14 @@ export default function MessageContent({ content, onPromptClick }: MessageConten
               onClick={() => onPromptClick(promptText)}
               className="flex gap-2 mb-1 text-left hover:bg-zinc-800/50 px-2 py-1 rounded transition-colors w-full"
             >
-              <span className="text-zinc-400">•</span>
+              <span className="text-muted-foreground">•</span>
               <span className="text-blue-400 hover:text-blue-300">{promptText}</span>
             </button>
           );
         } else {
           elements.push(
             <div key={idx} className="flex gap-2 mb-1">
-              <span className="text-zinc-400">•</span>
+              <span className="text-muted-foreground">•</span>
               <span>{finalParts}</span>
             </div>
           );

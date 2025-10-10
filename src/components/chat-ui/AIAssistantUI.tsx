@@ -136,7 +136,7 @@ export default function AIAssistantUI() {
   const selected = conversations.find((c) => c.id === selectedId) || null;
 
   return (
-    <div className="h-screen w-full bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+    <div className="h-screen w-full bg-background text-foreground">
       <div className="flex h-full w-full">
         <Sidebar
           onNewChat={createNewChat}

@@ -64,23 +64,20 @@ const ChatPane = forwardRef<{ insertTemplate: (content: string) => void }, ChatP
           <div className="mb-2 text-3xl font-serif tracking-tight sm:text-4xl md:text-5xl">
             <span className="block leading-[1.05] font-sans text-2xl">{conversation.title}</span>
           </div>
-          <div className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
-            Updated {timeAgo(conversation.updatedAt)} · {count} messages
-          </div>
-
-          <div className="mb-6 flex flex-wrap gap-2 border-b border-zinc-200 pb-5 dark:border-zinc-800">
-            {tags.map((t) => (
-              <span
-                key={t}
-                className="inline-flex items-center rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-700 dark:border-zinc-800 dark:text-zinc-200"
+          <div className="mb-4 text-sm text-muted-foreground">Suggested</div>
+          <div className="flex flex-wrap gap-2">
+            {tags.map((t, i) => (
+              <button
+                key={i}
+                className="inline-flex items-center rounded-full border border-border px-3 py-1 text-xs text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
               >
                 {t}
-              </span>
+              </button>
             ))}
           </div>
 
           {messages.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-300 p-6 text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+            <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
               No messages yet. Say hello to start.
             </div>
           ) : (
@@ -98,7 +95,7 @@ const ChatPane = forwardRef<{ insertTemplate: (content: string) => void }, ChatP
                       <div className="mt-2 flex items-center gap-2">
                         <button
                           onClick={saveEdit}
-                          className="inline-flex items-center gap-1 rounded-full bg-zinc-900 px-3 py-1.5 text-xs text-white dark:bg-white dark:text-zinc-900"
+                          className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs text-primary-foreground"
                         >
                           <Check className="h-3.5 w-3.5" /> Save
                         </button>
@@ -117,7 +114,7 @@ const ChatPane = forwardRef<{ insertTemplate: (content: string) => void }, ChatP
                     <Message role={m.role}>
                       <div className="whitespace-pre-wrap">{m.content}</div>
                       {m.role === "user" && (
-                        <div className="mt-1 flex gap-2 text-[11px] text-zinc-500">
+                        <div className="mt-1 flex gap-2 text-[11px] text-muted-foreground">
                           <button className="inline-flex items-center gap-1 hover:underline" onClick={() => startEdit(m)}>
                             <Pencil className="h-3.5 w-3.5" /> Edit
                           </button>
