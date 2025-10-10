@@ -111,7 +111,17 @@ const Header = () => {
               Bridge
             </Link>
             <Link 
-              to="/claim" 
+              to="/swap" 
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                isActive('/swap') 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-muted'
+              }`}
+            >
+              Swap
+            </Link>
+            <Link 
+              to="/claim"
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap relative ${
                 isActive('/claim') 
                   ? 'bg-primary text-primary-foreground' 

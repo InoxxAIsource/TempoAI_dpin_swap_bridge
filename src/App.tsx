@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Chat from "./pages/Chat";
 import Portfolio from "./pages/Portfolio";
 import Bridge from "./pages/Bridge";
+import Swap from "./pages/Swap";
 import Claim from "./pages/Claim";
 import Transactions from "./pages/Transactions";
 import Auth from "./pages/Auth";
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/chat" element={<Chat />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/bridge" element={<Bridge />} />
+          <Route path="/swap" element={<Swap />} />
           <Route path="/claim" element={<Claim />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/auth" element={<Auth />} />

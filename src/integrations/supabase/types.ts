@@ -41,6 +41,81 @@ export type Database = {
         }
         Relationships: []
       }
+      cross_chain_swaps: {
+        Row: {
+          bridge_fee: number | null
+          completed_at: string | null
+          created_at: string | null
+          estimated_to_amount: number
+          from_amount: number
+          from_chain: string
+          from_token: string
+          gas_fees_paid: number | null
+          id: string
+          network: string | null
+          price_impact: number | null
+          route_used: Json | null
+          slippage_tolerance: number | null
+          status: Database["public"]["Enums"]["swap_status"] | null
+          swap_fee: number | null
+          to_amount: number | null
+          to_chain: string
+          to_token: string
+          total_fees_usd: number | null
+          tx_hash: string | null
+          user_id: string | null
+          wallet_address: string
+        }
+        Insert: {
+          bridge_fee?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          estimated_to_amount: number
+          from_amount: number
+          from_chain: string
+          from_token: string
+          gas_fees_paid?: number | null
+          id?: string
+          network?: string | null
+          price_impact?: number | null
+          route_used?: Json | null
+          slippage_tolerance?: number | null
+          status?: Database["public"]["Enums"]["swap_status"] | null
+          swap_fee?: number | null
+          to_amount?: number | null
+          to_chain: string
+          to_token: string
+          total_fees_usd?: number | null
+          tx_hash?: string | null
+          user_id?: string | null
+          wallet_address: string
+        }
+        Update: {
+          bridge_fee?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          estimated_to_amount?: number
+          from_amount?: number
+          from_chain?: string
+          from_token?: string
+          gas_fees_paid?: number | null
+          id?: string
+          network?: string | null
+          price_impact?: number | null
+          route_used?: Json | null
+          slippage_tolerance?: number | null
+          status?: Database["public"]["Enums"]["swap_status"] | null
+          swap_fee?: number | null
+          to_amount?: number | null
+          to_chain?: string
+          to_token?: string
+          total_fees_usd?: number | null
+          tx_hash?: string | null
+          user_id?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       portfolio_snapshots: {
         Row: {
           created_at: string | null
@@ -213,6 +288,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       chain_type: "EVM" | "SOLANA"
+      swap_status: "pending" | "bridging" | "swapping" | "completed" | "failed"
       transaction_status: "pending" | "completed" | "failed"
     }
     CompositeTypes: {
@@ -343,6 +419,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       chain_type: ["EVM", "SOLANA"],
+      swap_status: ["pending", "bridging", "swapping", "completed", "failed"],
       transaction_status: ["pending", "completed", "failed"],
     },
   },
