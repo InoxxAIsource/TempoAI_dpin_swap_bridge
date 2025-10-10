@@ -11,7 +11,6 @@ import { AlertCircle, CheckCircle } from 'lucide-react';
 export const WormholeSwapWidget = () => {
   const [widgetKey, setWidgetKey] = useState(0);
   const [rpcError, setRpcError] = useState<string | null>(null);
-  const [rpcHealthy, setRpcHealthy] = useState<boolean | null>(null);
   const { theme: appTheme } = useTheme();
   const { toast } = useToast();
   const { evmAddress, solanaAddress } = useWalletContext();
@@ -105,44 +104,6 @@ export const WormholeSwapWidget = () => {
     };
   }, []);
 
-  // RPC Health Check for Sepolia
-  useEffect(() => {
-    const checkRpcHealth = async () => {
-      const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
-      
-      if (!alchemyKey) {
-        setRpcHealthy(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              method: 'eth_blockNumber',
-              params: [],
-              id: 1,
-            }),
-          }
-        );
-        
-        if (response.ok) {
-          setRpcHealthy(true);
-        } else {
-          setRpcHealthy(false);
-        }
-      } catch (error) {
-        console.error('RPC health check failed:', error);
-        setRpcHealthy(false);
-      }
-    };
-
-    checkRpcHealth();
-  }, []);
 
   // Listen for RPC errors from the widget
   useEffect(() => {
@@ -157,26 +118,7 @@ export const WormholeSwapWidget = () => {
 
   return (
     <div className="space-y-4">
-      {/* RPC Status Alerts */}
-      {!import.meta.env.VITE_ALCHEMY_API_KEY && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Missing Alchemy API Key:</strong> Using public RPC endpoints which may be slower or rate-limited.
-            Add VITE_ALCHEMY_API_KEY to your .env file for better performance.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {rpcHealthy === true && (
-        <Alert className="border-success bg-success/10">
-          <CheckCircle className="h-4 w-4 text-success" />
-          <AlertDescription>
-            <strong>RPC Connection:</strong> Healthy connection to Sepolia testnet via Alchemy
-          </AlertDescription>
-        </Alert>
-      )}
-
+      {/* Show only actual RPC errors from the widget */}
       {rpcError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
