@@ -6,6 +6,7 @@ import { TestTube, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Swap = () => {
+  console.log('✅ Swap page loaded successfully');
   const testnetFaucets = [
     { name: "Sepolia ETH", url: "https://sepoliafaucet.com" },
     { name: "Solana Devnet", url: "https://solfaucet.com" },
