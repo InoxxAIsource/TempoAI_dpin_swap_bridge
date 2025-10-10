@@ -15,12 +15,39 @@ import CTASection from '@/components/CTASection';
 import Footer from '@/components/Footer';
 import StartEarningChat from '@/components/StartEarningChat';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [pendingClaimsCount, setPendingClaimsCount] = useState(0);
+  const navigate = useNavigate();
   
   console.log('Current active tab:', activeTab);
+
+  useEffect(() => {
+    fetchPendingClaimsCount();
+  }, []);
+
+  const fetchPendingClaimsCount = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { count, error } = await supabase
+        .from('wormhole_transactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .or('status.eq.pending,needs_redemption.eq.true');
+
+      if (!error && count) {
+        setPendingClaimsCount(count);
+      }
+    } catch (error) {
+      console.error('Error fetching pending claims:', error);
+    }
+  };
 
   return (
     <div className="relative min-h-screen">
@@ -40,7 +67,7 @@ const Index = () => {
               className="w-full max-w-7xl mx-auto"
             >
               <div className="sticky top-20 z-[100] bg-background/95 backdrop-blur-sm pb-4 -mx-6 px-6 md:-mx-12 md:px-12 mb-8">
-                <TabsList className="grid w-full max-w-7xl mx-auto grid-cols-2 h-auto p-2 bg-muted shadow-lg border border-border">
+                <TabsList className="grid w-full max-w-7xl mx-auto grid-cols-3 h-auto p-2 bg-muted shadow-lg border border-border">
                   <TabsTrigger 
                     value="overview" 
                     className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50"
@@ -54,6 +81,21 @@ const Index = () => {
                     onClick={() => console.log('About tab clicked')}
                   >
                     About Protocol
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="redemption" 
+                    className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 relative"
+                    onClick={() => {
+                      console.log('Redemption tab clicked');
+                      navigate('/claim');
+                    }}
+                  >
+                    Redemption
+                    {pendingClaimsCount > 0 && (
+                      <span className="ml-2 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
+                        {pendingClaimsCount}
+                      </span>
+                    )}
                   </TabsTrigger>
                 </TabsList>
               </div>

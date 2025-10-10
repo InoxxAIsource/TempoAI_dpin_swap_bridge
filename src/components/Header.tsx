@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 import { Wallet, ChevronDown, Moon, Sun } from 'lucide-react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import WalletModal from './WalletModal';
+import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +17,7 @@ import {
 const Header = () => {
   const location = useLocation();
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [pendingClaimsCount, setPendingClaimsCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
   const { 
     isAnyWalletConnected, 
@@ -26,6 +29,45 @@ const Header = () => {
     disconnectSolana 
   } = useWalletContext();
   
+  useEffect(() => {
+    fetchPendingClaimsCount();
+    
+    // Subscribe to changes
+    const channel = supabase
+      .channel('claims-count')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'wormhole_transactions'
+      }, () => {
+        fetchPendingClaimsCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchPendingClaimsCount = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { count, error } = await supabase
+        .from('wormhole_transactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .or('status.eq.pending,needs_redemption.eq.true');
+
+      if (!error && count !== null) {
+        setPendingClaimsCount(count);
+      }
+    } catch (error) {
+      console.error('Error fetching pending claims:', error);
+    }
+  };
+
   const isActive = (path: string) => location.pathname === path;
   
   const formatAddress = (address: string) => {
@@ -67,6 +109,21 @@ const Header = () => {
               }`}
             >
               Bridge
+            </Link>
+            <Link 
+              to="/claim" 
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap relative ${
+                isActive('/claim') 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-muted'
+              }`}
+            >
+              Claim
+              {pendingClaimsCount > 0 && (
+                <Badge className="ml-1.5 px-1.5 py-0 text-xs h-5 bg-red-500 hover:bg-red-600 absolute -top-1 -right-1">
+                  {pendingClaimsCount}
+                </Badge>
+              )}
             </Link>
             <Link 
               to="/transactions" 

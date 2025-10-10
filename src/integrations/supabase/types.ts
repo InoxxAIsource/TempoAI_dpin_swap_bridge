@@ -148,6 +148,9 @@ export type Database = {
           from_chain: string
           from_token: string
           id: string
+          needs_redemption: boolean | null
+          redemption_completed_at: string | null
+          redemption_tx_hash: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           to_chain: string
           to_token: string
@@ -162,6 +165,9 @@ export type Database = {
           from_chain: string
           from_token: string
           id?: string
+          needs_redemption?: boolean | null
+          redemption_completed_at?: string | null
+          redemption_tx_hash?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           to_chain: string
           to_token: string
@@ -176,6 +182,9 @@ export type Database = {
           from_chain?: string
           from_token?: string
           id?: string
+          needs_redemption?: boolean | null
+          redemption_completed_at?: string | null
+          redemption_tx_hash?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           to_chain?: string
           to_token?: string

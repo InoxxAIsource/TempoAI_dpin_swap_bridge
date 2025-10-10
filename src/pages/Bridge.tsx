@@ -2,23 +2,32 @@ import PageLayout from '../components/layout/PageLayout';
 import PageHero from '../components/layout/PageHero';
 import BridgeCard from '../components/bridge/BridgeCard';
 import WormholeConnectWidget from '../components/bridge/WormholeConnectWidget';
+import PendingClaimsBanner from '@/components/claim/PendingClaimsBanner';
 import ChainBadge from '../components/ui/ChainBadge';
 import { ArrowRight, ExternalLink, Zap, Settings } from 'lucide-react';
 import StatusBadge from '../components/ui/StatusBadge';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Bridge = () => {
   const { evmAddress, solanaAddress, isAnyWalletConnected } = useWalletContext();
+  const navigate = useNavigate();
   const [recentTransfers, setRecentTransfers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('simple');
+  const [pendingClaimsCount, setPendingClaimsCount] = useState(0);
 
-  // Fetch real transaction history from database
   useEffect(() => {
-    const fetchTransactions = async () => {
+    fetchTransactions();
+    fetchPendingClaims();
+  }, [isAnyWalletConnected, evmAddress, solanaAddress]);
+
+  const fetchTransactions = async () => {
       if (!isAnyWalletConnected) {
         setRecentTransfers([]);
         setLoading(false);
@@ -53,10 +62,24 @@ const Bridge = () => {
       } finally {
         setLoading(false);
       }
-    };
+  };
 
-    fetchTransactions();
-  }, [isAnyWalletConnected, evmAddress, solanaAddress]);
+  const fetchPendingClaims = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { count } = await supabase
+        .from('wormhole_transactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .or('status.eq.pending,needs_redemption.eq.true');
+
+      setPendingClaimsCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching pending claims:', error);
+    }
+  };
   
   // FIX 3: Listen for switch to advanced bridge event
   useEffect(() => {
@@ -82,6 +105,10 @@ const Bridge = () => {
         title="Bridge"
         description="Seamlessly transfer assets across multiple blockchains with Wormhole"
       />
+      
+      <div className="px-6 md:px-12 pt-4">
+        <PendingClaimsBanner count={pendingClaimsCount} />
+      </div>
 
       <section className="px-6 md:px-12 py-8">
         <div className="max-w-6xl mx-auto">
@@ -128,10 +155,15 @@ const Bridge = () => {
                 ) : (
                   recentTransfers.map((transfer, index) => (
                     <div key={index} className="border border-border rounded-xl p-4 space-y-3 hover:border-primary/50 transition-all duration-300">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="font-medium">{transfer.from}</span>
-                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium">{transfer.to}</span>
+                      <div className="flex items-center justify-between gap-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{transfer.from}</span>
+                          <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium">{transfer.to}</span>
+                        </div>
+                        {transfer.status === 'pending' && (
+                          <Badge variant="outline" className="text-xs">Needs Claim</Badge>
+                        )}
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="font-bold">{transfer.amount}</span>
@@ -139,16 +171,23 @@ const Bridge = () => {
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="text-xs text-muted-foreground">{transfer.time}</div>
-                        {transfer.txHash && (
-                          <a 
-                            href={`https://wormholescan.io/#/tx/${transfer.txHash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-primary hover:underline flex items-center gap-1"
-                          >
-                            View <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
+                        <div className="flex gap-2">
+                          {transfer.status === 'pending' && (
+                            <Button size="sm" variant="outline" onClick={() => navigate('/claim')} className="text-xs h-6">
+                              Claim
+                            </Button>
+                          )}
+                          {transfer.txHash && (
+                            <a 
+                              href={`https://wormholescan.io/#/tx/${transfer.txHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline flex items-center gap-1"
+                            >
+                              View <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
