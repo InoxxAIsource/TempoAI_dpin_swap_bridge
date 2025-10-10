@@ -10,6 +10,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useWalletContext } from '@/contexts/WalletContext';
+import { Button } from '@/components/ui/button';
+import { Wallet } from 'lucide-react';
 
 interface ClaimableTransfer {
   id: string;
@@ -23,13 +26,17 @@ interface ClaimableTransfer {
   needs_redemption: boolean;
   created_at: string;
   wormhole_vaa: string | null;
+  wallet_address: string;
 }
 
 const Claim = () => {
   const [transfers, setTransfers] = useState<ClaimableTransfer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { evmAddress, solanaAddress } = useWalletContext();
+  const currentWallet = evmAddress || solanaAddress;
 
   useEffect(() => {
     fetchClaimableTransfers();
@@ -41,9 +48,12 @@ const Claim = () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        navigate('/auth');
+        setIsAuthenticated(false);
+        setLoading(false);
         return;
       }
+
+      setIsAuthenticated(true);
 
       const { data, error } = await supabase
         .from('wormhole_transactions')
@@ -114,6 +124,17 @@ const Claim = () => {
               <Skeleton className="h-48 w-full" />
               <Skeleton className="h-48 w-full" />
             </div>
+          ) : !isAuthenticated ? (
+            <div className="text-center py-16 border border-border rounded-2xl bg-card">
+              <Wallet className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-2xl font-semibold mb-2">Sign In Required</h3>
+              <p className="text-muted-foreground mb-6">
+                Please sign in to view your pending claims
+              </p>
+              <Button onClick={() => navigate('/auth')}>
+                Sign In to View Claims
+              </Button>
+            </div>
           ) : transfers.length === 0 ? (
             <EmptyClaimState />
           ) : (
@@ -122,6 +143,7 @@ const Claim = () => {
                 <ClaimableTransferCard 
                   key={transfer.id} 
                   transfer={transfer}
+                  currentWallet={currentWallet}
                   onRefresh={fetchClaimableTransfers}
                 />
               ))}

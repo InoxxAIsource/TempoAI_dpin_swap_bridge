@@ -156,6 +156,7 @@ export type Database = {
           to_token: string
           tx_hash: string | null
           user_id: string
+          wallet_address: string
           wormhole_vaa: string | null
         }
         Insert: {
@@ -173,6 +174,7 @@ export type Database = {
           to_token: string
           tx_hash?: string | null
           user_id: string
+          wallet_address?: string
           wormhole_vaa?: string | null
         }
         Update: {
@@ -190,6 +192,7 @@ export type Database = {
           to_token?: string
           tx_hash?: string | null
           user_id?: string
+          wallet_address?: string
           wormhole_vaa?: string | null
         }
         Relationships: []

@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import ChainBadge from '@/components/ui/ChainBadge';
-import { ExternalLink, RefreshCw, ArrowRight } from 'lucide-react';
+import { ExternalLink, RefreshCw, ArrowRight, Wallet, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,13 +19,23 @@ interface ClaimableTransferCardProps {
     tx_hash: string | null;
     needs_redemption: boolean;
     wormhole_vaa: string | null;
+    wallet_address: string;
   };
+  currentWallet?: string;
   onRefresh: () => void;
 }
 
-const ClaimableTransferCard = ({ transfer, onRefresh }: ClaimableTransferCardProps) => {
+const ClaimableTransferCard = ({ transfer, currentWallet, onRefresh }: ClaimableTransferCardProps) => {
   const [checking, setChecking] = useState(false);
   const { toast } = useToast();
+  
+  const walletMatches = currentWallet && transfer.wallet_address && 
+    currentWallet.toLowerCase() === transfer.wallet_address.toLowerCase();
+  
+  const formatWallet = (address: string) => {
+    if (!address) return 'Unknown';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
 
   const handleCheckStatus = async () => {
     setChecking(true);
@@ -107,6 +117,27 @@ const ClaimableTransferCard = ({ transfer, onRefresh }: ClaimableTransferCardPro
             {getStatusBadge()}
           </div>
           
+          {transfer.wallet_address && (
+            <div className="flex items-center gap-2 text-sm">
+              <Wallet className="w-4 h-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Wallet:</span>
+              <code className="px-2 py-1 bg-secondary rounded text-xs">
+                {formatWallet(transfer.wallet_address)}
+              </code>
+              {currentWallet && walletMatches && (
+                <Badge variant="outline" className="text-green-500 border-green-500">
+                  Connected
+                </Badge>
+              )}
+              {currentWallet && !walletMatches && (
+                <Badge variant="outline" className="text-yellow-500 border-yellow-500">
+                  <AlertTriangle className="w-3 h-3 mr-1" />
+                  Different Wallet
+                </Badge>
+              )}
+            </div>
+          )}
+          
           {transfer.tx_hash && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Transaction:</span>
@@ -118,6 +149,15 @@ const ClaimableTransferCard = ({ transfer, onRefresh }: ClaimableTransferCardPro
         </div>
         
         <div className="flex flex-col gap-3 md:w-64">
+          {currentWallet && !walletMatches && transfer.wallet_address && (
+            <div className="p-3 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
+              <p className="text-xs text-yellow-500 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>Connect wallet {formatWallet(transfer.wallet_address)} to claim this transfer</span>
+              </p>
+            </div>
+          )}
+          
           <Button
             onClick={handleCheckStatus}
             disabled={checking}

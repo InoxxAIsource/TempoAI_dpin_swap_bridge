@@ -9,7 +9,7 @@ import { AlertCircle } from 'lucide-react';
 
 const WormholeConnectWidget = () => {
   const { theme } = useTheme();
-  const { isAnyWalletConnected } = useWalletContext();
+  const { isAnyWalletConnected, evmAddress, solanaAddress } = useWalletContext();
   const [widgetKey, setWidgetKey] = useState(0);
   const [rpcError, setRpcError] = useState<string | null>(null);
   const [rpcHealthy, setRpcHealthy] = useState<boolean | null>(null);
@@ -31,6 +31,8 @@ const WormholeConnectWidget = () => {
           
           if (user) {
             const txData = event.detail;
+            const walletAddress = evmAddress || solanaAddress || '';
+            
             await supabase.from('wormhole_transactions').insert({
               user_id: user.id,
               from_chain: txData.fromChain || 'Unknown',
@@ -41,6 +43,7 @@ const WormholeConnectWidget = () => {
               tx_hash: txData.txHash,
               status: 'pending',
               wormhole_vaa: txData.vaa || null,
+              wallet_address: walletAddress,
             });
 
             toast({
