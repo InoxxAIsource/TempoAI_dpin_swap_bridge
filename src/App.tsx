@@ -11,6 +11,7 @@ import Swap from "./pages/Swap";
 import Claim from "./pages/Claim";
 import Transactions from "./pages/Transactions";
 import Auth from "./pages/Auth";
+import Docs from "./pages/Docs";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/claim" element={<Claim />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/docs" element={<Docs />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
