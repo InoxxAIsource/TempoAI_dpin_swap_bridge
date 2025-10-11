@@ -14,28 +14,30 @@ import Auth from "./pages/Auth";
 import Docs from "./pages/Docs";
 import NotFound from "./pages/NotFound";
 
-const App = () => (
-  <ThemeProvider>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/portfolio" element={<Portfolio />} />
-          <Route path="/bridge" element={<Bridge />} />
-          <Route path="/swap" element={<Swap />} />
-          <Route path="/claim" element={<Claim />} />
-          <Route path="/transactions" element={<Transactions />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/docs" element={<Docs />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </ThemeProvider>
-);
+const App = () => {
+  return (
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/portfolio" element={<Portfolio />} />
+            <Route path="/bridge" element={<Bridge />} />
+            <Route path="/swap" element={<Swap />} />
+            <Route path="/claim" element={<Claim />} />
+            <Route path="/transactions" element={<Transactions />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/docs" element={<Docs />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
+  );
+};
 
 export default App;
