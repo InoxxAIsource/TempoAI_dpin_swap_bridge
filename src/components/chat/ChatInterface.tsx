@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Menu, Plus, X } from 'lucide-react';
+import { Send, Loader2, Menu, Plus, X, Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ThinkingMessages from './ThinkingMessages';
@@ -111,35 +111,59 @@ export default function ChatInterface() {
   };
 
   // Generate follow-up prompts based on AI response
-  const generateFollowUpPrompts = (aiResponse: string): string[] => {
+  const generateFollowUpPrompts = (aiResponse: string, portfolioContext: any): string[] => {
     const prompts: string[] = [];
+    const response = aiResponse.toLowerCase();
     
-    // If AI mentioned protocols, suggest deep dives
-    if (aiResponse.includes('Aave')) prompts.push('Tell me more about Aave');
-    if (aiResponse.includes('Compound')) prompts.push('How does Compound work?');
-    if (aiResponse.includes('Lido')) prompts.push('Explain Lido staking risks');
-    
-    // If AI showed execution cards, suggest comparisons
-    if (aiResponse.includes('[EXECUTE_CARD]')) {
-      prompts.push('Compare these opportunities');
-      prompts.push('What are the risks?');
+    // Strategy-specific follow-ups
+    if (response.includes('lido') || response.includes('staking')) {
+      prompts.push('How does staking work?');
+      prompts.push('Can I unstake anytime?');
     }
     
-    // If AI mentioned bridging, suggest how-to
-    if (aiResponse.includes('bridge') || aiResponse.includes('cross-chain')) {
-      prompts.push('How do I bridge assets?');
+    if (response.includes('aave')) {
+      prompts.push('What are Aave liquidation risks?');
+      prompts.push('Show me Aave rates on other chains');
     }
     
-    // If AI mentioned Base limitation, suggest alternative
-    if (aiResponse.includes('Base') && aiResponse.includes('ETH')) {
+    if (response.includes('compound')) {
+      prompts.push('Compare Compound vs Aave');
+    }
+    
+    // Action-specific follow-ups
+    if (response.includes('[execute_card]') || response.includes('bridge')) {
+      prompts.push('Walk me through the bridging process');
+      prompts.push('How long does bridging take?');
+      prompts.push('What are the gas fees?');
+    }
+    
+    // Risk-related follow-ups
+    if (response.includes('risk') || response.includes('safe')) {
+      prompts.push("What's the safest option?");
+      prompts.push('How do I minimize risk?');
+    }
+    
+    // Base/limitation follow-ups
+    if (response.includes('base') && response.includes('eth')) {
       prompts.push('How do I swap ETH to USDC?');
+      prompts.push('Which DEX is cheapest for swapping?');
     }
     
-    // Always include generic follow-ups
-    prompts.push('Show me other strategies');
-    prompts.push('What else can I do?');
+    // Portfolio-aware follow-ups
+    if (portfolioContext && portfolioContext.chainCount > 1) {
+      prompts.push('Should I consolidate my assets?');
+    }
     
-    return prompts.slice(0, 4); // Max 4 follow-up prompts
+    if (portfolioContext && portfolioContext.totalValueUSD < 100) {
+      prompts.push('Best strategies for small portfolios?');
+    }
+    
+    // Generic high-value follow-ups (always include 1-2)
+    prompts.push('Show me other opportunities');
+    prompts.push('What would you do with this portfolio?');
+    
+    // Return top 6 unique prompts
+    return [...new Set(prompts)].slice(0, 6);
   };
 
   const handleSend = async (messageText?: string) => {
@@ -379,7 +403,7 @@ export default function ChatInterface() {
       // Generate follow-up prompts when streaming completes
       if (streamingComplete && assistantContent) {
         console.log('✅ Streaming complete, generating follow-up prompts');
-        const followUps = generateFollowUpPrompts(assistantContent);
+        const followUps = generateFollowUpPrompts(assistantContent, portfolioContext);
         setFollowUpPrompts(followUps);
       }
     } catch (error) {
@@ -565,9 +589,12 @@ export default function ChatInterface() {
                   <button
                     key={idx}
                     onClick={() => handlePrePrompt(prompt)}
-                    className="p-4 text-left text-sm rounded-xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 transition-colors"
+                    className="group relative p-4 text-left text-sm rounded-xl border border-zinc-700 bg-gradient-to-br from-zinc-900 to-zinc-900/50 hover:from-zinc-800 hover:to-zinc-800/50 hover:border-zinc-600 transition-all duration-200 hover:scale-[1.02] cursor-pointer"
                   >
-                    {prompt}
+                    <span className="flex items-start justify-between gap-2">
+                      <span className="flex-1">{prompt}</span>
+                      <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all" />
+                    </span>
                   </button>
                 ))}
               </div>
@@ -617,28 +644,35 @@ export default function ChatInterface() {
                 </div>
               )}
 
-              {/* Follow-up prompts after AI response */}
-              {!isThinking && followUpPrompts.length > 0 && (
-                <div className="max-w-3xl mx-auto px-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-2">Suggested follow-ups:</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {followUpPrompts.map((prompt, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          handlePrePrompt(prompt);
-                          setFollowUpPrompts([]); // Clear after click
-                        }}
-                        className="p-3 text-left text-xs rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 transition-colors"
-                      >
-                        {prompt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
+        </div>
+
+        {/* Persistent Suggestion Strip - Always Visible Above Input */}
+        <div className="sticky bottom-0 left-0 right-0 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-sm">
+          <div className="max-w-3xl mx-auto px-4 py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-blue-400" />
+              <p className="text-xs text-muted-foreground font-medium">
+                {hasMessages ? 'Quick actions:' : 'Try asking:'}
+              </p>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {(hasMessages && followUpPrompts.length > 0 ? followUpPrompts.slice(0, 4) : prePrompts.slice(0, 4)).map((prompt, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    handlePrePrompt(prompt);
+                    setFollowUpPrompts([]);
+                  }}
+                  className="px-4 py-2 text-xs rounded-full border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-600 transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                >
+                  <span>{prompt}</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Input Area (shown when there are messages) */}
