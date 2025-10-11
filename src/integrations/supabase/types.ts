@@ -118,24 +118,33 @@ export type Database = {
       }
       portfolio_snapshots: {
         Row: {
+          chains_queried: string[] | null
           created_at: string | null
+          guardian_verified: boolean | null
           id: string
+          network: string | null
           snapshot_data: Json
           total_value_usd: number
           user_id: string
           wallet_address: string
         }
         Insert: {
+          chains_queried?: string[] | null
           created_at?: string | null
+          guardian_verified?: boolean | null
           id?: string
+          network?: string | null
           snapshot_data: Json
           total_value_usd: number
           user_id: string
           wallet_address: string
         }
         Update: {
+          chains_queried?: string[] | null
           created_at?: string | null
+          guardian_verified?: boolean | null
           id?: string
+          network?: string | null
           snapshot_data?: Json
           total_value_usd?: number
           user_id?: string
@@ -211,6 +220,60 @@ export type Database = {
           id?: string
           is_primary?: boolean | null
           user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      wormhole_executions: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string | null
+          estimated_completion: string | null
+          execution_type: string
+          from_chain: string
+          guardian_verified: boolean | null
+          id: string
+          status: string | null
+          to_chain: string
+          token: string
+          tx_hash: string | null
+          user_id: string | null
+          vaa: string | null
+          wallet_address: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string | null
+          estimated_completion?: string | null
+          execution_type: string
+          from_chain: string
+          guardian_verified?: boolean | null
+          id?: string
+          status?: string | null
+          to_chain: string
+          token: string
+          tx_hash?: string | null
+          user_id?: string | null
+          vaa?: string | null
+          wallet_address: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string | null
+          estimated_completion?: string | null
+          execution_type?: string
+          from_chain?: string
+          guardian_verified?: boolean | null
+          id?: string
+          status?: string | null
+          to_chain?: string
+          token?: string
+          tx_hash?: string | null
+          user_id?: string | null
+          vaa?: string | null
           wallet_address?: string
         }
         Relationships: []

@@ -1,11 +1,69 @@
+import { ExecutionCard } from './ExecutionCard';
+
 interface MessageContentProps {
   content: string;
   onPromptClick?: (prompt: string) => void;
 }
 
 export default function MessageContent({ content, onPromptClick }: MessageContentProps) {
+  // Parse execution cards first
+  const parseExecutionCards = (text: string) => {
+    const parts: (string | JSX.Element)[] = [];
+    const cardRegex = /\[EXECUTE_CARD\]([\s\S]*?)\[\/EXECUTE_CARD\]/g;
+    
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = cardRegex.exec(text)) !== null) {
+      // Add text before card
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      
+      // Parse card data
+      const cardContent = match[1];
+      const cardData: any = {};
+      
+      const lines = cardContent.trim().split('\n');
+      lines.forEach(line => {
+        const [key, value] = line.split(':').map(s => s.trim());
+        if (key && value) {
+          cardData[key] = value;
+        }
+      });
+      
+      parts.push(
+        <ExecutionCard
+          key={`card-${match.index}`}
+          type={cardData.type as any}
+          protocol={cardData.protocol}
+          token={cardData.token}
+          chain={cardData.chain}
+          fromChain={cardData.fromChain}
+          amount={parseFloat(cardData.amount) || 0}
+          estimatedGas={cardData.estimatedGas}
+          executionTime={cardData.executionTime}
+          apy={cardData.apy ? parseFloat(cardData.apy) : undefined}
+        />
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+    
+    return parts;
+  };
+
   // Parse markdown-like formatting
-  const parseContent = (text: string) => {
+  const parseContent = (text: string | JSX.Element) => {
+    if (typeof text !== 'string') {
+      return text;
+    }
+
     const lines = text.split('\n');
     const elements: JSX.Element[] = [];
     
@@ -112,5 +170,15 @@ export default function MessageContent({ content, onPromptClick }: MessageConten
     return elements;
   };
 
-  return <div className="space-y-1">{parseContent(content)}</div>;
+  const renderContent = () => {
+    const parts = parseExecutionCards(content);
+    return parts.map((part, idx) => {
+      if (typeof part === 'string') {
+        return <div key={idx}>{parseContent(part)}</div>;
+      }
+      return <div key={idx}>{part}</div>;
+    });
+  };
+
+  return <div className="space-y-1">{renderContent()}</div>;
 }

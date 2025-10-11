@@ -21,12 +21,39 @@ interface Chat {
   createdAt: string;
 }
 
-const PRE_PROMPTS = [
-  'Show me LP strategies for USDC-USDT pairs',
-  'Compare gas costs for yield farming on different L2s',
-  'What about leveraged stablecoin strategies?',
-  'What are the best stablecoin yields right now?',
+const DEFAULT_PRE_PROMPTS = [
+  "Show me my portfolio",
+  "What are the current best DeFi yield opportunities?",
+  "How can I maximize returns on my stablecoins?",
+  "Show me cross-chain yield strategies"
 ];
+
+const generatePrePrompts = (portfolio: any) => {
+  if (!portfolio) return DEFAULT_PRE_PROMPTS;
+
+  const prompts = [];
+  
+  // If user has assets on Ethereum mainnet
+  if (portfolio.hasEthereumMainnet && portfolio.ethereumGasHigh) {
+    prompts.push('Bridge my assets to Arbitrum to save on gas');
+  }
+  
+  // If user has stablecoins not earning yield
+  if (portfolio.hasIdleStablecoins) {
+    prompts.push('Show me safe stablecoin yields above 5%');
+  }
+  
+  // If user has assets on multiple chains
+  if (portfolio.chainCount > 3) {
+    prompts.push('Consolidate my portfolio to fewer chains');
+  }
+  
+  // Always include these
+  prompts.push('Show me best yield opportunities');
+  prompts.push('What are cross-chain arbitrage opportunities?');
+  
+  return prompts.slice(0, 4);
+};
 
 export default function ChatInterface() {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -35,6 +62,8 @@ export default function ChatInterface() {
   const [isThinking, setIsThinking] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [portfolioContext, setPortfolioContext] = useState<any>(null);
+  const [prePrompts, setPrePrompts] = useState(DEFAULT_PRE_PROMPTS);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { isAnyWalletConnected, evmAddress, solanaAddress } = useWalletContext();
 
@@ -57,6 +86,36 @@ export default function ChatInterface() {
     const textToSend = messageText || input;
     
     if (!textToSend.trim() || isThinking) return;
+
+    // Fetch portfolio context if wallet connected and not already cached
+    if (isAnyWalletConnected && !portfolioContext) {
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const portfolioUrl = `${supabaseUrl}/functions/v1/wormhole-portfolio-fetcher`;
+        
+        const portResponse = await fetch(portfolioUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({ 
+            evmAddress, 
+            solanaAddress,
+            includeTestnets: true 
+          }),
+        });
+        
+        if (portResponse.ok) {
+          const data = await portResponse.json();
+          setPortfolioContext(data);
+          setPrePrompts(generatePrePrompts(data));
+        }
+      } catch (error) {
+        console.error('Error fetching portfolio:', error);
+      }
+    }
 
     // Create new chat if none exists
     let chatId = currentChatId;
@@ -112,6 +171,8 @@ export default function ChatInterface() {
             role: m.role,
             content: m.content,
           })),
+          portfolioContext,
+          walletConnected: isAnyWalletConnected
         }),
       });
 
@@ -354,7 +415,7 @@ export default function ChatInterface() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-xl">
-                {PRE_PROMPTS.map((prompt, idx) => (
+                {prePrompts.map((prompt, idx) => (
                   <button
                     key={idx}
                     onClick={() => handlePrePrompt(prompt)}
