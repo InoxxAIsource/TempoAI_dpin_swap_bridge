@@ -30,29 +30,48 @@ const DEFAULT_PRE_PROMPTS = [
 ];
 
 const generatePrePrompts = (portfolio: any) => {
-  if (!portfolio) return DEFAULT_PRE_PROMPTS;
+  if (!portfolio || portfolio.totalValueUSD === 0) {
+    return DEFAULT_PRE_PROMPTS;
+  }
 
-  const prompts = [];
+  const prompts: string[] = [];
+  const holdings = portfolio.holdings || [];
+  const topHoldings = portfolio.topHoldings || [];
   
-  // If user has assets on Ethereum mainnet
-  if (portfolio.hasEthereumMainnet && portfolio.ethereumGasHigh) {
-    prompts.push('Bridge my assets to Arbitrum to save on gas');
+  // Check for specific tokens
+  const hasETH = holdings.some((h: any) => h.token === 'ETH');
+  const hasUSDC = holdings.some((h: any) => h.token === 'USDC');
+  const hasMainnetETH = holdings.some((h: any) => h.token === 'ETH' && h.chain === 'Ethereum' && h.network === 'mainnet');
+  const hasSepoliaETH = holdings.some((h: any) => h.token === 'ETH' && h.chain === 'Sepolia' && h.network === 'testnet');
+  
+  // Personalized prompts based on holdings
+  if (hasMainnetETH) {
+    prompts.push('Show me best yields for my Ethereum ETH');
+    prompts.push('Should I bridge my ETH to L2 to save gas?');
   }
   
-  // If user has stablecoins not earning yield
-  if (portfolio.hasIdleStablecoins) {
-    prompts.push('Show me safe stablecoin yields above 5%');
+  if (hasSepoliaETH) {
+    prompts.push('What can I do with testnet ETH?');
   }
   
-  // If user has assets on multiple chains
-  if (portfolio.chainCount > 3) {
-    prompts.push('Consolidate my portfolio to fewer chains');
+  if (hasUSDC) {
+    prompts.push('Show me stablecoin yields across chains');
+  }
+  
+  // Portfolio-level prompts
+  if (portfolio.chainCount > 2) {
+    prompts.push('How can I consolidate my portfolio?');
+  }
+  
+  if (portfolio.totalValueUSD > 1000) {
+    prompts.push('What are advanced yield strategies for larger portfolios?');
   }
   
   // Always include these
-  prompts.push('Show me best yield opportunities');
-  prompts.push('What are cross-chain arbitrage opportunities?');
+  prompts.push('Show me cross-chain opportunities');
+  prompts.push('Analyze my portfolio risk');
   
+  // Return 4 most relevant prompts
   return prompts.slice(0, 4);
 };
 
@@ -65,6 +84,7 @@ export default function ChatInterface() {
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [portfolioContext, setPortfolioContext] = useState<any>(null);
   const [prePrompts, setPrePrompts] = useState(DEFAULT_PRE_PROMPTS);
+  const [followUpPrompts, setFollowUpPrompts] = useState<string[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { isAnyWalletConnected, evmAddress, solanaAddress } = useWalletContext();
 
@@ -81,12 +101,54 @@ export default function ChatInterface() {
     setChats(prev => [newChat, ...prev]);
     setCurrentChatId(newChat.id);
     setSidebarOpen(false);
+    
+    // Reset pre-prompts to default OR regenerate from portfolio
+    if (portfolioContext && portfolioContext.totalValueUSD > 0) {
+      setPrePrompts(generatePrePrompts(portfolioContext));
+    } else {
+      setPrePrompts(DEFAULT_PRE_PROMPTS);
+    }
+  };
+
+  // Generate follow-up prompts based on AI response
+  const generateFollowUpPrompts = (aiResponse: string): string[] => {
+    const prompts: string[] = [];
+    
+    // If AI mentioned protocols, suggest deep dives
+    if (aiResponse.includes('Aave')) prompts.push('Tell me more about Aave');
+    if (aiResponse.includes('Compound')) prompts.push('How does Compound work?');
+    if (aiResponse.includes('Lido')) prompts.push('Explain Lido staking risks');
+    
+    // If AI showed execution cards, suggest comparisons
+    if (aiResponse.includes('[EXECUTE_CARD]')) {
+      prompts.push('Compare these opportunities');
+      prompts.push('What are the risks?');
+    }
+    
+    // If AI mentioned bridging, suggest how-to
+    if (aiResponse.includes('bridge') || aiResponse.includes('cross-chain')) {
+      prompts.push('How do I bridge assets?');
+    }
+    
+    // If AI mentioned Base limitation, suggest alternative
+    if (aiResponse.includes('Base') && aiResponse.includes('ETH')) {
+      prompts.push('How do I swap ETH to USDC?');
+    }
+    
+    // Always include generic follow-ups
+    prompts.push('Show me other strategies');
+    prompts.push('What else can I do?');
+    
+    return prompts.slice(0, 4); // Max 4 follow-up prompts
   };
 
   const handleSend = async (messageText?: string) => {
     const textToSend = messageText || input;
     
     if (!textToSend.trim() || isThinking) return;
+
+    // Clear follow-up prompts when starting new query
+    setFollowUpPrompts([]);
 
     // Detect portfolio queries explicitly
     const isPortfolioQuery = textToSend.toLowerCase().includes('portfolio') || 
@@ -266,10 +328,14 @@ export default function ChatInterface() {
       ));
 
       let textBuffer = '';
+      let streamingComplete = false;
       
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          streamingComplete = true;
+          break;
+        }
 
         textBuffer += decoder.decode(value, { stream: true });
         
@@ -308,6 +374,13 @@ export default function ChatInterface() {
             console.error('Error parsing SSE:', e);
           }
         }
+      }
+
+      // Generate follow-up prompts when streaming completes
+      if (streamingComplete && assistantContent) {
+        console.log('✅ Streaming complete, generating follow-up prompts');
+        const followUps = generateFollowUpPrompts(assistantContent);
+        setFollowUpPrompts(followUps);
       }
     } catch (error) {
       console.error('Error calling AI:', error);
@@ -353,6 +426,15 @@ export default function ChatInterface() {
       inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 200) + 'px';
     }
   }, [input]);
+
+  // Regenerate pre-prompts when portfolio context changes
+  useEffect(() => {
+    if (portfolioContext && portfolioContext.totalValueUSD > 0) {
+      const newPrompts = generatePrePrompts(portfolioContext);
+      setPrePrompts(newPrompts);
+      console.log('🎯 Updated pre-prompts based on portfolio:', newPrompts);
+    }
+  }, [portfolioContext]);
 
   return (
     <div className="flex h-screen w-full bg-black text-white">
@@ -469,6 +551,15 @@ export default function ChatInterface() {
                 </div>
               </div>
 
+              {/* Pre-prompt suggestions with visual indicator */}
+              <div className="w-full max-w-xl mb-2 text-center">
+                <p className="text-xs text-muted-foreground">
+                  {portfolioContext && portfolioContext.totalValueUSD > 0 
+                    ? `✨ Personalized suggestions based on your $${portfolioContext.totalValueUSD.toFixed(2)} portfolio`
+                    : '💡 Popular questions'}
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-xl">
                 {prePrompts.map((prompt, idx) => (
                   <button
@@ -522,6 +613,27 @@ export default function ChatInterface() {
                   </div>
                   <div className="max-w-[85%]">
                     <ThinkingMessages lastUserMessage={currentChat?.messages[currentChat.messages.length - 1]?.content || ''} />
+                  </div>
+                </div>
+              )}
+
+              {/* Follow-up prompts after AI response */}
+              {!isThinking && followUpPrompts.length > 0 && (
+                <div className="max-w-3xl mx-auto px-4 pb-4">
+                  <p className="text-xs text-muted-foreground mb-2">Suggested follow-ups:</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {followUpPrompts.map((prompt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          handlePrePrompt(prompt);
+                          setFollowUpPrompts([]); // Clear after click
+                        }}
+                        className="p-3 text-left text-xs rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 transition-colors"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}

@@ -6,6 +6,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Validation function to filter out Wormhole-incompatible yields
+function isValidWormholeYield(yieldData: any): boolean {
+  const chain = yieldData.chain?.toLowerCase();
+  const symbol = yieldData.symbol?.toUpperCase();
+  
+  // Base cannot receive native ETH via Wormhole
+  if (chain === 'base' && (symbol === 'ETH' || symbol === 'WETH')) {
+    console.log(`⚠️ Filtered out invalid yield: ${symbol} on ${chain} (Wormhole limitation)`);
+    return false;
+  }
+  
+  // Add more validation rules if needed
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -62,8 +77,15 @@ serve(async (req) => {
         
         if (yieldResponse.ok) {
           const data = await yieldResponse.json();
-          yieldData = data.yields; // Array of 15 real yields
-          console.log(`✅ Fetched ${yieldData?.length || 0} real yield opportunities with top APY:`, yieldData?.[0]?.apy);
+          const allYields = data.yields || [];
+          
+          // Filter out Wormhole-incompatible yields
+          yieldData = allYields.filter(isValidWormholeYield);
+          
+          console.log(`✅ Fetched ${allYields.length} yields, filtered to ${yieldData.length} valid Wormhole-compatible yields`);
+          if (yieldData.length > 0) {
+            console.log(`Top APY after filtering: ${yieldData[0]?.apy}`);
+          }
         } else {
           console.error('❌ Yield fetch failed:', yieldResponse.status);
         }
@@ -226,8 +248,10 @@ You have access to ${yieldData.length} REAL yield opportunities from DeFi Llama 
 4. Use exact APY, TVL, protocol, token, chain from the data below
 5. Each card must be properly formatted with [EXECUTE_CARD] tags
 
-**TOP 10 REAL YIELD OPPORTUNITIES:**
+**TOP 10 REAL YIELD OPPORTUNITIES (Pre-filtered for Wormhole compatibility):**
 ${JSON.stringify(yieldData.slice(0, 10), null, 2)}
+
+**IMPORTANT: These yields have been pre-validated. Do NOT suggest any Base + ETH yields as they are already filtered out.**
 
 **EXACT FORMAT TO USE (repeat for 5-7 different yields):**
 
