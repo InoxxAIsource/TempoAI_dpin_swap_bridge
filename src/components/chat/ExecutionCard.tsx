@@ -31,6 +31,32 @@ export function ExecutionCard({
   const [isExecuting, setIsExecuting] = useState(false);
   const { evmAddress, solanaAddress, isAnyWalletConnected } = useWalletContext();
 
+  const getProtocolUrl = (protocol: string, chain: string, token: string): string => {
+    const chainParam = chain.toLowerCase();
+    
+    const urls: Record<string, string> = {
+      'Aave': `https://app.aave.com/?marketName=proto_${chainParam}_v3`,
+      'Compound': 'https://app.compound.finance/',
+      'Curve': `https://curve.fi/#/${chainParam}/pools`,
+      'Lido': 'https://stake.lido.fi/',
+      'Uniswap': 'https://app.uniswap.org/',
+      'Yearn': `https://yearn.fi/vaults/${chainParam}`,
+      'Convex': 'https://www.convexfinance.com/stake',
+      'Balancer': `https://app.balancer.fi/#/${chainParam}/pool`,
+      'Stargate': 'https://stargate.finance/pool',
+    };
+    
+    // Match protocol name (case-insensitive, partial match)
+    for (const [key, url] of Object.entries(urls)) {
+      if (protocol.toLowerCase().includes(key.toLowerCase())) {
+        return url;
+      }
+    }
+    
+    // Fallback to protocol search
+    return `https://www.google.com/search?q=${encodeURIComponent(protocol + ' ' + chain + ' app')}`;
+  };
+
   const handleExecute = async () => {
     if (!isAnyWalletConnected) {
       toast({
@@ -68,7 +94,22 @@ export function ExecutionCard({
       }
       
       if (type === 'cross_chain_yield') {
-        // Two-step flow: bridge first, then deposit
+        // Check if same-chain or cross-chain
+        const needsBridging = fromChain && fromChain !== chain;
+        
+        if (!needsBridging) {
+          // Same-chain yield: Open protocol app directly
+          const protocolUrl = getProtocolUrl(protocol, chain, token);
+          window.open(protocolUrl, '_blank');
+          
+          toast({
+            title: "Opening Protocol",
+            description: `Opening ${protocol} to deposit ${token} on ${chain}`,
+          });
+          return;
+        }
+        
+        // Cross-chain yield: Bridge first, then deposit
         toast({
           title: "Multi-step execution",
           description: "Step 1: Bridge assets. Step 2: Deposit into protocol.",
@@ -98,7 +139,18 @@ export function ExecutionCard({
   };
 
   const getActionLabel = () => {
-    if (type === 'cross_chain_yield') return 'Execute Yield Strategy';
+    if (type === 'cross_chain_yield') {
+      const needsBridging = fromChain && fromChain !== chain;
+      if (!needsBridging) {
+        return (
+          <>
+            Open {protocol} App
+            <ExternalLink className="w-4 h-4 ml-2" />
+          </>
+        );
+      }
+      return 'Execute Yield Strategy';
+    }
     if (type === 'cross_chain_swap') return 'Execute Swap';
     return 'Execute Bridge';
   };
@@ -138,11 +190,14 @@ export function ExecutionCard({
         onClick={handleExecute} 
         disabled={isExecuting || !isAnyWalletConnected}
         className="w-full"
+        variant={type === 'cross_chain_yield' && fromChain === chain ? 'outline' : 'default'}
       >
         {isExecuting ? (
           <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Executing...</>
         ) : (
-          <>{getActionLabel()}</>
+          <div className="flex items-center justify-center">
+            {getActionLabel()}
+          </div>
         )}
       </Button>
     </div>

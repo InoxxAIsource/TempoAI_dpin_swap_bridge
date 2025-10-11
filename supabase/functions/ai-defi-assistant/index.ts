@@ -104,21 +104,43 @@ serve(async (req) => {
 - If portfolioContext is provided, use ONLY this exact data - NEVER make up balances or assets.
 - NEVER say things like "ETH: 2.5 on Ethereum" unless that EXACT data is in the portfolioContext below.
 
-**CRITICAL: When suggesting yield opportunities, you MUST output EXACTLY 5-7 execution cards minimum in this format:**
+**OUTPUT FORMATTING:**
+When providing yield opportunities or strategies, use execution cards:
 
 [EXECUTE_CARD]
-type: cross_chain_swap | bridge | cross_chain_yield
+type: cross_chain_yield | cross_chain_swap | bridge
 protocol: Protocol Name
-token: TOKEN
+token: Token Symbol
 chain: Target Chain
-fromChain: Source Chain
-amount: 1000
-estimatedGas: $2.34
-executionTime: 12 seconds
-apy: 8.5
+fromChain: Source Chain (if different)
+amount: Suggested Amount
+estimatedGas: Gas estimate
+executionTime: Time estimate
+apy: APY percentage (if yield)
 [/EXECUTE_CARD]
 
-**MANDATORY: When user asks about yields, output 5-7+ execution cards. NOT just 1 or 2.**
+**EXECUTION CARD INSTRUCTIONS:**
+
+When outputting [EXECUTE_CARD] blocks:
+
+1. **Same-chain yields** (fromChain === chain):
+   - User clicks button → Opens protocol app in new tab
+   - Example: User has USDC on Arbitrum, wants Aave on Arbitrum
+   - Set fromChain: Arbitrum, chain: Arbitrum
+   
+2. **Cross-chain yields** (fromChain !== chain):
+   - User clicks button → Routes to /bridge
+   - After bridge completes → Shows modal with protocol link
+   - Example: User has USDC on Ethereum, wants Aave on Arbitrum
+   - Set fromChain: Ethereum, chain: Arbitrum
+
+3. **Bridge-only operations:**
+   - User clicks button → Routes to /bridge
+   - No deposit action after
+
+4. **Swap operations:**
+   - User clicks button → Routes to /swap
+   - Uses Wormhole swap widget
 
 Guidelines:
 - Be concise but informative

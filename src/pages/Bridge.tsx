@@ -9,23 +9,49 @@ import StatusBadge from '../components/ui/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { YieldDepositModal } from '@/components/chat/YieldDepositModal';
 
 const Bridge = () => {
   const { evmAddress, solanaAddress, isAnyWalletConnected } = useWalletContext();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [recentTransfers, setRecentTransfers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('simple');
   const [pendingClaimsCount, setPendingClaimsCount] = useState(0);
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  
+  // Check if this is part of a yield strategy flow
+  const nextAction = searchParams.get('nextAction');
+  const protocol = searchParams.get('protocol');
+  const apy = searchParams.get('apy');
+  const token = searchParams.get('token');
+  const chain = searchParams.get('targetChain');
+  const amount = searchParams.get('amount');
 
   useEffect(() => {
     fetchTransactions();
     fetchPendingClaims();
   }, [isAnyWalletConnected, evmAddress, solanaAddress]);
+  
+  // Listen for bridge completion event
+  useEffect(() => {
+    const handleBridgeComplete = () => {
+      if (nextAction === 'deposit' && protocol) {
+        setShowDepositModal(true);
+      }
+    };
+    
+    window.addEventListener('wormhole-transfer-complete', handleBridgeComplete);
+    
+    return () => {
+      window.removeEventListener('wormhole-transfer-complete', handleBridgeComplete);
+    };
+  }, [nextAction, protocol]);
 
   const fetchTransactions = async () => {
       if (!isAnyWalletConnected) {
@@ -211,6 +237,19 @@ const Bridge = () => {
           </div>
         </div>
       </section>
+      
+      {/* Show deposit modal after bridge completes */}
+      {showDepositModal && protocol && token && chain && (
+        <YieldDepositModal
+          protocol={protocol}
+          token={token}
+          chain={chain}
+          amount={parseFloat(amount || '0')}
+          apy={parseFloat(apy || '0')}
+          isOpen={showDepositModal}
+          onClose={() => setShowDepositModal(false)}
+        />
+      )}
     </PageLayout>
   );
 };

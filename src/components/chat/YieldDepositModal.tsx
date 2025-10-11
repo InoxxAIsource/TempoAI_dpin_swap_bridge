@@ -57,18 +57,29 @@ export function YieldDepositModal({
   };
 
   const getProtocolUrl = () => {
+    const chainParam = chain.toLowerCase();
+    
     const urls: Record<string, string> = {
-      'Aave': 'https://app.aave.com',
-      'Compound': 'https://app.compound.finance',
-      'Curve': 'https://curve.fi',
-      'Lido': 'https://lido.fi',
-      'Uniswap': 'https://app.uniswap.org',
+      'Aave': `https://app.aave.com/?marketName=proto_${chainParam}_v3`,
+      'Compound': 'https://app.compound.finance/',
+      'Curve': `https://curve.fi/#/${chainParam}/pools`,
+      'Lido': 'https://stake.lido.fi/',
+      'Uniswap': 'https://app.uniswap.org/',
+      'Yearn': `https://yearn.fi/vaults/${chainParam}`,
+      'Convex': 'https://www.convexfinance.com/stake',
+      'Balancer': `https://app.balancer.fi/#/${chainParam}/pool`,
+      'Stargate': 'https://stargate.finance/pool',
     };
     
+    // Match protocol name (case-insensitive, partial match)
     for (const [key, url] of Object.entries(urls)) {
-      if (protocol.includes(key)) return url;
+      if (protocol.toLowerCase().includes(key.toLowerCase())) {
+        return url;
+      }
     }
-    return '#';
+    
+    // Fallback to protocol search
+    return `https://www.google.com/search?q=${encodeURIComponent(protocol + ' ' + chain + ' app')}`;
   };
 
   return (
@@ -102,21 +113,15 @@ export function YieldDepositModal({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Button 
-              onClick={handleDeposit} 
-              disabled={isDepositing}
-              className="w-full"
-            >
-              {isDepositing ? (
-                <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Depositing...</>
-              ) : (
-                <>Deposit {amount} {token} into {protocol}</>
-              )}
-            </Button>
+          <div className="space-y-3">
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+              <p className="text-sm text-yellow-200">
+                ⚠️ Direct deposits are not yet supported. Please visit the protocol app to complete your deposit.
+              </p>
+            </div>
             
             <Button 
-              variant="outline" 
+              variant="default"
               className="w-full"
               asChild
             >
@@ -129,6 +134,14 @@ export function YieldDepositModal({
                 Open {protocol} App
                 <ExternalLink className="w-4 h-4" />
               </a>
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              className="w-full"
+              onClick={onClose}
+            >
+              Close
             </Button>
           </div>
         </div>

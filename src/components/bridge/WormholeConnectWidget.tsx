@@ -54,6 +54,11 @@ const WormholeConnectWidget = () => {
             title: "Transaction Submitted",
             description: "Your bridge transaction is being tracked. Check the Claims page to monitor progress.",
           });
+          
+          // Emit completion event for yield deposit flow
+          window.dispatchEvent(new CustomEvent('wormhole-transfer-complete', {
+            detail: txData
+          }));
         } catch (error) {
           console.error('Error saving transaction:', error);
           toast({
