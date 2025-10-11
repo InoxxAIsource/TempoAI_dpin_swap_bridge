@@ -41,70 +41,59 @@ export function ExecutionCard({
       return;
     }
 
-    setIsExecuting(true);
-
+    // Redirect to widgets with pre-filled params instead of mock execution
     try {
-      let result;
-      const walletAddress = evmAddress || solanaAddress;
-
       if (type === 'cross_chain_swap') {
-        const { data, error } = await supabase.functions.invoke('wormhole-execute-swap', {
-          body: { 
-            fromChain: fromChain || chain, 
-            toChain: chain, 
-            token, 
-            amount,
-            walletAddress 
-          }
+        const params = new URLSearchParams({
+          sourceChain: fromChain || chain,
+          targetChain: chain,
+          sourceToken: token,
+          amount: amount.toString()
         });
         
-        if (error) throw error;
-        result = data;
-      } else if (type === 'cross_chain_yield') {
-        const { data, error } = await supabase.functions.invoke('wormhole-execute-yield', {
-          body: { 
-            protocol, 
-            token, 
-            chain, 
-            fromChain: fromChain || chain, 
-            amount,
-            walletAddress 
-          }
-        });
-        
-        if (error) throw error;
-        result = data;
-      } else if (type === 'bridge') {
-        const { data, error } = await supabase.functions.invoke('wormhole-execute-bridge', {
-          body: { 
-            token, 
-            amount, 
-            fromChain: fromChain || chain, 
-            toChain: chain,
-            senderAddress: walletAddress,
-            recipientAddress: walletAddress
-          }
-        });
-        
-        if (error) throw error;
-        result = data;
+        window.location.href = `/swap?${params.toString()}`;
+        return;
       }
-
-      toast({
-        title: "Execution started!",
-        description: `Transaction submitted. Expected completion in ${executionTime}`,
-      });
-
-      console.log('Execution result:', result);
+      
+      if (type === 'bridge') {
+        const params = new URLSearchParams({
+          sourceChain: fromChain || chain,
+          targetChain: chain,
+          token: token,
+          amount: amount.toString()
+        });
+        
+        window.location.href = `/bridge?${params.toString()}`;
+        return;
+      }
+      
+      if (type === 'cross_chain_yield') {
+        // Two-step flow: bridge first, then deposit
+        toast({
+          title: "Multi-step execution",
+          description: "Step 1: Bridge assets. Step 2: Deposit into protocol.",
+        });
+        
+        const params = new URLSearchParams({
+          sourceChain: fromChain || chain,
+          targetChain: chain,
+          token: token,
+          amount: amount.toString(),
+          nextAction: 'deposit',
+          protocol: protocol,
+          apy: apy?.toString() || ''
+        });
+        
+        window.location.href = `/bridge?${params.toString()}`;
+        return;
+      }
     } catch (error) {
       console.error('Execution error:', error);
       toast({
         title: "Execution failed",
-        description: error.message || "Something went wrong",
+        description: error instanceof Error ? error.message : "Something went wrong",
         variant: "destructive",
       });
-    } finally {
-      setIsExecuting(false);
     }
   };
 

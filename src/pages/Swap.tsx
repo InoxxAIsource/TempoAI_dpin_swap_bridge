@@ -4,9 +4,17 @@ import { WormholeSwapWidget } from "@/components/swap/WormholeSwapWidget";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TestTube, ExternalLink, ArrowLeftRight, Zap, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSearchParams } from 'react-router-dom';
 
 const Swap = () => {
   console.log('✅ Swap page loaded successfully');
+  const [searchParams] = useSearchParams();
+  
+  // Extract URL params for pre-filling widget
+  const sourceChain = searchParams.get('sourceChain');
+  const targetChain = searchParams.get('targetChain');
+  const sourceToken = searchParams.get('sourceToken');
+  const amount = searchParams.get('amount');
   const testnetFaucets = [
     { name: "Sepolia ETH", url: "https://sepoliafaucet.com" },
     { name: "Solana Devnet", url: "https://solfaucet.com" },
@@ -58,7 +66,19 @@ const Swap = () => {
         <div className="relative bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl rounded-2xl border-2 border-border/50 shadow-2xl p-8 mb-8 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
           <div className="relative z-10">
-            <WormholeSwapWidget />
+            {sourceChain && (
+              <Alert className="mb-4 border-primary/30 bg-primary/10">
+                <AlertDescription>
+                  Pre-filled from AI: {sourceToken} on {sourceChain} → {targetChain} ({amount})
+                </AlertDescription>
+              </Alert>
+            )}
+            <WormholeSwapWidget 
+              defaultSourceChain={sourceChain || undefined}
+              defaultTargetChain={targetChain || undefined}
+              defaultSourceToken={sourceToken || undefined}
+              defaultAmount={amount || undefined}
+            />
           </div>
         </div>
 

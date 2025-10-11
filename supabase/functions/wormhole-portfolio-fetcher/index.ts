@@ -6,6 +6,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Price cache to avoid rate limits
+const priceCache = new Map<string, { price: number, timestamp: number }>();
+const CACHE_TTL = 60000; // 60 seconds
+
+async function fetchTokenPrice(tokenId: string): Promise<number> {
+  const cached = priceCache.get(tokenId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.price;
+  }
+  
+  try {
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${tokenId}&vs_currencies=usd`
+    );
+    const data = await response.json();
+    const price = data[tokenId]?.usd || 0;
+    
+    priceCache.set(tokenId, { price, timestamp: Date.now() });
+    console.log(`✅ Fetched ${tokenId} price: $${price}`);
+    return price;
+  } catch (error) {
+    console.error(`Error fetching price for ${tokenId}:`, error);
+    return cached?.price || 0;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -55,8 +81,8 @@ serve(async (req) => {
           const balanceWei = parseInt(data.result, 16);
           const balanceEth = balanceWei / 1e18;
 
-          // Mock price - in production, fetch from CoinGecko
-          const ethPrice = 2500;
+          // Fetch real ETH price from CoinGecko
+          const ethPrice = await fetchTokenPrice('ethereum');
           const valueUSD = balanceEth * ethPrice;
 
           if (balanceEth > 0) {
@@ -100,7 +126,8 @@ serve(async (req) => {
 
         const data = await response.json();
         const balanceSol = (data.result?.value || 0) / 1e9;
-        const solPrice = 100; // Mock price
+        // Fetch real SOL price from CoinGecko
+        const solPrice = await fetchTokenPrice('solana');
         const valueUSD = balanceSol * solPrice;
 
         if (balanceSol > 0) {

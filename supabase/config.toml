@@ -18,11 +18,3 @@ verify_jwt = false
 [functions.fetch-defi-yields]
 verify_jwt = false
 
-[functions.wormhole-execute-swap]
-verify_jwt = false
-
-[functions.wormhole-execute-yield]
-verify_jwt = false
-
-[functions.wormhole-execute-bridge]
-verify_jwt = false

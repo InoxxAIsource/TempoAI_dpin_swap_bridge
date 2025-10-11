@@ -15,6 +15,44 @@ serve(async (req) => {
     const { messages, portfolioContext, walletConnected } = await req.json();
     console.log(`Processing chat request with ${messages?.length || 0} messages`);
     
+    // Detect if user is asking about yields
+    const lastMessage = messages[messages.length - 1]?.content?.toLowerCase() || '';
+    const isYieldQuery = lastMessage.includes('yield') ||
+                         lastMessage.includes('best opportunities') ||
+                         lastMessage.includes('earn') ||
+                         lastMessage.includes('apy') ||
+                         lastMessage.includes('optimize');
+
+    let yieldData = null;
+
+    // Fetch real yield data if needed
+    if (isYieldQuery) {
+      console.log('🔍 User asking about yields, fetching real data...');
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
+        
+        const yieldResponse = await fetch(
+          `${supabaseUrl}/functions/v1/fetch-defi-yields`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        if (yieldResponse.ok) {
+          const data = await yieldResponse.json();
+          yieldData = data.yields; // Array of 15 real yields
+          console.log(`✅ Fetched ${yieldData.length} real yield opportunities`);
+        }
+      } catch (error) {
+        console.error('Error fetching yields:', error);
+      }
+    }
+    
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
@@ -117,6 +155,38 @@ Portfolio Stats:
 - Chains: ${portfolioContext.chainCount}
 - Total Assets: ${portfolioContext.holdings.length}
 - Network: ${portfolioContext.holdings.some((h: any) => h.network === 'testnet') ? 'Mainnet + Testnets' : 'Mainnet'}
+`;
+    }
+
+    // Add REAL yield data to system prompt
+    if (yieldData && yieldData.length > 0) {
+      systemPrompt += `\n\n**🔴 CRITICAL: REAL YIELD DATA FROM DEFI LLAMA (USE THESE EXACT VALUES)**
+
+You have access to ${yieldData.length} REAL yield opportunities from DeFi Llama API.
+
+**MANDATORY INSTRUCTIONS:**
+1. Output [EXECUTE_CARD] for EACH of the top 7-10 yields below (NOT just 1 card!)
+2. Do NOT make up yields - use ONLY the data provided
+3. Use exact APY, TVL, protocol names, chains from the data below
+4. Present them in order of APY (highest first)
+
+**REAL YIELD OPPORTUNITIES (sorted by APY):**
+${JSON.stringify(yieldData.slice(0, 10), null, 2)}
+
+**EXECUTION CARD FORMAT (use for EACH yield above):**
+[EXECUTE_CARD]
+type: cross_chain_yield
+protocol: {exact protocol name from data}
+token: {exact token symbol from data}
+chain: {exact chain name from data}
+fromChain: Ethereum
+amount: 1000
+estimatedGas: {exact gas from data}
+executionTime: 12 seconds
+apy: {exact APY from data}
+[/EXECUTE_CARD]
+
+Remember: Output 7-10 execution cards, one for each yield opportunity!
 `;
     }
 

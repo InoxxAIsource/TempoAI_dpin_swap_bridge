@@ -8,7 +8,19 @@ import { useWalletContext } from '@/contexts/WalletContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 
-export const WormholeSwapWidget = () => {
+interface WormholeSwapWidgetProps {
+  defaultSourceChain?: string;
+  defaultTargetChain?: string;
+  defaultSourceToken?: string;
+  defaultAmount?: string;
+}
+
+export const WormholeSwapWidget = ({ 
+  defaultSourceChain,
+  defaultTargetChain,
+  defaultSourceToken,
+  defaultAmount
+}: WormholeSwapWidgetProps) => {
   const [widgetKey, setWidgetKey] = useState(0);
   const [rpcError, setRpcError] = useState<string | null>(null);
   const { theme: appTheme } = useTheme();
