@@ -166,6 +166,136 @@ export default function ChatInterface() {
     return [...new Set(prompts)].slice(0, 6);
   };
 
+  /**
+   * Advanced algorithm to generate contextual prompts based on conversation analysis
+   */
+  const generateContextualPrompts = (
+    messages: Message[],
+    portfolioContext: any,
+    followUpPrompts: string[]
+  ): string[] => {
+    
+    // If we have AI-generated follow-ups, prioritize those
+    if (followUpPrompts.length > 0) {
+      return followUpPrompts.slice(0, 4);
+    }
+    
+    // If no messages yet, return portfolio-aware initial prompts
+    if (messages.length === 0) {
+      return generatePrePrompts(portfolioContext);
+    }
+    
+    // Analyze conversation context
+    const lastUserMessage = messages.filter(m => m.role === 'user').slice(-1)[0]?.content.toLowerCase() || '';
+    const lastAiMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0]?.content.toLowerCase() || '';
+    const allMessages = messages.map(m => m.content.toLowerCase()).join(' ');
+    
+    const prompts: string[] = [];
+    
+    // === CONVERSATION STAGE ANALYSIS ===
+    
+    // Stage 1: User asked about yields/opportunities → Suggest deeper exploration
+    if (lastUserMessage.includes('yield') || lastUserMessage.includes('opportunit') || lastUserMessage.includes('apy')) {
+      if (lastAiMessage.includes('[execute_card]')) {
+        prompts.push('Compare risk profiles of these options');
+        prompts.push('Which option is best for beginners?');
+        prompts.push('Show me APY history for these protocols');
+      } else {
+        prompts.push('Show me execution cards for these');
+        prompts.push('What are the risks?');
+      }
+    }
+    
+    // Stage 2: User asked about specific protocol → Suggest alternatives or details
+    if (lastUserMessage.includes('lido') || lastAiMessage.includes('lido')) {
+      prompts.push('How does Lido compare to Rocket Pool?');
+      prompts.push('What are Lido withdrawal times?');
+    }
+    
+    if (lastUserMessage.includes('aave') || lastAiMessage.includes('aave')) {
+      prompts.push('Explain Aave liquidation risks');
+      prompts.push('Compare Aave vs Compound rates');
+    }
+    
+    if (lastUserMessage.includes('compound') || lastAiMessage.includes('compound')) {
+      prompts.push('How does Compound interest accrue?');
+      prompts.push('Show me Compound rates on other chains');
+    }
+    
+    // Stage 3: User asked about bridging → Suggest execution help
+    if (lastUserMessage.includes('bridge') || lastAiMessage.includes('bridge')) {
+      prompts.push('Walk me through bridging step-by-step');
+      prompts.push('How long does bridging take?');
+      prompts.push('What are typical bridging fees?');
+    }
+    
+    // Stage 4: User asked about Base → Suggest workarounds
+    if ((lastUserMessage.includes('base') && lastUserMessage.includes('eth')) || 
+        (lastAiMessage.includes('base') && lastAiMessage.includes('wormhole'))) {
+      prompts.push('How do I swap ETH to USDC?');
+      prompts.push('Which DEX is cheapest for ETH swaps?');
+      prompts.push('Can I bridge USDC to Base instead?');
+    }
+    
+    // Stage 5: User asked about risk → Suggest risk management
+    if (lastUserMessage.includes('risk') || lastUserMessage.includes('safe')) {
+      prompts.push('What\'s the safest DeFi protocol?');
+      prompts.push('How do I minimize smart contract risk?');
+      prompts.push('Should I diversify across protocols?');
+    }
+    
+    // Stage 6: User received execution cards → Suggest action
+    if (lastAiMessage.includes('[execute_card]')) {
+      if (!allMessages.includes('how do i')) {
+        prompts.push('How do I execute these strategies?');
+      }
+      if (!allMessages.includes('gas')) {
+        prompts.push('What are the gas costs?');
+      }
+      prompts.push('Which one should I start with?');
+    }
+    
+    // === PORTFOLIO-AWARE FALLBACKS ===
+    
+    // If conversation went deep but user might want to pivot
+    if (messages.length > 6) {
+      prompts.push('Show me other strategies');
+      prompts.push('What else can I do with this portfolio?');
+    }
+    
+    // Chain-specific suggestions
+    if (portfolioContext && portfolioContext.chainCount > 1) {
+      if (!allMessages.includes('consolidate')) {
+        prompts.push('Should I consolidate assets onto one chain?');
+      }
+    }
+    
+    // Value-specific suggestions
+    if (portfolioContext && portfolioContext.totalValueUSD < 100 && !allMessages.includes('small portfolio')) {
+      prompts.push('Best strategies for small portfolios?');
+    }
+    
+    if (portfolioContext && portfolioContext.totalValueUSD > 1000 && !allMessages.includes('advanced')) {
+      prompts.push('Show me advanced strategies');
+    }
+    
+    // === GENERIC HIGH-VALUE FALLBACKS ===
+    
+    // Always include 1-2 evergreen prompts if we don't have enough
+    if (prompts.length < 3) {
+      prompts.push('What would you do with this portfolio?');
+      prompts.push('Show me trending opportunities');
+    }
+    
+    // Deduplicate and return top 4
+    return [...new Set(prompts)].slice(0, 4);
+  };
+
+  const getCurrentPrompts = (): string[] => {
+    const currentMessages = currentChat?.messages || [];
+    return generateContextualPrompts(currentMessages, portfolioContext, followUpPrompts);
+  };
+
   const handleSend = async (messageText?: string) => {
     const textToSend = messageText || input;
     
@@ -600,8 +730,8 @@ export default function ChatInterface() {
               </div>
             </div>
           ) : (
-            // Chat messages view
-            <div className="max-w-3xl mx-auto px-4 py-6">
+            // Chat messages view with bottom padding for fixed UI
+            <div className="max-w-3xl mx-auto px-4 py-6 pb-[200px]">
               {currentChat?.messages.map((message) => (
                 <div key={message.id} className={cn('mb-6 flex gap-4', message.role === 'user' ? 'justify-end' : 'justify-start')}>
                   {message.role === 'assistant' && (
@@ -648,58 +778,62 @@ export default function ChatInterface() {
           )}
         </div>
 
-        {/* Persistent Suggestion Strip - Always Visible Above Input */}
-        <div className="sticky bottom-0 left-0 right-0 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-sm">
-          <div className="max-w-3xl mx-auto px-4 py-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-blue-400" />
-              <p className="text-xs text-muted-foreground font-medium">
-                {hasMessages ? 'Quick actions:' : 'Try asking:'}
-              </p>
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {(hasMessages && followUpPrompts.length > 0 ? followUpPrompts.slice(0, 4) : prePrompts.slice(0, 4)).map((prompt, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    handlePrePrompt(prompt);
-                    setFollowUpPrompts([]);
-                  }}
-                  className="px-4 py-2 text-xs rounded-full border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-600 transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300"
-                >
-                  <span>{prompt}</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Input Area (shown when there are messages) */}
+        {/* Bottom UI Container - Fixed at bottom with proper stacking */}
         {hasMessages && (
-          <div className="border-t border-zinc-800 p-4">
-            <div className="max-w-3xl mx-auto">
-              <div className="relative">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Message Tempo AI..."
-                  className="w-full px-4 py-3 pr-12 rounded-2xl border border-zinc-700 bg-zinc-900 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[56px]"
-                  rows={1}
-                />
-                <button
-                  onClick={() => handleSend()}
-                  disabled={!input.trim() || isThinking}
-                  className="absolute right-3 bottom-3 p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors"
-                >
-                  {isThinking ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </button>
+          <div className="fixed bottom-0 left-0 right-0 bg-zinc-950 z-10 md:left-64">
+            
+            {/* Persistent Suggestion Strip */}
+            <div className="border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-sm">
+              <div className="max-w-3xl mx-auto px-4 py-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-blue-400" />
+                  <p className="text-xs text-muted-foreground font-medium">
+                    Quick actions:
+                  </p>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                  {getCurrentPrompts().map((prompt, idx) => (
+                    <button
+                      key={`${idx}-${prompt.substring(0, 10)}`}
+                      onClick={() => {
+                        handlePrePrompt(prompt);
+                        setFollowUpPrompts([]);
+                      }}
+                      className="group px-4 py-2 text-xs rounded-full border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-600 hover:scale-[1.02] transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                    >
+                      <span>{prompt}</span>
+                      <ArrowRight className="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Input Area */}
+            <div className="border-t border-zinc-800 p-4 bg-zinc-950">
+              <div className="max-w-3xl mx-auto">
+                <div className="relative">
+                  <textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Message Tempo AI..."
+                    className="w-full px-4 py-3 pr-12 rounded-2xl border border-zinc-700 bg-zinc-900 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[56px]"
+                    rows={1}
+                  />
+                  <button
+                    onClick={() => handleSend()}
+                    disabled={!input.trim() || isThinking}
+                    className="absolute right-3 bottom-3 p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors"
+                  >
+                    {isThinking ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
