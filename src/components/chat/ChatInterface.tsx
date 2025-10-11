@@ -117,18 +117,43 @@ export default function ChatInterface() {
         
         if (portResponse.ok) {
           const data = await portResponse.json();
-          console.log('✅ Portfolio fetched:', {
-            totalValueUSD: data.totalValueUSD,
-            totalValueType: typeof data.totalValueUSD,
-            holdings: data.holdings?.length || 0,
-            chains: data.chainCount
-          });
+          console.log('✅ FULL PORTFOLIO DATA:', JSON.stringify(data, null, 2));
+          
+          // Enhanced client-side logging
+          if (data.holdings && data.holdings.length > 0) {
+            console.log('📊 Holdings breakdown:');
+            data.holdings.forEach((h: any) => {
+              console.log(`  - ${h.chain} (${h.network}): ${h.amount} ${h.token} ($${h.valueUSD})`);
+            });
+          }
+          
+          // Show toast for user visibility
+          if (data.totalValueUSD > 0) {
+            toast({
+              title: "✅ Portfolio Loaded",
+              description: `Found $${data.totalValueUSD.toFixed(2)} across ${data.chainCount} chain(s)`,
+            });
+          } else {
+            // Zero balance detected - show warning
+            toast({
+              title: "⚠️ No Balance Detected",
+              description: `Queried ${data.chainsQueried?.length || 0} chains but found 0 balance. Check wallet or try again.`,
+              variant: "destructive"
+            });
+          }
+          
           setPortfolioContext(data);
           setPrePrompts(generatePrePrompts(data));
         } else {
-          console.error('❌ Portfolio fetch failed:', portResponse.status);
+          // HTTP error
           const errorText = await portResponse.text();
-          console.error('Error details:', errorText);
+          console.error('❌ Portfolio fetch HTTP error:', portResponse.status, errorText);
+          
+          toast({
+            title: "❌ Portfolio Fetch Failed",
+            description: errorText || `HTTP ${portResponse.status} error. Check edge function logs.`,
+            variant: "destructive",
+          });
         }
       } catch (error) {
         console.error('❌ Portfolio fetch error:', error);
