@@ -676,7 +676,7 @@ export default function ChatInterface() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto pb-[180px]">
+        <div className="flex-1 overflow-y-auto pb-[260px]">
           {!hasMessages ? (
             // Initial centered view
             <div className="flex flex-col items-center justify-center h-full px-4 max-w-2xl mx-auto">
