@@ -676,7 +676,7 @@ export default function ChatInterface() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-[180px]">
           {!hasMessages ? (
             // Initial centered view
             <div className="flex flex-col items-center justify-center h-full px-4 max-w-2xl mx-auto">
@@ -730,8 +730,8 @@ export default function ChatInterface() {
               </div>
             </div>
           ) : (
-            // Chat messages view with bottom padding for fixed UI
-            <div className="max-w-3xl mx-auto px-4 py-6 pb-[200px]">
+            // Chat messages view
+            <div className="max-w-3xl mx-auto px-4 py-6">
               {currentChat?.messages.map((message) => (
                 <div key={message.id} className={cn('mb-6 flex gap-4', message.role === 'user' ? 'justify-end' : 'justify-start')}>
                   {message.role === 'assistant' && (
@@ -780,10 +780,10 @@ export default function ChatInterface() {
 
         {/* Bottom UI Container - Fixed at bottom with proper stacking */}
         {hasMessages && (
-          <div className="fixed bottom-0 left-0 right-0 bg-zinc-950 z-10 md:left-64">
+          <div className="fixed bottom-0 left-0 right-0 bg-zinc-950 shadow-[0_-4px_12px_rgba(0,0,0,0.5)] z-50 md:left-64">
             
             {/* Persistent Suggestion Strip */}
-            <div className="border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-sm">
+            <div className="border-t border-zinc-800 bg-zinc-950">
               <div className="max-w-3xl mx-auto px-4 py-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="w-4 h-4 text-blue-400" />
