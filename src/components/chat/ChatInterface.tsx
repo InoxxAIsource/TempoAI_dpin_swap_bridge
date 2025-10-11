@@ -676,7 +676,7 @@ export default function ChatInterface() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto pb-[120px]">
+        <div className="flex-1 overflow-y-auto pb-[200px]">
           {!hasMessages ? (
             // Initial centered view
             <div className="flex flex-col items-center justify-center h-full px-4 max-w-2xl mx-auto">
@@ -777,7 +777,7 @@ export default function ChatInterface() {
               {/* Show follow-up prompts after AI responds */}
               {!isThinking && currentChat?.messages.length > 0 && 
                currentChat.messages[currentChat.messages.length - 1]?.role === 'assistant' && (
-                <div className="max-w-3xl mx-auto px-4 mb-6">
+                <div className="mb-6">
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="w-4 h-4 text-blue-400" />
                     <p className="text-xs text-muted-foreground font-medium">
