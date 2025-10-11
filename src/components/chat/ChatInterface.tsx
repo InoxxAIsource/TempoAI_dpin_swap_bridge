@@ -534,6 +534,7 @@ export default function ChatInterface() {
       if (streamingComplete && assistantContent) {
         console.log('✅ Streaming complete, generating follow-up prompts');
         const followUps = generateFollowUpPrompts(assistantContent, portfolioContext);
+        console.log('🔄 New follow-up prompts:', followUps);
         setFollowUpPrompts(followUps);
       }
     } catch (error) {
@@ -569,6 +570,7 @@ export default function ChatInterface() {
   };
 
   const handlePrePrompt = (prompt: string) => {
+    console.log('🎯 Pre-prompt clicked:', prompt);
     setInput(prompt);
     handleSend(prompt);
   };
@@ -776,33 +778,36 @@ export default function ChatInterface() {
 
               {/* Show follow-up prompts after AI responds */}
               {!isThinking && currentChat?.messages.length > 0 && 
-               currentChat.messages[currentChat.messages.length - 1]?.role === 'assistant' && (
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-4 h-4 text-blue-400" />
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Continue with:
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {getCurrentPrompts().slice(0, 4).map((prompt, idx) => (
-                      <button
-                        key={`followup-${idx}-${prompt.substring(0, 10)}`}
-                        onClick={() => {
-                          handlePrePrompt(prompt);
-                          setFollowUpPrompts([]);
-                        }}
-                        className="group p-3 text-left text-xs rounded-xl border border-zinc-700 bg-gradient-to-br from-zinc-900 to-zinc-900/50 hover:from-zinc-800 hover:to-zinc-800/50 hover:border-zinc-600 transition-all duration-200 hover:scale-[1.02] cursor-pointer"
-                      >
-                        <span className="flex items-start justify-between gap-2">
-                          <span className="flex-1">{prompt}</span>
-                          <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all" />
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+               currentChat.messages[currentChat.messages.length - 1]?.role === 'assistant' && (() => {
+                 const prompts = getCurrentPrompts().slice(0, 4);
+                 const messageCount = currentChat.messages.length;
+                 return (
+                   <div className="mb-6" key={`prompts-${messageCount}`}>
+                     <div className="flex items-center gap-2 mb-3">
+                       <Sparkles className="w-4 h-4 text-blue-400" />
+                       <p className="text-xs text-muted-foreground font-medium">
+                         Continue with:
+                       </p>
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                       {prompts.map((prompt, idx) => (
+                         <button
+                           key={`followup-${messageCount}-${idx}-${prompt.substring(0, 20)}`}
+                           onClick={() => {
+                             handlePrePrompt(prompt);
+                           }}
+                           className="group p-3 text-left text-xs rounded-xl border border-zinc-700 bg-gradient-to-br from-zinc-900 to-zinc-900/50 hover:from-zinc-800 hover:to-zinc-800/50 hover:border-zinc-600 transition-all duration-200 hover:scale-[1.02] cursor-pointer"
+                         >
+                           <span className="flex items-start justify-between gap-2">
+                             <span className="flex-1">{prompt}</span>
+                             <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all" />
+                           </span>
+                         </button>
+                       ))}
+                     </div>
+                   </div>
+                 );
+               })()}
             </div>
           )}
         </div>
