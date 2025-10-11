@@ -676,7 +676,7 @@ export default function ChatInterface() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto pb-[260px]">
+        <div className="flex-1 overflow-y-auto pb-[120px]">
           {!hasMessages ? (
             // Initial centered view
             <div className="flex flex-col items-center justify-center h-full px-4 max-w-2xl mx-auto">
@@ -774,43 +774,44 @@ export default function ChatInterface() {
                 </div>
               )}
 
+              {/* Show follow-up prompts after AI responds */}
+              {!isThinking && currentChat?.messages.length > 0 && 
+               currentChat.messages[currentChat.messages.length - 1]?.role === 'assistant' && (
+                <div className="max-w-3xl mx-auto px-4 mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-blue-400" />
+                    <p className="text-xs text-muted-foreground font-medium">
+                      Continue with:
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {getCurrentPrompts().slice(0, 4).map((prompt, idx) => (
+                      <button
+                        key={`followup-${idx}-${prompt.substring(0, 10)}`}
+                        onClick={() => {
+                          handlePrePrompt(prompt);
+                          setFollowUpPrompts([]);
+                        }}
+                        className="group p-3 text-left text-xs rounded-xl border border-zinc-700 bg-gradient-to-br from-zinc-900 to-zinc-900/50 hover:from-zinc-800 hover:to-zinc-800/50 hover:border-zinc-600 transition-all duration-200 hover:scale-[1.02] cursor-pointer"
+                      >
+                        <span className="flex items-start justify-between gap-2">
+                          <span className="flex-1">{prompt}</span>
+                          <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all" />
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Bottom UI Container - Fixed at bottom with proper stacking */}
         {hasMessages && (
-          <div className="fixed bottom-0 left-0 right-0 bg-zinc-950 shadow-[0_-4px_12px_rgba(0,0,0,0.5)] z-50 md:left-64">
-            
-            {/* Persistent Suggestion Strip */}
-            <div className="border-t border-zinc-800 bg-zinc-950">
-              <div className="max-w-3xl mx-auto px-4 py-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-blue-400" />
-                  <p className="text-xs text-muted-foreground font-medium">
-                    Quick actions:
-                  </p>
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                  {getCurrentPrompts().map((prompt, idx) => (
-                    <button
-                      key={`${idx}-${prompt.substring(0, 10)}`}
-                      onClick={() => {
-                        handlePrePrompt(prompt);
-                        setFollowUpPrompts([]);
-                      }}
-                      className="group px-4 py-2 text-xs rounded-full border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-600 hover:scale-[1.02] transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300"
-                    >
-                      <span>{prompt}</span>
-                      <ArrowRight className="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
+          <div className="fixed bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-800 shadow-[0_-4px_12px_rgba(0,0,0,0.5)] z-50 md:left-64">
             {/* Input Area */}
-            <div className="border-t border-zinc-800 p-4 bg-zinc-950">
+            <div className="p-4 bg-zinc-950">
               <div className="max-w-3xl mx-auto">
                 <div className="relative">
                   <textarea
