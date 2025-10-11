@@ -87,8 +87,15 @@ export default function ChatInterface() {
     
     if (!textToSend.trim() || isThinking) return;
 
-    // Fetch portfolio context if wallet connected and not already cached
-    if (isAnyWalletConnected && !portfolioContext) {
+    // Detect portfolio queries explicitly
+    const isPortfolioQuery = textToSend.toLowerCase().includes('portfolio') || 
+                             textToSend.toLowerCase().includes('holdings') ||
+                             textToSend.toLowerCase().includes('balance') ||
+                             textToSend.toLowerCase().includes('show me my');
+
+    // Always fetch fresh portfolio for portfolio queries OR if not cached
+    if (isAnyWalletConnected && (isPortfolioQuery || !portfolioContext)) {
+      console.log('🔍 Fetching portfolio for query:', textToSend);
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -109,11 +116,18 @@ export default function ChatInterface() {
         
         if (portResponse.ok) {
           const data = await portResponse.json();
+          console.log('✅ Portfolio fetched:', {
+            totalValueUSD: data.totalValueUSD,
+            holdings: data.holdings?.length || 0,
+            chains: data.chainCount
+          });
           setPortfolioContext(data);
           setPrePrompts(generatePrePrompts(data));
+        } else {
+          console.error('❌ Portfolio fetch failed:', portResponse.status);
         }
       } catch (error) {
-        console.error('Error fetching portfolio:', error);
+        console.error('❌ Portfolio fetch error:', error);
       }
     }
 
@@ -160,6 +174,13 @@ export default function ChatInterface() {
       const currentMessages = chats.find(c => c.id === chatId)?.messages || [];
       const allMessages = [...currentMessages, userMessage];
       
+      console.log('📤 Sending to AI:', {
+        messages: allMessages.length,
+        hasPortfolioContext: !!portfolioContext,
+        portfolioValue: portfolioContext?.totalValueUSD,
+        walletConnected: isAnyWalletConnected
+      });
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {

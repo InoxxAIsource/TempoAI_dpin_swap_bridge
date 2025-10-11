@@ -11,6 +11,12 @@ export default function MessageContent({ content, onPromptClick }: MessageConten
     const parts: (string | JSX.Element)[] = [];
     const cardRegex = /\[EXECUTE_CARD\]([\s\S]*?)\[\/EXECUTE_CARD\]/g;
     
+    const matches = text.match(cardRegex);
+    console.log('🔍 Parsing execution cards:', {
+      textLength: text.length,
+      cardsFound: matches?.length || 0
+    });
+    
     let lastIndex = 0;
     let match;
     

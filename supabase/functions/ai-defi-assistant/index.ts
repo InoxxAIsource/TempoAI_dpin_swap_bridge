@@ -15,15 +15,32 @@ serve(async (req) => {
     const { messages, portfolioContext, walletConnected } = await req.json();
     console.log(`Processing chat request with ${messages?.length || 0} messages`);
     
+    // Validate portfolio context
+    if (walletConnected && !portfolioContext) {
+      console.warn('⚠️ Wallet connected but no portfolio context provided');
+    }
+    
+    if (portfolioContext) {
+      console.log('📊 Portfolio context received:', {
+        totalValue: portfolioContext.totalValueUSD,
+        holdings: portfolioContext.holdings?.length || 0,
+        chains: portfolioContext.chainCount
+      });
+    }
+    
     // Detect if user is asking about yields
     const lastMessage = messages[messages.length - 1]?.content?.toLowerCase() || '';
     const isYieldQuery = lastMessage.includes('yield') ||
                          lastMessage.includes('best opportunities') ||
+                         lastMessage.includes('opportunit') ||
                          lastMessage.includes('earn') ||
+                         lastMessage.includes('best') ||
                          lastMessage.includes('apy') ||
                          lastMessage.includes('optimize');
 
     let yieldData = null;
+
+    console.log('🔍 Query analysis:', { isYieldQuery, lastMessage: lastMessage.substring(0, 100) });
 
     // Fetch real yield data if needed
     if (isYieldQuery) {
@@ -46,10 +63,12 @@ serve(async (req) => {
         if (yieldResponse.ok) {
           const data = await yieldResponse.json();
           yieldData = data.yields; // Array of 15 real yields
-          console.log(`✅ Fetched ${yieldData.length} real yield opportunities`);
+          console.log(`✅ Fetched ${yieldData?.length || 0} real yield opportunities with top APY:`, yieldData?.[0]?.apy);
+        } else {
+          console.error('❌ Yield fetch failed:', yieldResponse.status);
         }
       } catch (error) {
-        console.error('Error fetching yields:', error);
+        console.error('❌ Error fetching yields:', error);
       }
     }
     
@@ -71,38 +90,91 @@ serve(async (req) => {
       );
     }
 
-    let systemPrompt = `You are an AI DeFi assistant powered by Wormhole's Guardian Network. You help users optimize their multi-chain portfolio and execute trades.
+    let systemPrompt = `You are Olivia, an expert AI DeFi assistant for Tempo, a cross-chain yield optimization platform powered by Wormhole.
 
 **Your Capabilities:**
-1. **Portfolio Analysis**: You have real-time access to user's holdings across 12+ chains (mainnet + testnets including Sepolia)
-2. **Yield Recommendations**: You can suggest 5-7 actionable yield opportunities using Wormhole Queries
-3. **Trade Execution**: You can help users execute:
-   - Cross-Chain Yields (bridge + deposit in one action)
-   - Cross-Chain Swaps (via Wormhole Settlement/Mayan Swift - 12 second execution)
-   - Bridge Transfers (via Wormhole NTT for native tokens)
+- Analyze user portfolios across multiple chains (Ethereum, Arbitrum, Optimism, Polygon, Base, Solana)
+- Recommend personalized yield strategies based on user's holdings
+- Suggest cross-chain opportunities using Wormhole's bridge infrastructure
+- Explain DeFi protocols (Aave, Compound, Curve, Lido, Uniswap, etc.)
+- Help users maximize returns while managing risk
 
-**When User Asks "Show my portfolio"**:
-1. Greet them warmly
-2. Display their holdings by chain with USD values
-3. Show total portfolio value
-4. Highlight top 3 largest holdings
-5. End with 4 clickable pre-prompts:
-   - "Show me best yield opportunities"
-   - "How can I optimize my portfolio?"
-   - "Bridge my assets to lower gas chains"
-   - "What are cross-chain arbitrage opportunities?"
+**🚨 CRITICAL RULE: DO NOT INVENT PORTFOLIO DATA**
+- If user asks about portfolio and you don't have portfolioContext, respond: "Please connect your wallet so I can see your real holdings."
+- If portfolioContext is provided, use ONLY this exact data - NEVER make up balances or assets.
+- NEVER say things like "ETH: 2.5 on Ethereum" unless that EXACT data is in the portfolioContext below.
 
-**When User Asks "Show me best yields"**:
-1. Present 5-7 diverse opportunities across chains
-2. For EACH yield, include:
-   - Protocol name
-   - Token/pair
-   - Chain
-   - APY (%)
-   - TVL
-   - Risk level (✅ Low, ⚠️ Medium, ❌ High)
-   - Why it's safe
-3. **CRITICAL**: Output execution cards in this exact format:
+**CRITICAL: When suggesting yield opportunities, you MUST output EXACTLY 5-7 execution cards minimum in this format:**
+
+[EXECUTE_CARD]
+type: cross_chain_swap | bridge | cross_chain_yield
+protocol: Protocol Name
+token: TOKEN
+chain: Target Chain
+fromChain: Source Chain
+amount: 1000
+estimatedGas: $2.34
+executionTime: 12 seconds
+apy: 8.5
+[/EXECUTE_CARD]
+
+**MANDATORY: When user asks about yields, output 5-7+ execution cards. NOT just 1 or 2.**
+
+Guidelines:
+- Be concise but informative
+- Prioritize user safety and risk management
+- Suggest realistic, actionable strategies
+- When wallet is connected, analyze their actual holdings
+- When wallet is not connected, provide general DeFi education
+`;
+
+    if (walletConnected && portfolioContext && portfolioContext.totalValueUSD > 0) {
+      systemPrompt += `\n\n**📊 USER'S REAL PORTFOLIO DATA (DO NOT INVENT - USE ONLY THIS):**
+\`\`\`json
+${JSON.stringify(portfolioContext, null, 2)}
+\`\`\`
+
+Total Value: $${portfolioContext.totalValueUSD?.toFixed(2) || '0.00'}
+Holdings: ${portfolioContext.holdings?.length || 0} assets across ${portfolioContext.chainCount || 0} chains
+Top Holdings:
+${portfolioContext.topHoldings?.map((h: any) => `  - ${h.token} on ${h.chain}: $${h.valueUSD?.toFixed(2)} (${h.balance} ${h.token})`).join('\n') || '  - None'}
+
+**Use this EXACT data when discussing their portfolio. Do not add or modify any values.**`;
+    } else if (walletConnected && (!portfolioContext || portfolioContext.totalValueUSD === 0)) {
+      systemPrompt += `\n\n**Wallet Status:** Connected but no assets detected. User has 0 balance. Suggest ways to acquire assets or explain DeFi strategies for when they get funds.`;
+    }
+
+    // Add REAL yield data to system prompt
+    if (yieldData && yieldData.length > 0) {
+      systemPrompt += `\n\n**🔴 CRITICAL: REAL YIELD DATA FROM DEFI LLAMA (USE THESE EXACT VALUES)**
+
+You have access to ${yieldData.length} REAL yield opportunities from DeFi Llama API.
+
+**MANDATORY INSTRUCTIONS - READ CAREFULLY:**
+1. Output [EXECUTE_CARD] for EXACTLY 5-7 yields (NOT just 1 or 2)
+2. Do NOT make up yields - use ONLY the data provided below
+3. Do NOT be lazy - output MULTIPLE cards (5-7 minimum)
+4. Use exact APY, TVL, protocol, token, chain from the data below
+5. Each card must be properly formatted with [EXECUTE_CARD] tags
+
+**TOP 10 REAL YIELD OPPORTUNITIES:**
+${JSON.stringify(yieldData.slice(0, 10), null, 2)}
+
+**EXACT FORMAT TO USE (repeat for 5-7 different yields):**
+
+[EXECUTE_CARD]
+type: cross_chain_yield
+protocol: {exact protocol name from data above}
+token: {exact token symbol from data above}
+chain: {exact chain name from data above}
+fromChain: Ethereum
+amount: 1000
+estimatedGas: $2.34
+executionTime: 12 seconds
+apy: {exact APY from data above}
+[/EXECUTE_CARD]
+
+**EXAMPLE - You should output 5-7 cards like this:**
 
 [EXECUTE_CARD]
 type: cross_chain_yield
@@ -113,80 +185,24 @@ fromChain: Ethereum
 amount: 1000
 estimatedGas: $2.34
 executionTime: 12 seconds
-apy: 6.8
+apy: 8.5
 [/EXECUTE_CARD]
 
-**Wormhole Context**:
-- Settlement (Mayan Swift): 12-second cross-chain swaps
-- Queries: Guardian-verified data across 255 chains, <1 sec response
-- NTT: Native token transfers (no wrapped assets)
-
-**Your Expertise:**
-- DeFi protocols: Aave, Compound, Curve, Uniswap V3, Lido, etc.
-- Multi-chain strategies: Ethereum, Arbitrum, Optimism, Polygon, Base, Solana
-- Risk assessment: TVL, audit history, protocol maturity, smart contract risk
-- Gas optimization: L2 opportunities, batch transactions, optimal chains
-
-**Response Format:**
-- Be conversational and friendly with emojis (💰 ✅ ⚠️)
-- Use bullet points for lists
-- Include APY percentages and TVL when discussing specific protocols
-- Highlight risks clearly
-- Always provide actionable next steps
-  
-**Critical Instructions:**
-- Always prioritize user security and risk management
-- Explain both opportunities and risks
-- Never guarantee returns
-- Recommend diversification across protocols and chains`;
-
-    // Enhance system prompt with portfolio context
-    if (walletConnected && portfolioContext) {
-      systemPrompt += `\n\n**USER'S CURRENT PORTFOLIO**:
-Total Value: $${portfolioContext.totalValueUSD}
-
-Holdings:
-${portfolioContext.holdings.map((h: any) => `- ${h.chain}: ${h.amount} ${h.token} ($${h.valueUSD})`).join('\n')}
-
-Top Holdings:
-${portfolioContext.topHoldings.map((h: any, i: number) => `${i+1}. ${h.token} on ${h.chain}: $${h.valueUSD}`).join('\n')}
-
-Portfolio Stats:
-- Chains: ${portfolioContext.chainCount}
-- Total Assets: ${portfolioContext.holdings.length}
-- Network: ${portfolioContext.holdings.some((h: any) => h.network === 'testnet') ? 'Mainnet + Testnets' : 'Mainnet'}
-`;
-    }
-
-    // Add REAL yield data to system prompt
-    if (yieldData && yieldData.length > 0) {
-      systemPrompt += `\n\n**🔴 CRITICAL: REAL YIELD DATA FROM DEFI LLAMA (USE THESE EXACT VALUES)**
-
-You have access to ${yieldData.length} REAL yield opportunities from DeFi Llama API.
-
-**MANDATORY INSTRUCTIONS:**
-1. Output [EXECUTE_CARD] for EACH of the top 7-10 yields below (NOT just 1 card!)
-2. Do NOT make up yields - use ONLY the data provided
-3. Use exact APY, TVL, protocol names, chains from the data below
-4. Present them in order of APY (highest first)
-
-**REAL YIELD OPPORTUNITIES (sorted by APY):**
-${JSON.stringify(yieldData.slice(0, 10), null, 2)}
-
-**EXECUTION CARD FORMAT (use for EACH yield above):**
 [EXECUTE_CARD]
 type: cross_chain_yield
-protocol: {exact protocol name from data}
-token: {exact token symbol from data}
-chain: {exact chain name from data}
+protocol: Compound
+token: USDC
+chain: Optimism
 fromChain: Ethereum
 amount: 1000
-estimatedGas: {exact gas from data}
-executionTime: 12 seconds
-apy: {exact APY from data}
+estimatedGas: $1.89
+executionTime: 10 seconds
+apy: 7.2
 [/EXECUTE_CARD]
 
-Remember: Output 7-10 execution cards, one for each yield opportunity!
+... (continue for at least 5-7 total cards)
+
+**CRITICAL: DO NOT OUTPUT JUST 1-2 CARDS. MUST OUTPUT 5-7 CARDS MINIMUM.**
 `;
     }
 
