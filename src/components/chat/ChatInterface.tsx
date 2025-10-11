@@ -6,6 +6,7 @@ import ThinkingMessages from './ThinkingMessages';
 import MessageContent from './MessageContent';
 import WalletModal from '@/components/WalletModal';
 import { useWalletContext } from '@/contexts/WalletContext';
+import { toast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -118,6 +119,7 @@ export default function ChatInterface() {
           const data = await portResponse.json();
           console.log('✅ Portfolio fetched:', {
             totalValueUSD: data.totalValueUSD,
+            totalValueType: typeof data.totalValueUSD,
             holdings: data.holdings?.length || 0,
             chains: data.chainCount
           });
@@ -125,9 +127,16 @@ export default function ChatInterface() {
           setPrePrompts(generatePrePrompts(data));
         } else {
           console.error('❌ Portfolio fetch failed:', portResponse.status);
+          const errorText = await portResponse.text();
+          console.error('Error details:', errorText);
         }
       } catch (error) {
         console.error('❌ Portfolio fetch error:', error);
+        toast({
+          title: "Portfolio Fetch Failed",
+          description: "Unable to fetch your portfolio. Please try again.",
+          variant: "destructive",
+        });
       }
     }
 

@@ -109,9 +109,10 @@ serve(async (req) => {
     // Fetch Solana balance
     if (solanaAddress) {
       try {
+        const ALCHEMY_KEY = ALCHEMY_API_KEY || 'demo';
         const solanaRpc = includeTestnets 
-          ? 'https://api.devnet.solana.com' 
-          : 'https://api.mainnet-beta.solana.com';
+          ? `https://solana-devnet.g.alchemy.com/v2/${ALCHEMY_KEY}` 
+          : `https://solana-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`;
         
         const response = await fetch(solanaRpc, {
           method: 'POST',
@@ -155,7 +156,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        totalValueUSD: totalValueUSD.toFixed(2),
+        totalValueUSD: parseFloat(totalValueUSD.toFixed(2)),
         holdings,
         topHoldings,
         chainCount,

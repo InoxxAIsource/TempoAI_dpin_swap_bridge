@@ -73,10 +73,10 @@ export function YieldDepositModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby="deposit-description">
         <DialogHeader>
           <DialogTitle>Complete Yield Deposit</DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="deposit-description">
             Your assets have been bridged to {chain}. 
             Now deposit into {protocol} to start earning {apy}% APY.
           </DialogDescription>

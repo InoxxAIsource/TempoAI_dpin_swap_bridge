@@ -128,19 +128,33 @@ Guidelines:
 - When wallet is not connected, provide general DeFi education
 `;
 
-    if (walletConnected && portfolioContext && portfolioContext.totalValueUSD > 0) {
-      systemPrompt += `\n\n**📊 USER'S REAL PORTFOLIO DATA (DO NOT INVENT - USE ONLY THIS):**
+    if (walletConnected && portfolioContext) {
+      // Defensive type checking for totalValueUSD
+      const totalValue = typeof portfolioContext.totalValueUSD === 'string' 
+        ? parseFloat(portfolioContext.totalValueUSD) 
+        : portfolioContext.totalValueUSD;
+      
+      console.log('💰 Portfolio totalValueUSD type:', typeof portfolioContext.totalValueUSD, 'value:', totalValue);
+      
+      if (totalValue > 0) {
+        systemPrompt += `\n\n**📊 USER'S REAL PORTFOLIO DATA (DO NOT INVENT - USE ONLY THIS):**
 \`\`\`json
 ${JSON.stringify(portfolioContext, null, 2)}
 \`\`\`
 
-Total Value: $${portfolioContext.totalValueUSD?.toFixed(2) || '0.00'}
+Total Value: $${totalValue.toFixed(2)}
 Holdings: ${portfolioContext.holdings?.length || 0} assets across ${portfolioContext.chainCount || 0} chains
 Top Holdings:
-${portfolioContext.topHoldings?.map((h: any) => `  - ${h.token} on ${h.chain}: $${h.valueUSD?.toFixed(2)} (${h.balance} ${h.token})`).join('\n') || '  - None'}
+${portfolioContext.topHoldings?.map((h: any) => {
+  const holdingValue = typeof h.valueUSD === 'string' ? parseFloat(h.valueUSD) : h.valueUSD;
+  return `  - ${h.token} on ${h.chain}: $${holdingValue?.toFixed(2)} (${h.amount} ${h.token})`;
+}).join('\n') || '  - None'}
 
 **Use this EXACT data when discussing their portfolio. Do not add or modify any values.**`;
-    } else if (walletConnected && (!portfolioContext || portfolioContext.totalValueUSD === 0)) {
+      } else {
+        systemPrompt += `\n\n**Wallet Status:** Connected but no assets detected. User has 0 balance. Suggest ways to acquire assets or explain DeFi strategies for when they get funds.`;
+      }
+    } else if (walletConnected && !portfolioContext) {
       systemPrompt += `\n\n**Wallet Status:** Connected but no assets detected. User has 0 balance. Suggest ways to acquire assets or explain DeFi strategies for when they get funds.`;
     }
 

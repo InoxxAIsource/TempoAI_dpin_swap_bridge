@@ -38,7 +38,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   // Fetch Solana balance
   useEffect(() => {
     if (solanaPublicKey) {
-      const connection = new Connection('https://api.mainnet-beta.solana.com');
+      // Use Alchemy Solana RPC (no API key needed for mainnet reads)
+      const connection = new Connection('https://solana-mainnet.g.alchemy.com/v2/demo');
       connection.getBalance(solanaPublicKey).then((balance) => {
         setSolanaBalance((balance / LAMPORTS_PER_SOL).toFixed(4));
       });
