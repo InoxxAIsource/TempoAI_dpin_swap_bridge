@@ -6,6 +6,7 @@ import FeatureCard from '@/components/docs/FeatureCard';
 import UseCaseCard from '@/components/docs/UseCaseCard';
 import Mermaid from '@/components/docs/Mermaid';
 import diagramTempo from '@/assets/diagram_tempo.png';
+import multiStepDiagram from '@/assets/multi-step-diagram.png';
 import { Brain, Zap, TrendingUp, MessageSquare, MousePointerClick, Shield, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -143,23 +144,13 @@ function isValidWormholeYield(protocol, chain, token) {
                 Getting from Point A to Point B in cross-chain DeFi often requires multiple steps. Tempo AI breaks down complex journeys into clear, executable stages.
               </p>
 
-              <Mermaid chart={`sequenceDiagram
-    participant U as User
-    participant AI as Tempo AI
-    participant W as Wormhole
-    participant P as Protocol
-    
-    U->>AI: "I want WSOL yield on Solana"
-    AI->>AI: Analyze: User has USDC on Ethereum
-    AI->>U: Step 1: Bridge USDC to Solana
-    U->>W: Execute Bridge
-    W-->>U: USDC on Solana ✓
-    AI->>U: Step 2: Swap USDC to WSOL
-    U->>W: Execute Swap
-    W-->>U: WSOL ✓
-    AI->>U: Step 3: Deposit to Protocol
-    U->>P: Deposit WSOL
-    P-->>U: Earning yield 🎉`} />
+              <div className="my-8 flex justify-center">
+                <img 
+                  src={multiStepDiagram} 
+                  alt="Multi-Step Intelligence - Tempo AI guides users through complex cross-chain yield strategies"
+                  className="max-w-full h-auto rounded-xl border border-border bg-card/50 p-6"
+                />
+              </div>
             </div>
 
             <div>
