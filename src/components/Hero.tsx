@@ -1,16 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-
 const Hero = () => {
   const navigate = useNavigate();
-
-  return (
-    <section className="relative min-h-screen flex items-center justify-center px-6 md:px-12 py-20">
+  return <section className="relative min-h-screen flex items-center justify-center px-6 md:px-12 py-20">
       <div className="max-w-6xl w-full">
         <div className="flex items-center gap-2 mb-8 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-primary" />
-            <span>Powered by Artificial Intelligence</span>
+            <span>
+          </span>
           </div>
         </div>
 
@@ -20,12 +18,7 @@ const Hero = () => {
           <span className="block">for everyone</span>
         </h1>
 
-        <Button 
-          variant="outline" 
-          size="lg"
-          onClick={() => navigate('/chat')}
-          className="rounded-full px-8 py-6 text-base hover:bg-primary hover:text-primary-foreground transition-all duration-300"
-        >
+        <Button variant="outline" size="lg" onClick={() => navigate('/chat')} className="rounded-full px-8 py-6 text-base hover:bg-primary hover:text-primary-foreground transition-all duration-300">
           Start earning
         </Button>
 
@@ -35,8 +28,6 @@ const Hero = () => {
           </p>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default Hero;
