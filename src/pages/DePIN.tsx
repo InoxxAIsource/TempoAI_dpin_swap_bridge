@@ -42,7 +42,7 @@ const DePIN = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [showWalletModal, setShowWalletModal] = useState(false);
   const { toast } = useToast();
-  const { isAuthenticated, authMethod } = useWalletContext();
+  const { isAuthenticated, authMethod, walletAuthenticatedAddress } = useWalletContext();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -78,6 +78,23 @@ const DePIN = () => {
   };
 
   const handleStartDemo = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please connect your wallet or login to start demo",
+        action: (
+          <div className="flex gap-2 mt-2">
+            <Button size="sm" onClick={() => setShowWalletModal(true)}>
+              Connect Wallet
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate('/auth')}>
+              Login
+            </Button>
+          </div>
+        ),
+      });
+      return;
+    }
     await initializeDemo();
     fetchDevices();
   };
@@ -111,7 +128,14 @@ const DePIN = () => {
   const initializeDemo = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        throw new Error('User session not found');
+      }
+
+      // Additional validation for wallet-authenticated users
+      if (authMethod === 'wallet' && !walletAuthenticatedAddress) {
+        throw new Error('Wallet authentication incomplete');
+      }
 
       // Check if user already has devices
       const { data: existingDevices } = await supabase
@@ -120,7 +144,11 @@ const DePIN = () => {
         .eq('user_id', user.id);
 
       if (existingDevices && existingDevices.length > 0) {
-        return; // User already has devices
+        toast({
+          title: 'Demo Already Created',
+          description: 'You already have devices registered',
+        });
+        return;
       }
 
       // Create 5 simulated solar panels for demo
@@ -138,9 +166,18 @@ const DePIN = () => {
       }));
 
       await supabase.from('device_registry').insert(devices);
+      toast({
+        title: 'Demo Devices Created',
+        description: '5 demo solar panels have been added to your network',
+      });
       console.log('✅ Demo devices created');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error initializing demo:', error);
+      toast({
+        title: 'Error Creating Demo',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -248,6 +285,30 @@ const DePIN = () => {
     }
   };
 
+  const handleDeleteDevice = async (deviceId: string) => {
+    try {
+      const { error } = await supabase
+        .from('device_registry')
+        .delete()
+        .eq('id', deviceId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Device Deleted',
+        description: 'The device has been removed successfully',
+      });
+      
+      fetchDevices();
+    } catch (error: any) {
+      toast({
+        title: 'Delete Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const stats = [
     { 
       icon: Activity, 
@@ -290,6 +351,10 @@ const DePIN = () => {
         onClose={() => setShowOnboarding(false)}
         onStartDemo={handleStartDemo}
         onConnectReal={handleConnectReal}
+        isAuthenticated={isAuthenticated}
+        authMethod={authMethod}
+        onShowWalletModal={() => setShowWalletModal(true)}
+        onNavigateToAuth={() => navigate('/auth')}
       />
 
       {/* Add Device Modal */}
@@ -386,7 +451,7 @@ const DePIN = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               {devices.map((device) => (
-                <DeviceCard key={device.id} device={device} />
+                <DeviceCard key={device.id} device={device} onDelete={handleDeleteDevice} />
               ))}
             </div>
           )}

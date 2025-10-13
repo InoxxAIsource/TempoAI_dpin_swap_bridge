@@ -1,16 +1,29 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Globe, Shield, Activity, Zap, ArrowRight } from 'lucide-react';
+import { Globe, Shield, Activity, Zap, ArrowRight, AlertCircle } from 'lucide-react';
 
 interface OnboardingModalProps {
   open: boolean;
   onClose: () => void;
   onStartDemo: () => void;
   onConnectReal: () => void;
+  isAuthenticated: boolean;
+  authMethod: 'wallet' | 'email' | null;
+  onShowWalletModal: () => void;
+  onNavigateToAuth: () => void;
 }
 
-const OnboardingModal = ({ open, onClose, onStartDemo, onConnectReal }: OnboardingModalProps) => {
+const OnboardingModal = ({ 
+  open, 
+  onClose, 
+  onStartDemo, 
+  onConnectReal, 
+  isAuthenticated, 
+  authMethod,
+  onShowWalletModal,
+  onNavigateToAuth
+}: OnboardingModalProps) => {
   const [step, setStep] = useState(1);
 
   const handleStartDemo = () => {
@@ -63,12 +76,51 @@ const OnboardingModal = ({ open, onClose, onStartDemo, onConnectReal }: Onboardi
                 </div>
               </DialogDescription>
             </DialogHeader>
+
+            {!isAuthenticated && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mt-4">
+                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+                  <AlertCircle className="w-5 h-5" />
+                  <span className="font-semibold">Authentication Required</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Please connect your wallet or login to add devices and start earning rewards
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={onShowWalletModal}>
+                    Connect Wallet
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={onNavigateToAuth}>
+                    Login with Email
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {isAuthenticated && (
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 mt-4">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
+                  <Shield className="w-4 h-4" />
+                  <span>Authenticated via {authMethod === 'wallet' ? 'Wallet' : 'Email'}</span>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-3 mt-6">
-              <Button onClick={handleStartDemo} className="flex-1" variant="outline">
+              <Button 
+                onClick={handleStartDemo} 
+                className="flex-1" 
+                variant="outline"
+                disabled={!isAuthenticated}
+              >
                 <Activity className="w-4 h-4 mr-2" />
                 Start with 5 Demo Devices
               </Button>
-              <Button onClick={() => setStep(2)} className="flex-1">
+              <Button 
+                onClick={() => setStep(2)} 
+                className="flex-1"
+                disabled={!isAuthenticated}
+              >
                 <Shield className="w-4 h-4 mr-2" />
                 I Have Real Hardware
               </Button>

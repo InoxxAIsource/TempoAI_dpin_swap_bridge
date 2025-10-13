@@ -1,9 +1,22 @@
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Activity, Shield, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from '@/components/ui/alert-dialog';
+import { Activity, Shield, Clock, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface DeviceCardProps {
   device: {
+    id: string;
     device_id: string;
     device_name: string;
     device_type: string;
@@ -12,19 +25,43 @@ interface DeviceCardProps {
     metadata: any;
     last_seen_at: string;
   };
+  onDelete?: (deviceId: string) => Promise<void>;
 }
 
-const DeviceCard = ({ device }: DeviceCardProps) => {
+const DeviceCard = ({ device, onDelete }: DeviceCardProps) => {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const isOnline = new Date().getTime() - new Date(device.last_seen_at).getTime() < 120000; // 2 min
 
+  const handleDelete = async () => {
+    if (onDelete) {
+      setDeleting(true);
+      await onDelete(device.id);
+      setDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   return (
-    <div className={`border-2 rounded-xl md:rounded-2xl p-4 md:p-6 bg-card hover:shadow-lg transition-all duration-300 ${
-      device.is_verified 
-        ? 'border-green-500/30 hover:border-green-500/50' 
-        : 'border-blue-500/30 hover:border-blue-500/50'
-    }`}>
-      <div className="flex items-start justify-between mb-3 md:mb-4">
-        <div className="flex items-center gap-2 md:gap-3">
+    <>
+      <div className={`group relative border-2 rounded-xl md:rounded-2xl p-4 md:p-6 bg-card hover:shadow-lg transition-all duration-300 ${
+        device.is_verified 
+          ? 'border-green-500/30 hover:border-green-500/50' 
+          : 'border-blue-500/30 hover:border-blue-500/50'
+      }`}>
+        {onDelete && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <Trash2 className="w-4 h-4 text-destructive" />
+          </Button>
+        )}
+
+        <div className="flex items-start justify-between mb-3 md:mb-4">
+          <div className="flex items-center gap-2 md:gap-3">
           <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center relative ${
             device.is_verified ? 'bg-green-500/10' : 'bg-blue-500/10'
           }`}>
@@ -82,7 +119,29 @@ const DeviceCard = ({ device }: DeviceCardProps) => {
           <span>Last seen {formatDistanceToNow(new Date(device.last_seen_at), { addSuffix: true })}</span>
         </div>
       </div>
-    </div>
+      </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Device?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{device.device_name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
