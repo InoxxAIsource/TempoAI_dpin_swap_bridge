@@ -1,90 +1,95 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useWalletContext } from '@/contexts/WalletContext';
 
-interface EarningStats {
+interface WorldwideStats {
   totalEarnings: number;
-  pendingRewards: number;
-  claimedRewards: number;
+  solarEarnings: number;
   activeDevices: number;
+  totalDeviceEvents: number;
 }
 
 const StatsSection = () => {
-  const { isAuthenticated } = useWalletContext();
-  const [stats, setStats] = useState<EarningStats>({
+  const [stats, setStats] = useState<WorldwideStats>({
     totalEarnings: 0,
-    pendingRewards: 0,
-    claimedRewards: 0,
-    activeDevices: 0
+    solarEarnings: 0,
+    activeDevices: 0,
+    totalDeviceEvents: 0
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchEarningStats = async () => {
-      if (!isAuthenticated) {
-        setLoading(false);
-        return;
-      }
-
+    const fetchWorldwideStats = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        // Fetch rewards data
-        const { data: rewards } = await supabase
+        // Fetch all rewards worldwide (aggregate across all users)
+        const { data: allRewards } = await supabase
           .from('depin_rewards')
-          .select('amount, status')
-          .eq('user_id', user.id);
+          .select('amount');
 
-        // Fetch active devices count
+        // Fetch all active devices worldwide
         const { count: devicesCount } = await supabase
           .from('device_registry')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
           .eq('status', 'active');
 
-        if (rewards) {
-          const total = rewards.reduce((sum, r) => sum + Number(r.amount), 0);
-          const pending = rewards
-            .filter(r => r.status === 'pending')
-            .reduce((sum, r) => sum + Number(r.amount), 0);
-          const claimed = rewards
-            .filter(r => r.status === 'claimed')
-            .reduce((sum, r) => sum + Number(r.amount), 0);
+        // Fetch solar-specific devices and their earnings
+        const { data: solarDevices } = await supabase
+          .from('device_registry')
+          .select('device_id')
+          .eq('device_type', 'solar_panel')
+          .eq('status', 'active');
 
-          setStats({
-            totalEarnings: total,
-            pendingRewards: pending,
-            claimedRewards: claimed,
-            activeDevices: devicesCount || 0
-          });
+        const solarDeviceIds = solarDevices?.map(d => d.device_id) || [];
+        
+        // Fetch total device events
+        const { count: eventsCount } = await supabase
+          .from('device_events')
+          .select('*', { count: 'exact', head: true });
+
+        // Calculate solar earnings from device events
+        let solarEarnings = 0;
+        if (solarDeviceIds.length > 0) {
+          const { data: solarEvents } = await supabase
+            .from('device_events')
+            .select('reward_amount')
+            .in('device_id', solarDeviceIds);
+          
+          solarEarnings = solarEvents?.reduce((sum, e) => sum + Number(e.reward_amount || 0), 0) || 0;
         }
+
+        const totalEarnings = allRewards?.reduce((sum, r) => sum + Number(r.amount), 0) || 0;
+
+        setStats({
+          totalEarnings,
+          solarEarnings,
+          activeDevices: devicesCount || 0,
+          totalDeviceEvents: eventsCount || 0
+        });
       } catch (error) {
-        console.error('Error fetching earning stats:', error);
+        console.error('Error fetching worldwide stats:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEarningStats();
-  }, [isAuthenticated]);
+    fetchWorldwideStats();
+  }, []);
 
   const displayStats = [
     {
-      value: loading ? '...' : `$${stats.totalEarnings.toFixed(2)}`,
-      label: 'Total Earnings'
+      value: loading ? '...' : `$${stats.totalEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      label: 'Worldwide DePIN Earnings'
     },
     {
-      value: loading ? '...' : `$${stats.pendingRewards.toFixed(2)}`,
-      label: 'Pending Rewards'
+      value: loading ? '...' : `$${stats.solarEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      label: 'Solar System Earnings'
     },
     {
-      value: loading ? '...' : `$${stats.claimedRewards.toFixed(2)}`,
-      label: 'Claimed Rewards'
+      value: loading ? '...' : stats.activeDevices.toLocaleString(),
+      label: 'Active Devices Worldwide'
     },
     {
-      value: loading ? '...' : stats.activeDevices.toString(),
-      label: 'Active Devices'
+      value: loading ? '...' : stats.totalDeviceEvents.toLocaleString(),
+      label: 'Total Events Reported'
     }
   ];
 
