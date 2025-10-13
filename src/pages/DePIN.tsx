@@ -4,6 +4,7 @@ import PageLayout from '../components/layout/PageLayout';
 import PageHero from '../components/layout/PageHero';
 import StatCard from '../components/ui/StatCard';
 import DeviceCard from '../components/depin/DeviceCard';
+import WorldMap from '../components/depin/WorldMap';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -235,6 +236,19 @@ const DePIN = () => {
               <StatCard key={index} {...stat} />
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* World Map Section */}
+      <section className="px-6 md:px-12 py-8 bg-muted/20">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-6">
+            <h2 className="text-3xl font-bold mb-2">Global Device Network</h2>
+            <p className="text-muted-foreground">
+              Real-time monitoring of distributed infrastructure across locations
+            </p>
+          </div>
+          <WorldMap devices={devices} />
         </div>
       </section>
 
