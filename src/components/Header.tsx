@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Wallet, ChevronDown, Moon, Sun } from 'lucide-react';
+import { Wallet, ChevronDown, Moon, Sun, Menu, Layers } from 'lucide-react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import WalletModal from './WalletModal';
@@ -13,6 +13,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import { ScrollArea } from './ui/scroll-area';
+import ProtocolPopover from './footer/ProtocolPopover';
+import ComingSoonDialog from './footer/ComingSoonDialog';
 
 const Header = () => {
   const location = useLocation();
@@ -87,102 +90,118 @@ const Header = () => {
           <span className="text-2xl font-bold">Tempo</span>
         </Link>
 
-        {/* Scrollable Navigation Menu */}
-        <div className="flex-1 relative mx-4 md:mx-8">
-          {/* Gradient fade indicators */}
-          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none z-10" />
-          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none z-10" />
-          
-          <nav className="overflow-x-auto scrollbar-hide scroll-smooth">
-            <div className="flex items-center gap-2 md:gap-3 min-w-max px-2">
-              <Link 
-                to="/portfolio" 
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-                  isActive('/portfolio') 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'hover:bg-muted'
-                }`}
-              >
-                Portfolio
-              </Link>
-              <Link 
-                to="/bridge" 
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-                  isActive('/bridge') 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'hover:bg-muted'
-                }`}
-              >
-                Bridge
-              </Link>
-              <Link 
-                to="/swap" 
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-                  isActive('/swap') 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'hover:bg-muted'
-                }`}
-              >
-                Swap
-              </Link>
-              <Link 
-                to="/claim"
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap relative ${
-                  isActive('/claim') 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'hover:bg-muted'
-                }`}
-              >
-                Claim
-                {pendingClaimsCount > 0 && (
-                  <Badge className="ml-1.5 px-1.5 py-0 text-xs h-5 bg-red-500 hover:bg-red-600 absolute -top-1 -right-1">
-                    {pendingClaimsCount}
-                  </Badge>
-                )}
-              </Link>
-              <Link 
-                to="/transactions" 
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-                  isActive('/transactions') 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'hover:bg-muted'
-                }`}
-              >
-                Transactions
-              </Link>
-              <Link 
-                to="/depin" 
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-                  isActive('/depin') 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'hover:bg-muted'
-                }`}
-              >
-                DePIN
-              </Link>
-              <Link 
-                to="/chat" 
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-                  isActive('/chat') 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'hover:bg-muted'
-                }`}
-              >
-                AI Assistant
-              </Link>
-              <Link 
-                to="/docs" 
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-                  isActive('/docs') 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'hover:bg-muted'
-                }`}
-              >
-                Docs
-              </Link>
-            </div>
-          </nav>
-        </div>
+        {/* Navigation */}
+        <nav className="flex items-center gap-2 md:gap-3 flex-1 mx-4 md:mx-8">
+          {/* Menu Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="rounded-full gap-1">
+                <Menu className="w-4 h-4" />
+                <span className="text-sm font-medium">Menu</span>
+                <ChevronDown className="w-3 h-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <ScrollArea className="max-h-[400px]">
+                <Link to="/portfolio">
+                  <DropdownMenuItem className={isActive('/portfolio') ? 'bg-muted' : ''}>
+                    Portfolio
+                  </DropdownMenuItem>
+                </Link>
+                <Link to="/transactions">
+                  <DropdownMenuItem className={isActive('/transactions') ? 'bg-muted' : ''}>
+                    Transactions
+                  </DropdownMenuItem>
+                </Link>
+                <Link to="/bridge">
+                  <DropdownMenuItem className={isActive('/bridge') ? 'bg-muted' : ''}>
+                    Bridge
+                  </DropdownMenuItem>
+                </Link>
+                <Link to="/claim">
+                  <DropdownMenuItem className={`relative ${isActive('/claim') ? 'bg-muted' : ''}`}>
+                    Claim
+                    {pendingClaimsCount > 0 && (
+                      <Badge className="ml-1.5 px-1.5 py-0 text-xs h-5 bg-red-500 hover:bg-red-600">
+                        {pendingClaimsCount}
+                      </Badge>
+                    )}
+                  </DropdownMenuItem>
+                </Link>
+                <Link to="/chat">
+                  <DropdownMenuItem className={isActive('/chat') ? 'bg-muted' : ''}>
+                    AI Assistant
+                  </DropdownMenuItem>
+                </Link>
+              </ScrollArea>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Products Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="rounded-full gap-1">
+                <Layers className="w-4 h-4" />
+                <span className="text-sm font-medium">Products</span>
+                <ChevronDown className="w-3 h-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <ScrollArea className="max-h-[400px]">
+                <div className="px-2 py-1.5">
+                  <ProtocolPopover />
+                </div>
+                <Link to="/chat">
+                  <DropdownMenuItem className={isActive('/chat') ? 'bg-muted' : ''}>
+                    Yield Farming
+                  </DropdownMenuItem>
+                </Link>
+                <Link to="/depin">
+                  <DropdownMenuItem className={isActive('/depin') ? 'bg-muted' : ''}>
+                    DePIN
+                  </DropdownMenuItem>
+                </Link>
+                <Link to="/swap">
+                  <DropdownMenuItem className={isActive('/swap') ? 'bg-muted' : ''}>
+                    Swap
+                  </DropdownMenuItem>
+                </Link>
+                <Link to="/bridge">
+                  <DropdownMenuItem className={isActive('/bridge') ? 'bg-muted' : ''}>
+                    Bridge
+                  </DropdownMenuItem>
+                </Link>
+                <ComingSoonDialog featureName="AI Trading">
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    AI Trading
+                  </DropdownMenuItem>
+                </ComingSoonDialog>
+                <ComingSoonDialog featureName="Staking">
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    Staking
+                  </DropdownMenuItem>
+                </ComingSoonDialog>
+                <ComingSoonDialog featureName="Liquidity Pools">
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    Liquidity Pools
+                  </DropdownMenuItem>
+                </ComingSoonDialog>
+              </ScrollArea>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Docs Tab */}
+          <Link 
+            to="/docs" 
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+              isActive('/docs') 
+                ? 'bg-primary text-primary-foreground' 
+                : 'hover:bg-muted'
+            }`}
+          >
+            Docs
+          </Link>
+        </nav>
 
         {/* Theme Toggle */}
         <Button
