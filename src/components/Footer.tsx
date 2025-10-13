@@ -1,29 +1,54 @@
 import { Link } from 'react-router-dom';
 import ProtocolPopover from './footer/ProtocolPopover';
 import ComingSoonDialog from './footer/ComingSoonDialog';
-
 const Footer = () => {
   const handleResearchClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
-
-  const productLinks = [
-    { name: 'Protocol', type: 'popover' },
-    { name: 'Yield Farming', href: '/chat', type: 'link' },
-    { name: 'DePIN', href: '/depin', type: 'link' },
-    { name: 'Swap', href: '/swap', type: 'link' },
-    { name: 'Bridge', href: '/bridge', type: 'link' },
-    { name: 'AI Trading', type: 'coming-soon' },
-    { name: 'Staking', type: 'coming-soon' },
-    { name: 'Liquidity Pools', type: 'coming-soon' }
-  ];
-
-  const resourceLinks = [
-    { name: 'Documentation', href: '/docs' },
-    { name: 'Whitepaper', href: '#' },
-    { name: 'Research', href: '#', onClick: handleResearchClick }
-  ];
+  const productLinks = [{
+    name: 'Protocol',
+    type: 'popover'
+  }, {
+    name: 'Yield Farming',
+    href: '/chat',
+    type: 'link'
+  }, {
+    name: 'DePIN',
+    href: '/depin',
+    type: 'link'
+  }, {
+    name: 'Swap',
+    href: '/swap',
+    type: 'link'
+  }, {
+    name: 'Bridge',
+    href: '/bridge',
+    type: 'link'
+  }, {
+    name: 'AI Trading',
+    type: 'coming-soon'
+  }, {
+    name: 'Staking',
+    type: 'coming-soon'
+  }, {
+    name: 'Liquidity Pools',
+    type: 'coming-soon'
+  }];
+  const resourceLinks = [{
+    name: 'Documentation',
+    href: '/docs'
+  }, {
+    name: 'Whitepaper',
+    href: '#'
+  }, {
+    name: 'Research',
+    href: '#',
+    onClick: handleResearchClick
+  }];
   return <footer className="relative px-6 md:px-12 py-20 border-t border-border">
       <div className="max-w-6xl mx-auto">
         {/* Main Footer Content */}
@@ -34,9 +59,7 @@ const Footer = () => {
               <div className="w-10 h-10 rounded-full bg-primary" />
               <span className="text-2xl font-bold">Tempo</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-              The future of DeFi powered by artificial intelligence. Maximize yields with smart protocols.
-            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6">The future of DeFi powered by wormhole. Maximize yields with smart protocols and developed by InoxXAI</p>
             <div className="flex gap-4">
               <a href="#" className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300">
                 <span className="sr-only">Twitter</span>
@@ -63,23 +86,15 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider">Product</h3>
             <ul className="space-y-3">
-              {productLinks.map(link => (
-                <li key={link.name}>
-                  {link.type === 'popover' ? (
-                    <ProtocolPopover />
-                  ) : link.type === 'coming-soon' ? (
-                    <ComingSoonDialog featureName={link.name}>
+              {productLinks.map(link => <li key={link.name}>
+                  {link.type === 'popover' ? <ProtocolPopover /> : link.type === 'coming-soon' ? <ComingSoonDialog featureName={link.name}>
                       <button className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                         {link.name}
                       </button>
-                    </ComingSoonDialog>
-                  ) : (
-                    <Link to={link.href!} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    </ComingSoonDialog> : <Link to={link.href!} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                       {link.name}
-                    </Link>
-                  )}
-                </li>
-              ))}
+                    </Link>}
+                </li>)}
             </ul>
           </div>
 
@@ -87,23 +102,13 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider">Resources</h3>
             <ul className="space-y-3">
-              {resourceLinks.map(link => (
-                <li key={link.name}>
-                  {link.onClick ? (
-                    <a 
-                      href={link.href} 
-                      onClick={link.onClick}
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
+              {resourceLinks.map(link => <li key={link.name}>
+                  {link.onClick ? <a href={link.href} onClick={link.onClick} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                       {link.name}
-                    </a>
-                  ) : (
-                    <Link to={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    </a> : <Link to={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                       {link.name}
-                    </Link>
-                  )}
-                </li>
-              ))}
+                    </Link>}
+                </li>)}
             </ul>
           </div>
         </div>
