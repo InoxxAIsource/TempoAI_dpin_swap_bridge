@@ -1,28 +1,7 @@
 import Mermaid from '../docs/Mermaid';
+import deviceAdditionFlowImage from '@/assets/device-addition-flow.png';
 
 const CompleteFlowDiagram = () => {
-  const deviceAdditionFlow = `
-graph TD
-    A[User Visits DePIN Dashboard] --> B{First Time?}
-    B -->|Yes| C[Onboarding Modal Appears]
-    B -->|No| D[View Dashboard]
-    C --> E{Choose Option}
-    E -->|Demo Mode| F[Auto-create 5 Simulated Devices]
-    E -->|Real Hardware| G[Add Device Modal]
-    G --> H[Enter Device Details]
-    H --> I[Choose Device Type]
-    I --> J{Setup Method}
-    J -->|Demo| F
-    J -->|Real Hardware| K[Get Device ID & Public Key]
-    K --> L[Setup Guide Modal Opens]
-    L --> M[Install Raspberry Pi Client]
-    M --> N[Configure Device]
-    N --> O[Run Python Script]
-    O --> P[Device Starts Reporting]
-    F --> P
-    P --> Q[Metrics Appear on Dashboard]
-  `;
-
   const earningCalculationFlow = `
 graph LR
     A[Device Collects Metric] --> B[Sign with Private Key]
@@ -73,7 +52,13 @@ sequenceDiagram
         <p className="text-muted-foreground mb-6">
           Complete journey from signing up to seeing your first device metrics on the dashboard.
         </p>
-        <Mermaid chart={deviceAdditionFlow} />
+        <div className="my-8 p-6 rounded-xl border border-border bg-card/50">
+          <img 
+            src={deviceAdditionFlowImage} 
+            alt="Device Addition Flow Diagram" 
+            className="w-full h-auto"
+          />
+        </div>
       </div>
 
       <div>
