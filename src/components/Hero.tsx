@@ -19,7 +19,7 @@ const Hero = () => {
         </h1>
 
         <Button variant="outline" size="lg" onClick={() => navigate('/chat')} className="rounded-full px-8 py-6 text-base hover:bg-primary hover:text-primary-foreground transition-all duration-300">
-          Start earning
+          Get started
         </Button>
 
         <div className="mt-20 max-w-3xl">
