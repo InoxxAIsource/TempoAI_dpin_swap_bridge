@@ -5,26 +5,28 @@ const WhySection = () => {
         <div className="grid md:grid-cols-2 gap-16 items-start">
           <div>
             <h2 className="text-5xl md:text-7xl font-bold leading-tight mb-8">
-              Why AI-powered{' '}
-              <span className="block">yield optimization?</span>
+              Why choose{' '}
+              <span className="block">Tempo?</span>
             </h2>
           </div>
           
           <div className="space-y-8">
             <div className="text-sm text-muted-foreground flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-primary" />
-              <span>Intelligent and adaptive</span>
+              <span>Comprehensive & Connected</span>
             </div>
             
             <p className="text-lg leading-relaxed text-foreground/80">
-              Traditional DeFi protocols require constant manual monitoring and rebalancing. Tempo's 
-              AI engine analyzes thousands of yield opportunities per second, automatically deploying 
-              capital to the most profitable strategies while managing risk in real-time.
+              Tempo unifies DeFi's most powerful capabilities into a seamless experience. Earn rewards from 
+              physical DePIN devices like solar panels and sensors, optimize yields with AI across Aave, Compound, 
+              and Curve, bridge assets across 30+ chains with Wormhole, and swap tokens at the best rates—all 
+              without leaving the platform.
             </p>
             
             <p className="text-lg leading-relaxed text-foreground/80">
-              Our neural network learns from market patterns, adapting to volatility and optimizing 
-              your returns 24/7 without human intervention.
+              Our AI assistant guides you through complex strategies, while automated optimization ensures your 
+              assets work harder 24/7. From infrastructure to DeFi to cross-chain mobility, Tempo is your complete 
+              omnichain earning platform.
             </p>
           </div>
         </div>

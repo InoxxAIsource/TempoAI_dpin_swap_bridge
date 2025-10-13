@@ -11,26 +11,26 @@ const FeaturesGridSection = () => {
       highlight: true,
     },
     {
-      title: 'AI Assistant',
-      description: 'Chat with AI to optimize yields, execute strategies, and get personalized recommendations.',
+      title: 'AI DeFi Assistant',
+      description: 'Chat with AI to optimize yields across Aave, Compound, and Curve. Get personalized strategies and execute deposits instantly.',
       icon: MessageSquare,
       link: '/chat',
     },
     {
-      title: 'Yield Strategies',
-      description: 'Automated allocation across Aave, Compound, Curve optimized for highest returns.',
+      title: 'Yield Optimization',
+      description: 'Automated allocation and rebalancing across top DeFi protocols for maximum APY with minimal gas costs.',
       icon: TrendingUp,
       link: '/portfolio',
     },
     {
-      title: 'Cross-Chain Bridge',
-      description: 'Seamlessly move assets between chains using Wormhole with instant confirmation.',
+      title: 'Wormhole Bridge',
+      description: 'Move assets across 30+ chains in under 2 minutes. Bridge DePIN rewards or DeFi yields to any network.',
       icon: Repeat,
       link: '/bridge',
     },
     {
       title: 'Token Swap',
-      description: 'Best rates aggregated from multiple DEXs with zero slippage protection.',
+      description: 'Swap tokens at the best rates aggregated from multiple DEXs with MEV protection and optimal routing.',
       icon: RefreshCw,
       link: '/swap',
     },
@@ -41,10 +41,10 @@ const FeaturesGridSection = () => {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-20">
           <h2 className="text-5xl md:text-7xl font-bold leading-tight mb-8">
-            Built for DeFi natives
+            All-in-one platform
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Every feature designed to give you complete control and transparency over your yields.
+            DeFi yields, physical infrastructure rewards, cross-chain bridging, and token swaps unified in one powerful platform.
           </p>
         </div>
 

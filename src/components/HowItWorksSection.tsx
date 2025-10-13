@@ -3,26 +3,26 @@ const HowItWorksSection = () => {
     {
       step: '01',
       title: 'Connect Your Wallet',
-      description: 'Link your Web3 wallet in seconds. We support MetaMask, WalletConnect, Coinbase Wallet, and all major providers.',
-      features: ['Non-custodial', 'Secure connection', 'Multi-chain support'],
+      description: 'Link your Web3 wallet in seconds. We support MetaMask, WalletConnect, Coinbase Wallet, and all major multi-chain providers.',
+      features: ['Non-custodial', 'Secure connection', '30+ chains supported'],
     },
     {
       step: '02',
-      title: 'Deposit Assets',
-      description: 'Choose from stablecoins, ETH, BTC, or other supported assets. Our AI will analyze the best yield strategies for your portfolio.',
-      features: ['Multiple assets', 'Flexible amounts', 'Gas optimization'],
+      title: 'Choose Your Strategy',
+      description: 'Deploy assets to DeFi yields, add DePIN devices for infrastructure rewards, or combine both for maximum earnings.',
+      features: ['AI-powered DeFi', 'DePIN rewards', 'Hybrid strategies'],
     },
     {
       step: '03',
-      title: 'AI Optimizes Yield',
-      description: 'Our machine learning engine continuously scans opportunities across lending protocols, liquidity pools, and farming strategies.',
-      features: ['Real-time analysis', 'Risk assessment', 'Auto-rebalancing'],
+      title: 'Bridge & Swap Freely',
+      description: 'Move assets seamlessly across chains with Wormhole integration. Swap tokens at optimal rates when needed.',
+      features: ['Cross-chain bridging', 'Best swap rates', 'Sub-2min transfers'],
     },
     {
       step: '04',
-      title: 'Earn & Compound',
-      description: 'Watch your yields grow automatically. Rewards are auto-compounded for maximum returns with minimal gas fees.',
-      features: ['Auto-compound', 'Transparent fees', 'Withdraw anytime'],
+      title: 'Earn & Optimize',
+      description: 'AI continuously optimizes your positions while DePIN devices earn in the background. Compound rewards automatically.',
+      features: ['Auto-optimization', 'Real-time monitoring', 'Withdraw anytime'],
     },
   ];
 
@@ -34,7 +34,7 @@ const HowItWorksSection = () => {
             How it works
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Get started in minutes. Our AI handles the complexity while you earn passive income.
+            Get started in minutes. From DeFi to DePIN to cross-chain, everything works together seamlessly.
           </p>
         </div>
 
