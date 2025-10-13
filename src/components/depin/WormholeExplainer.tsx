@@ -140,14 +140,14 @@ const WormholeExplainer = () => {
         <h3 className="text-3xl font-bold mb-6">How It Works (Technical)</h3>
         <Dialog>
           <DialogTrigger asChild>
-            <div className="my-8 p-6 rounded-xl border border-border bg-card/50 overflow-x-auto cursor-pointer hover:border-primary/50 transition-colors relative group">
+            <div className="my-8 p-6 rounded-xl border border-border bg-card/50 overflow-x-auto cursor-pointer hover:border-primary/50 transition-colors relative group max-w-2xl mx-auto">
               <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <ZoomIn className="w-5 h-5" />
               </div>
               <img 
                 src={diagramTempoImage} 
                 alt="Wormhole Technical Flow Diagram" 
-                className="w-full h-auto min-w-[800px]"
+                className="w-full h-auto"
               />
             </div>
           </DialogTrigger>
