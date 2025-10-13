@@ -5,6 +5,7 @@ import CodeBlock from '@/components/docs/CodeBlock';
 import FeatureCard from '@/components/docs/FeatureCard';
 import UseCaseCard from '@/components/docs/UseCaseCard';
 import Mermaid from '@/components/docs/Mermaid';
+import diagramTempo from '@/assets/diagram_tempo.png';
 import { Brain, Zap, TrendingUp, MessageSquare, MousePointerClick, Shield, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -214,45 +215,13 @@ function isValidWormholeYield(protocol, chain, token) {
           title="How It Works: Complete Workflow"
           subtitle="Behind the scenes of every conversation"
         >
-          <Mermaid chart={`graph TB
-    subgraph User Interface
-        A[User Message] --> B[ChatInterface]
-        B --> C{Has Portfolio?}
-    end
-    
-    subgraph Backend Processing
-        C -->|Yes| D[Fetch Portfolio Data]
-        C -->|No| E[AI Assistant Edge Function]
-        D --> E
-        E --> F{Yield Query?}
-        F -->|Yes| G[Fetch DeFi Llama Yields]
-        F -->|No| H[Generate Response]
-        G --> I[Filter Wormhole Compatible]
-        I --> H
-    end
-    
-    subgraph AI Response
-        H --> J[Stream Response]
-        J --> K[Generate Follow-Up Prompts]
-        J --> L{Contains Action?}
-        L -->|Yes| M[Create Execution Card]
-        L -->|No| N[Display Message]
-    end
-    
-    subgraph Execution Layer
-        M --> O{Action Type}
-        O -->|Bridge| P[WormholeConnectWidget]
-        O -->|Swap| Q[WormholeSwapWidget]
-        O -->|Yield| R[Protocol URL]
-        P --> S[Track Transaction]
-        Q --> S
-        S --> T[(Supabase DB)]
-    end
-    
-    style E fill:#4F46E5,stroke:#312E81,color:#fff
-    style I fill:#10B981,stroke:#065F46,color:#fff
-    style M fill:#F59E0B,stroke:#92400E,color:#fff
-    style T fill:#EC4899,stroke:#831843,color:#fff`} />
+          <div className="my-8 flex justify-center">
+            <img 
+              src={diagramTempo} 
+              alt="Complete Workflow - Behind the scenes of every conversation"
+              className="max-w-full h-auto rounded-xl border border-border bg-card/50 p-6"
+            />
+          </div>
 
           <div className="space-y-8 mt-12">
             {[
