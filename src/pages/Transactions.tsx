@@ -71,17 +71,17 @@ const Transactions = () => {
         description="Track all your cross-chain transfers and their status in real-time"
       />
 
-      <section className="px-6 md:px-12 py-8">
-        <div className="max-w-6xl mx-auto space-y-6">
+      <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8">
+        <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
           {/* Filters and Search */}
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-start md:items-center justify-between">
             {/* Filter Tabs */}
-            <div className="flex items-center gap-2 p-1 border border-border rounded-full bg-card">
+            <div className="flex items-center gap-1.5 md:gap-2 p-1 border border-border rounded-full bg-card w-full md:w-auto overflow-x-auto">
               {filters.map((filter) => (
                 <button
                   key={filter.id}
                   onClick={() => setActiveFilter(filter.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                  className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                     activeFilter === filter.id
                       ? 'bg-primary text-primary-foreground'
                       : 'hover:bg-muted'
@@ -94,19 +94,19 @@ const Transactions = () => {
 
             {/* Search Bar */}
             <div className="relative w-full md:w-auto">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search by hash..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full md:w-64 pl-10 pr-4 py-2 border border-border rounded-full bg-card focus:outline-none focus:border-primary/50 transition-all duration-300"
+                className="w-full md:w-64 pl-9 md:pl-10 pr-3 md:pr-4 py-1.5 md:py-2 text-sm md:text-base border border-border rounded-full bg-card focus:outline-none focus:border-primary/50 transition-all duration-300"
               />
             </div>
           </div>
 
           {/* Transactions List */}
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             {transactions.map((transaction, index) => (
               <TransactionRow key={index} {...transaction} />
             ))}

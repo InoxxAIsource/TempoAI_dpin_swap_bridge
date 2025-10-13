@@ -39,19 +39,19 @@ const ComparisonSection = () => {
   ];
 
   return (
-    <section className="relative px-6 md:px-12 py-32 bg-secondary/30">
+    <section className="relative px-4 md:px-6 lg:px-12 py-16 md:py-24 lg:py-32 bg-secondary/30">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-20">
-          <h2 className="text-5xl md:text-7xl font-bold leading-tight mb-8">
+        <div className="text-center mb-12 md:mb-20">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-7xl font-bold leading-tight mb-6 md:mb-8">
             Why Tempo beats{' '}
             <span className="block">the alternatives</span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
             Compare Tempo's AI-powered approach against traditional banking and manual DeFi strategies.
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
           <div className="min-w-[600px]">
             {/* Header */}
             <div className="grid grid-cols-4 gap-4 mb-4">

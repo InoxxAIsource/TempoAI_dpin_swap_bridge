@@ -111,11 +111,11 @@ const Claim = () => {
       
       <ClaimGuideSection />
       
-      <section className="px-6 md:px-12 py-16 bg-secondary/30">
+      <section className="px-4 md:px-6 lg:px-12 py-12 md:py-16 bg-secondary/30">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-2 h-2 rounded-full bg-primary" />
-            <h2 className="text-3xl md:text-5xl font-bold">Your Claimable Transfers</h2>
+          <div className="flex items-center gap-2 md:gap-3 mb-6 md:mb-8">
+            <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary" />
+            <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold">Your Claimable Transfers</h2>
           </div>
           
           {loading ? (
@@ -155,11 +155,11 @@ const Claim = () => {
         </div>
       </section>
       
-      <section className="px-6 md:px-12 py-16">
+      <section className="px-4 md:px-6 lg:px-12 py-12 md:py-16">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-2 h-2 rounded-full bg-primary" />
-            <h2 className="text-3xl md:text-5xl font-bold">Frequently Asked Questions</h2>
+          <div className="flex items-center gap-2 md:gap-3 mb-6 md:mb-8">
+            <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary" />
+            <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold">Frequently Asked Questions</h2>
           </div>
           
           <Accordion type="single" collapsible className="w-full">

@@ -12,13 +12,13 @@ const StatsSection = () => {
     value: '99.9%',
     label: 'Uptime'
   }];
-  return <section className="relative px-6 md:px-12 py-32">
+  return <section className="relative px-4 md:px-6 lg:px-12 py-16 md:py-24 lg:py-32">
       <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
           {stats.map((stat, index) => (
             <div key={index} className="text-center">
-              <div className="text-4xl md:text-6xl font-bold mb-2">{stat.value}</div>
-              <div className="text-sm text-muted-foreground uppercase tracking-wider">{stat.label}</div>
+              <div className="text-3xl md:text-5xl lg:text-6xl font-bold mb-2">{stat.value}</div>
+              <div className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider">{stat.label}</div>
             </div>
           ))}
         </div>

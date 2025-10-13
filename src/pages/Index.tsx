@@ -57,7 +57,7 @@ const Index = () => {
         <main>
           <Hero />
           
-          <div className="px-6 md:px-12 py-12">
+          <div className="px-4 md:px-6 lg:px-12 py-8 md:py-12">
             <Tabs 
               value={activeTab}
               onValueChange={(value) => {
@@ -66,25 +66,25 @@ const Index = () => {
               }} 
               className="w-full max-w-7xl mx-auto"
             >
-              <div className="sticky top-20 z-[100] bg-background/95 backdrop-blur-sm pb-4 -mx-6 px-6 md:-mx-12 md:px-12 mb-8">
-                <TabsList className="grid w-full max-w-7xl mx-auto grid-cols-3 h-auto p-2 bg-muted shadow-lg border border-border">
+              <div className="sticky top-16 md:top-20 z-[100] bg-background/95 backdrop-blur-sm pb-3 md:pb-4 -mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-12 lg:px-12 mb-6 md:mb-8">
+                <TabsList className="grid w-full max-w-7xl mx-auto grid-cols-1 sm:grid-cols-3 h-auto p-1.5 md:p-2 bg-muted shadow-lg border border-border gap-1 sm:gap-0">
                   <TabsTrigger 
                     value="overview" 
-                    className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50"
+                    className="py-2.5 md:py-3 text-sm md:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50"
                     onClick={() => console.log('Overview tab clicked')}
                   >
                     Overview
                   </TabsTrigger>
                   <TabsTrigger 
                     value="about" 
-                    className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50"
+                    className="py-2.5 md:py-3 text-sm md:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50"
                     onClick={() => console.log('About tab clicked')}
                   >
                     About Protocol
                   </TabsTrigger>
                   <TabsTrigger 
                     value="redemption" 
-                    className="py-3 text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 relative"
+                    className="py-2.5 md:py-3 text-sm md:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 relative"
                     onClick={() => {
                       console.log('Redemption tab clicked');
                       navigate('/claim');

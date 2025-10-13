@@ -18,7 +18,7 @@ const PageLayout = ({ children, showFooter = false }: PageLayoutProps) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="relative z-10 pt-24"
+        className="relative z-10 pt-20 md:pt-24"
       >
         {children}
       </motion.main>

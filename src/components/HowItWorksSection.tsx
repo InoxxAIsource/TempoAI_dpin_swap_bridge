@@ -27,24 +27,24 @@ const HowItWorksSection = () => {
   ];
 
   return (
-    <section className="relative px-6 md:px-12 py-32 bg-secondary/30">
+    <section className="relative px-4 md:px-6 lg:px-12 py-16 md:py-24 lg:py-32 bg-secondary/30">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-20">
-          <h2 className="text-5xl md:text-7xl font-bold leading-tight mb-8">
+        <div className="text-center mb-12 md:mb-20">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-7xl font-bold leading-tight mb-6 md:mb-8">
             How it works
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
             Get started in minutes. From DeFi to DePIN to cross-chain, everything works together seamlessly.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
           {steps.map((step) => (
             <div key={step.step} className="relative">
-              <div className="flex items-start gap-6">
-                <div className="text-6xl font-bold text-foreground/10">{step.step}</div>
-                <div className="flex-1 pt-2">
-                  <h3 className="text-2xl font-bold mb-4">{step.title}</h3>
+              <div className="flex items-start gap-4 md:gap-6">
+                <div className="text-4xl md:text-6xl font-bold text-foreground/10">{step.step}</div>
+                <div className="flex-1 pt-1 md:pt-2">
+                  <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">{step.title}</h3>
                   <p className="text-foreground/70 mb-6 leading-relaxed">
                     {step.description}
                   </p>

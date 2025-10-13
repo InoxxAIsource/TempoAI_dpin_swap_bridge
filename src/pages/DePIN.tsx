@@ -286,9 +286,9 @@ const DePIN = () => {
       />
 
       {/* Stats Grid */}
-      <section className="px-6 md:px-12 py-8">
+      <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {stats.map((stat, index) => (
               <StatCard key={index} {...stat} />
             ))}
@@ -297,11 +297,11 @@ const DePIN = () => {
       </section>
 
       {/* World Map Section */}
-      <section className="px-6 md:px-12 py-8 bg-muted/20">
+      <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8 bg-muted/20">
         <div className="max-w-6xl mx-auto">
           <ExplainerPanel />
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold mb-2">Global Device Network</h2>
+          <div className="mb-4 md:mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">Global Device Network</h2>
             <p className="text-muted-foreground">
               Real-time monitoring of distributed infrastructure across locations
             </p>
@@ -311,16 +311,16 @@ const DePIN = () => {
       </section>
 
       {/* Process Flow */}
-      <section className="px-6 md:px-12 py-8">
+      <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8">
         <div className="max-w-6xl mx-auto">
           <ProcessFlowSection />
         </div>
       </section>
 
       {/* Rewards Calculator & Device Grid */}
-      <section className="px-6 md:px-12 py-8 pb-20">
+      <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8 pb-16 md:pb-20">
         <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-3 gap-8 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">
             <div className="lg:col-span-1">
               <RewardsCalculator
                 deviceCount={devices.length}
@@ -329,28 +329,29 @@ const DePIN = () => {
               />
             </div>
             <div className="lg:col-span-2">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-3xl font-bold">Your Devices</h2>
-                <Button onClick={() => setShowAddDevice(true)} className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Device
+              <div className="flex items-center justify-between mb-4 md:mb-6 gap-2">
+                <h2 className="text-2xl md:text-3xl font-bold">Your Devices</h2>
+                <Button onClick={() => setShowAddDevice(true)} className="gap-2 text-sm md:text-base">
+                  <Plus className="w-3 h-3 md:w-4 md:h-4" />
+                  <span className="hidden sm:inline">Add Device</span>
+                  <span className="sm:hidden">Add</span>
                 </Button>
               </div>
           
           {loading ? (
-            <div className="text-center py-12 text-muted-foreground">Loading devices...</div>
+            <div className="text-center py-8 md:py-12 text-muted-foreground text-sm md:text-base">Loading devices...</div>
           ) : devices.length === 0 ? (
-            <div className="border border-border rounded-2xl p-12 text-center">
-              <Activity className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">No Devices Yet</h3>
-              <p className="text-muted-foreground mb-4">Connect your first device to start earning rewards</p>
-              <Button onClick={() => setShowAddDevice(true)} className="gap-2">
-                <Plus className="w-4 h-4" />
+            <div className="border border-border rounded-2xl p-6 md:p-12 text-center">
+              <Activity className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 text-muted-foreground" />
+              <h3 className="text-lg md:text-xl font-semibold mb-2">No Devices Yet</h3>
+              <p className="text-sm md:text-base text-muted-foreground mb-3 md:mb-4">Connect your first device to start earning rewards</p>
+              <Button onClick={() => setShowAddDevice(true)} className="gap-2 text-sm md:text-base">
+                <Plus className="w-3 h-3 md:w-4 md:h-4" />
                 Add Your First Device
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               {devices.map((device) => (
                 <DeviceCard key={device.id} device={device} />
               ))}

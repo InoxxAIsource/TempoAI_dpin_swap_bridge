@@ -52,29 +52,29 @@ const YieldStrategiesSection = () => {
   };
 
   return (
-    <section className="relative px-6 md:px-12 py-32">
+    <section className="relative px-4 md:px-6 lg:px-12 py-16 md:py-24 lg:py-32">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-20">
-          <h2 className="text-5xl md:text-7xl font-bold leading-tight mb-8">
+        <div className="mb-12 md:mb-20">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-7xl font-bold leading-tight mb-6 md:mb-8">
             Yield strategies{' '}
             <span className="block">for every risk profile</span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl">
+          <p className="text-base md:text-lg text-muted-foreground max-w-3xl">
             From conservative stablecoin lending to aggressive multi-chain arbitrage, 
             our AI manages diverse strategies to match your risk tolerance.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           {strategies.map((strategy, index) => (
             <div
               key={index}
-              className="border border-border rounded-2xl p-8 hover:border-primary/50 transition-all duration-300 bg-card"
+              className="border border-border rounded-2xl p-4 md:p-6 lg:p-8 hover:border-primary/50 transition-all duration-300 bg-card"
             >
-              <div className="flex items-start justify-between mb-4">
-                <h3 className="text-2xl font-bold">{strategy.name}</h3>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-primary">{strategy.apy}</div>
+              <div className="flex items-start justify-between mb-3 md:mb-4 gap-2">
+                <h3 className="text-lg md:text-xl lg:text-2xl font-bold">{strategy.name}</h3>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-xl md:text-2xl font-bold text-primary">{strategy.apy}</div>
                   <div className="text-xs text-muted-foreground">APY</div>
                 </div>
               </div>

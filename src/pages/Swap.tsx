@@ -29,14 +29,14 @@ const Swap = () => {
         description="Exchange tokens across blockchains in a single transaction. No manual claiming required."
       />
       
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 md:px-6 py-6 md:py-8 max-w-6xl">
         {/* Testnet Warning Banner - Enhanced */}
-        <Alert className="mb-8 border-2 border-warning/30 bg-gradient-to-r from-warning/10 via-warning/5 to-warning/10 shadow-lg">
-          <TestTube className="h-5 w-5 text-warning animate-pulse" />
+        <Alert className="mb-6 md:mb-8 border-2 border-warning/30 bg-gradient-to-r from-warning/10 via-warning/5 to-warning/10 shadow-lg">
+          <TestTube className="h-4 w-4 md:h-5 md:w-5 text-warning animate-pulse" />
           <AlertDescription className="ml-2">
-            <div className="flex flex-col gap-3">
-              <p className="font-bold text-base">🧪 TESTNET MODE: Use testnet ETH and tokens only</p>
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col gap-2 md:gap-3">
+              <p className="font-bold text-sm md:text-base">🧪 TESTNET MODE: Use testnet ETH and tokens only</p>
+              <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
                 <span className="text-sm font-medium text-foreground/80">Get testnet tokens:</span>
                 {testnetFaucets.map((faucet) => (
                   <Button
@@ -63,7 +63,7 @@ const Swap = () => {
         </Alert>
 
         {/* Swap Widget - Enhanced with glassmorphism */}
-        <div className="relative bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl rounded-2xl border-2 border-border/50 shadow-2xl p-8 mb-8 overflow-hidden">
+        <div className="relative bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl rounded-2xl border-2 border-border/50 shadow-2xl p-4 md:p-6 lg:p-8 mb-6 md:mb-8 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
           <div className="relative z-10">
             {sourceChain && (

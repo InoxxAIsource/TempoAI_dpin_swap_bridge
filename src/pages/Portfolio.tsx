@@ -39,9 +39,9 @@ const Portfolio = () => {
       />
 
       {/* Stats Grid */}
-      <section className="px-6 md:px-12 py-8">
+      <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {stats.map((stat, index) => (
               <StatCard key={index} {...stat} />
             ))}
@@ -50,10 +50,10 @@ const Portfolio = () => {
       </section>
 
       {/* Assets Grid */}
-      <section className="px-6 md:px-12 py-8">
+      <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8">Your Assets</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Your Assets</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {assets.map((asset, index) => (
               <AssetCard key={index} {...asset} />
             ))}
@@ -62,12 +62,12 @@ const Portfolio = () => {
       </section>
 
       {/* Chain Distribution */}
-      <section className="px-6 md:px-12 py-8 pb-20">
+      <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8 pb-16 md:pb-20">
         <div className="max-w-6xl mx-auto">
-          <div className="border border-border rounded-2xl p-8 bg-card">
-            <h2 className="text-3xl font-bold mb-8">Chain Distribution</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="h-[300px]">
+          <div className="border border-border rounded-2xl p-4 md:p-6 lg:p-8 bg-card">
+            <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Chain Distribution</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+              <div className="h-[250px] md:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
