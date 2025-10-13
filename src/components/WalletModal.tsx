@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useWalletContext } from '@/contexts/WalletContext';
+import { useWeb3Auth } from '@/hooks/useWeb3Auth';
+import { Loader2, CheckCircle2 } from 'lucide-react';
 
 interface WalletModalProps {
   open: boolean;
@@ -13,7 +15,19 @@ interface WalletModalProps {
 
 const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
   const [activeTab, setActiveTab] = useState('evm');
-  const { isEvmConnected, isSolanaConnected } = useWalletContext();
+  const { isEvmConnected, isSolanaConnected, isWalletAuthenticated, solanaAddress } = useWalletContext();
+  const { authenticateWithSolana, isAuthenticating } = useWeb3Auth();
+
+  // Auto-authenticate when Solana wallet connects
+  useEffect(() => {
+    if (isSolanaConnected && !isWalletAuthenticated && !isAuthenticating) {
+      // Delay to ensure wallet is fully connected
+      const timer = setTimeout(() => {
+        authenticateWithSolana();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isSolanaConnected, isWalletAuthenticated, isAuthenticating]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -47,8 +61,34 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
             <div className="flex justify-center [&_button]:!bg-primary [&_button]:!text-primary-foreground [&_button]:!rounded-full">
               <WalletMultiButton />
             </div>
-            {isSolanaConnected && (
-              <p className="text-sm text-center text-green-500">✓ Solana wallet connected</p>
+            
+            {isAuthenticating && (
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Authenticating... Please sign the message in your wallet</span>
+              </div>
+            )}
+            
+            {isSolanaConnected && isWalletAuthenticated && (
+              <div className="flex items-center justify-center gap-2 text-sm text-green-500">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>✓ Wallet connected & authenticated</span>
+              </div>
+            )}
+            
+            {isSolanaConnected && !isWalletAuthenticated && !isAuthenticating && (
+              <div className="space-y-2">
+                <p className="text-sm text-center text-amber-500">
+                  ⚠️ Wallet connected but not authenticated
+                </p>
+                <Button 
+                  onClick={authenticateWithSolana} 
+                  size="sm" 
+                  className="w-full"
+                >
+                  Sign Message to Authenticate
+                </Button>
+              </div>
             )}
           </TabsContent>
         </Tabs>

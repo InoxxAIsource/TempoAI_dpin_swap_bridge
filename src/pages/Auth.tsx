@@ -5,13 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import WalletModal from '@/components/WalletModal';
+import { Wallet } from 'lucide-react';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -117,6 +121,32 @@ const Auth = () => {
               {loading ? 'Loading...' : isLogin ? 'Sign In' : 'Sign Up'}
             </Button>
           </form>
+          
+          <div className="my-6 relative">
+            <Separator />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-4">
+              <span className="text-sm text-muted-foreground">OR</span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm text-center text-muted-foreground">
+              Continue with your wallet
+            </p>
+            <Button 
+              type="button"
+              variant="outline" 
+              className="w-full gap-2"
+              onClick={() => setWalletModalOpen(true)}
+            >
+              <Wallet className="w-4 h-4" />
+              Connect Solana Wallet
+            </Button>
+            <p className="text-xs text-center text-muted-foreground">
+              EVM wallet support coming soon
+            </p>
+          </div>
+
           <div className="mt-4 text-center text-sm">
             <button
               type="button"
@@ -128,6 +158,8 @@ const Auth = () => {
           </div>
         </CardContent>
       </Card>
+      
+      <WalletModal open={walletModalOpen} onOpenChange={setWalletModalOpen} />
     </div>
   );
 };

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Wallet, ChevronDown, Moon, Sun, Menu, Layers } from 'lucide-react';
+import { Wallet, ChevronDown, Moon, Sun, Menu, Layers, CheckCircle2 } from 'lucide-react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import WalletModal from './WalletModal';
@@ -29,7 +29,11 @@ const Header = () => {
     evmBalance,
     solanaBalance,
     disconnectEvm,
-    disconnectSolana 
+    disconnectSolana,
+    isWalletAuthenticated,
+    isAuthenticated,
+    authMethod,
+    isSolanaConnected
   } = useWalletContext();
   
   useEffect(() => {
@@ -77,9 +81,14 @@ const Header = () => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  const handleDisconnectAll = () => {
+  const handleDisconnectAll = async () => {
     if (evmAddress) disconnectEvm();
     if (solanaAddress) disconnectSolana();
+    
+    // Also sign out from Supabase if authenticated via wallet
+    if (authMethod === 'wallet') {
+      await supabase.auth.signOut();
+    }
   };
 
   return (
@@ -235,7 +244,16 @@ const Header = () => {
                 <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-64">
+              {/* Authentication Status */}
+              {isAuthenticated && (
+                <DropdownMenuItem className="flex items-center gap-2 bg-muted/50">
+                  <span className="text-xs">
+                    {authMethod === 'wallet' ? '✓ Authenticated via Wallet' : '✓ Authenticated via Email'}
+                  </span>
+                </DropdownMenuItem>
+              )}
+              
               {evmAddress && (
                 <DropdownMenuItem className="flex flex-col items-start">
                   <span className="text-xs text-muted-foreground">EVM</span>
@@ -245,16 +263,24 @@ const Header = () => {
               )}
               {solanaAddress && (
                 <DropdownMenuItem className="flex flex-col items-start">
-                  <span className="text-xs text-muted-foreground">Solana</span>
+                  <div className="flex items-center gap-2 w-full">
+                    <span className="text-xs text-muted-foreground">Solana</span>
+                    {isWalletAuthenticated && (
+                      <span className="text-xs text-green-500">✓</span>
+                    )}
+                  </div>
                   <span className="font-mono text-sm text-foreground">{formatAddress(solanaAddress)}</span>
                   {solanaBalance && <span className="text-xs text-muted-foreground">{solanaBalance} SOL</span>}
+                  {!isWalletAuthenticated && isSolanaConnected && (
+                    <span className="text-xs text-amber-500">⚠️ Not authenticated</span>
+                  )}
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem 
                 onClick={handleDisconnectAll}
                 className="text-destructive cursor-pointer"
               >
-                Disconnect All
+                Disconnect All {authMethod === 'wallet' && '& Sign Out'}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

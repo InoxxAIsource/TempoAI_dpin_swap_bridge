@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useAccount, useBalance, useDisconnect } from 'wagmi';
 import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
 import { Connection, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { supabase } from '@/integrations/supabase/client';
+import type { Session } from '@supabase/supabase-js';
 
 interface WalletContextType {
   // EVM
@@ -19,6 +21,13 @@ interface WalletContextType {
   
   // Combined
   isAnyWalletConnected: boolean;
+  
+  // Authentication
+  isAuthenticated: boolean;
+  authMethod: 'wallet' | 'email' | null;
+  walletAuthenticatedAddress: string | undefined;
+  isWalletAuthenticated: boolean;
+  session: Session | null;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -34,6 +43,39 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   // Solana Wallet State
   const { publicKey: solanaPublicKey, connected: isSolanaConnected, disconnect: disconnectSolana } = useSolanaWallet();
   const [solanaBalance, setSolanaBalance] = useState<string>();
+  
+  // Authentication State
+  const [session, setSession] = useState<Session | null>(null);
+  const [authMethod, setAuthMethod] = useState<'wallet' | 'email' | null>(null);
+
+  // Listen to Supabase auth changes
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user?.user_metadata?.wallet_address) {
+        setAuthMethod('wallet');
+      } else if (session?.user?.email) {
+        setAuthMethod('email');
+      } else {
+        setAuthMethod(null);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session?.user?.user_metadata?.wallet_address) {
+        setAuthMethod('wallet');
+      } else if (session?.user?.email) {
+        setAuthMethod('email');
+      } else {
+        setAuthMethod(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Fetch Solana balance
   useEffect(() => {
@@ -48,6 +90,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [solanaPublicKey]);
 
+  const walletAuthenticatedAddress = session?.user?.user_metadata?.wallet_address;
+  const isWalletAuthenticated = authMethod === 'wallet' && !!walletAuthenticatedAddress;
+  const isAuthenticated = !!session;
+
   const value: WalletContextType = {
     evmAddress,
     evmBalance: evmBalanceData ? parseFloat(evmBalanceData.formatted).toFixed(4) : undefined,
@@ -61,6 +107,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     disconnectSolana,
     
     isAnyWalletConnected: isEvmConnected || isSolanaConnected,
+    
+    isAuthenticated,
+    authMethod,
+    walletAuthenticatedAddress,
+    isWalletAuthenticated,
+    session,
   };
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;

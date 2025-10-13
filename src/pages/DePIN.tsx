@@ -15,6 +15,8 @@ import FloatingHelpButton from '../components/depin/FloatingHelpButton';
 import { Button } from '../components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useWalletContext } from '@/contexts/WalletContext';
+import { useNavigate } from 'react-router-dom';
 
 interface Device {
   id: string;
@@ -38,7 +40,10 @@ const DePIN = () => {
   const [showAddDevice, setShowAddDevice] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
+  const [showWalletModal, setShowWalletModal] = useState(false);
   const { toast } = useToast();
+  const { isAuthenticated, authMethod } = useWalletContext();
+  const navigate = useNavigate();
 
   useEffect(() => {
     checkFirstVisit();
@@ -78,6 +83,23 @@ const DePIN = () => {
   };
 
   const handleConnectReal = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please connect your wallet or login to add devices",
+        action: (
+          <div className="flex gap-2 mt-2">
+            <Button size="sm" onClick={() => setShowWalletModal(true)}>
+              Connect Wallet
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate('/auth')}>
+              Login
+            </Button>
+          </div>
+        ),
+      });
+      return;
+    }
     setShowAddDevice(true);
   };
 
@@ -330,8 +352,19 @@ const DePIN = () => {
             </div>
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-4 md:mb-6 gap-2">
-                <h2 className="text-2xl md:text-3xl font-bold">Your Devices</h2>
-                <Button onClick={() => setShowAddDevice(true)} className="gap-2 text-sm md:text-base">
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-bold">Your Devices</h2>
+                  {authMethod && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Authenticated via {authMethod === 'wallet' ? 'Wallet' : 'Email'}
+                    </p>
+                  )}
+                </div>
+                <Button 
+                  onClick={handleConnectReal} 
+                  className="gap-2 text-sm md:text-base"
+                  disabled={!isAuthenticated}
+                >
                   <Plus className="w-3 h-3 md:w-4 md:h-4" />
                   <span className="hidden sm:inline">Add Device</span>
                   <span className="sm:hidden">Add</span>

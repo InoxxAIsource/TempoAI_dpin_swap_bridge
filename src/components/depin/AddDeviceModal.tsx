@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Activity, Shield, ArrowRight } from 'lucide-react';
+import { Activity, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useWalletContext } from '@/contexts/WalletContext';
 
 interface AddDeviceModalProps {
   open: boolean;
@@ -24,6 +25,7 @@ const AddDeviceModal = ({ open, onClose, onDeviceAdded, onOpenSetupGuide }: AddD
   const [setupMode, setSetupMode] = useState<'demo' | 'real'>('demo');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { isAuthenticated, authMethod, walletAuthenticatedAddress } = useWalletContext();
 
   const handleSubmit = async () => {
     if (!deviceName || !location) {
@@ -96,6 +98,14 @@ const AddDeviceModal = ({ open, onClose, onDeviceAdded, onOpenSetupGuide }: AddD
           <DialogDescription>
             Configure your new DePIN device for the network
           </DialogDescription>
+          {isAuthenticated && (
+            <div className="flex items-center gap-2 pt-2 text-sm text-green-500">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>
+                Authenticated via {authMethod === 'wallet' ? `Wallet (${walletAuthenticatedAddress?.slice(0, 6)}...${walletAuthenticatedAddress?.slice(-4)})` : 'Email'}
+              </span>
+            </div>
+          )}
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
