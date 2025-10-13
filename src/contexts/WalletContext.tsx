@@ -97,18 +97,46 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   // Unified disconnect function
   const disconnectAll = async () => {
-    // Disconnect wallets
-    if (isEvmConnected) disconnectEvm();
-    if (isSolanaConnected) disconnectSolana();
+    console.log('[WalletContext] Disconnecting all wallets and sessions...');
     
-    // Sign out from Supabase if authenticated via wallet
-    if (authMethod === 'wallet') {
-      await supabase.auth.signOut();
+    try {
+      // Disconnect physical wallets first
+      if (isEvmConnected) {
+        disconnectEvm();
+      }
+      if (isSolanaConnected) {
+        disconnectSolana();
+      }
+      
+      // ALWAYS sign out from Supabase (don't check authMethod)
+      // This ensures we clear any lingering sessions
+      try {
+        await supabase.auth.signOut();
+        console.log('[WalletContext] Supabase session cleared');
+      } catch (signOutError) {
+        console.error('[WalletContext] Error signing out:', signOutError);
+        // Continue anyway - we still want to clear local state
+      }
+      
+      // Force clear local state
+      setSession(null);
+      setAuthMethod(null);
+      
+      // Clear any localStorage cache that might persist
+      try {
+        localStorage.removeItem('supabase.auth.token');
+        localStorage.removeItem('sb-fhmyhvrejofybzdgzxdc-auth-token');
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      console.log('[WalletContext] ✓ All connections cleared successfully');
+    } catch (error) {
+      console.error('[WalletContext] Error during disconnect:', error);
+      // Still clear local state even if other operations fail
+      setSession(null);
+      setAuthMethod(null);
     }
-    
-    // Clear state
-    setSession(null);
-    setAuthMethod(null);
   };
 
   // Debug logging for wallet state changes

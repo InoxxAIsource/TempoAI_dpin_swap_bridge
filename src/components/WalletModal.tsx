@@ -18,6 +18,8 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
   const [activeTab, setActiveTab] = useState('evm');
   const { isEvmConnected, isSolanaConnected, isWalletAuthenticated, solanaAddress } = useWalletContext();
   const { authenticateWithSolana, isAuthenticating } = useWeb3Auth();
+  const [authFailed, setAuthFailed] = useState(false);
+  const [authErrorMessage, setAuthErrorMessage] = useState('');
 
   // Check for stale authentication when modal opens
   useEffect(() => {
@@ -40,10 +42,19 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
   // Auto-authenticate when Solana wallet connects
   useEffect(() => {
     if (isSolanaConnected && !isWalletAuthenticated && !isAuthenticating) {
-      // Delay to ensure wallet is fully connected
-      const timer = setTimeout(() => {
-        authenticateWithSolana();
+      setAuthFailed(false);
+      setAuthErrorMessage('');
+      
+      const timer = setTimeout(async () => {
+        try {
+          await authenticateWithSolana();
+        } catch (error: any) {
+          console.error('[WalletModal] Auto-authentication failed:', error);
+          setAuthFailed(true);
+          setAuthErrorMessage(error.message || 'Authentication failed');
+        }
       }, 500);
+      
       return () => clearTimeout(timer);
     }
   }, [isSolanaConnected, isWalletAuthenticated, isAuthenticating]);
@@ -95,7 +106,30 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
               </div>
             )}
             
-            {isSolanaConnected && !isWalletAuthenticated && !isAuthenticating && (
+            {authFailed && isSolanaConnected && !isWalletAuthenticated && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-red-600 dark:text-red-400 mb-2">
+                  <span className="font-semibold">Authentication Failed</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  {authErrorMessage}
+                </p>
+                <Button 
+                  onClick={() => {
+                    setAuthFailed(false);
+                    setAuthErrorMessage('');
+                    authenticateWithSolana();
+                  }} 
+                  size="sm" 
+                  className="w-full"
+                  variant="default"
+                >
+                  🔄 Retry Authentication
+                </Button>
+              </div>
+            )}
+            
+            {!authFailed && isSolanaConnected && !isWalletAuthenticated && !isAuthenticating && (
               <div className="space-y-2">
                 <p className="text-sm text-center text-amber-500">
                   ⚠️ Wallet connected but not authenticated

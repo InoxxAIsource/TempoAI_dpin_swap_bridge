@@ -77,17 +77,43 @@ serve(async (req) => {
       throw linkError;
     }
 
-    // Extract tokens properly using URL parsing
-    const actionLink = new URL(linkData.properties.action_link);
-    const accessToken = actionLink.searchParams.get('access_token');
-    const refreshToken = actionLink.searchParams.get('refresh_token');
+    console.log('Link data received:', {
+      hasActionLink: !!linkData?.properties?.action_link,
+      actionLinkPreview: linkData?.properties?.action_link?.substring(0, 100)
+    });
 
-    if (!accessToken || !refreshToken) {
-      console.error('Failed to extract tokens from action link:', linkData.properties.action_link);
-      throw new Error('Failed to generate valid session tokens');
+    // Extract tokens with better error handling
+    let accessToken: string | null = null;
+    let refreshToken: string | null = null;
+
+    try {
+      if (!linkData?.properties?.action_link) {
+        throw new Error('No action link in response from Supabase');
+      }
+
+      const actionLink = new URL(linkData.properties.action_link);
+      accessToken = actionLink.searchParams.get('access_token');
+      refreshToken = actionLink.searchParams.get('refresh_token');
+
+      console.log('Token extraction:', {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        accessTokenLength: accessToken?.length || 0,
+        refreshTokenLength: refreshToken?.length || 0
+      });
+
+      if (!accessToken || !refreshToken) {
+        console.error('Missing tokens in action link. Search params:', Array.from(actionLink.searchParams.keys()));
+        throw new Error('Failed to extract tokens from action link');
+      }
+    } catch (parseError) {
+      console.error('Error parsing action link:', parseError);
+      console.error('Raw action link:', linkData?.properties?.action_link);
+      const errorMsg = parseError instanceof Error ? parseError.message : 'Unknown parsing error';
+      throw new Error(`Failed to parse session tokens: ${errorMsg}`);
     }
 
-    console.log('✓ Session tokens generated successfully');
+    console.log('✓ Session tokens extracted successfully');
 
     return new Response(
       JSON.stringify({ 
