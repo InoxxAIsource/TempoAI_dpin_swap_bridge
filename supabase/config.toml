@@ -24,3 +24,6 @@ verify_jwt = false
 [functions.report-device-event]
 verify_jwt = false
 
+[functions.verify-wallet-signature]
+verify_jwt = false
+

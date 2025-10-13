@@ -77,13 +77,33 @@ serve(async (req) => {
       throw linkError;
     }
 
-    console.log('✓ Auth link created successfully');
+    // Extract tokens properly using URL parsing
+    const actionLink = new URL(linkData.properties.action_link);
+    const accessToken = actionLink.searchParams.get('access_token');
+    const refreshToken = actionLink.searchParams.get('refresh_token');
+
+    if (!accessToken || !refreshToken) {
+      console.error('Failed to extract tokens from action link:', linkData.properties.action_link);
+      throw new Error('Failed to generate valid session tokens');
+    }
+
+    console.log('✓ Session tokens generated successfully');
 
     return new Response(
       JSON.stringify({ 
         session: {
-          access_token: linkData.properties.action_link.split('#')[1]?.split('&')[0]?.replace('access_token=', '') || '',
-          user: { id: userId, email: `${walletAddress}@wallet.tempo` }
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: { 
+            id: userId, 
+            email: `${walletAddress}@wallet.tempo`,
+            user_metadata: {
+              wallet_address: walletAddress,
+              auth_method: 'wallet',
+            }
+          }
         }
       }),
       { 

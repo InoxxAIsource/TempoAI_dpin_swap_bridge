@@ -11,7 +11,13 @@ export const useWeb3Auth = () => {
 
   const authenticateWithSolana = async () => {
     if (!publicKey || !signMessage || !connected) {
-      setAuthError('Wallet not connected');
+      const error = 'Wallet not connected. Please connect your Phantom wallet first.';
+      setAuthError(error);
+      toast({
+        title: 'Connection Required',
+        description: error,
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -21,24 +27,40 @@ export const useWeb3Auth = () => {
     try {
       const walletAddress = publicKey.toString();
       
-      // Check if user already has a session
+      // Check if already authenticated
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.user_metadata?.wallet_address === walletAddress) {
-        console.log('Already authenticated with this wallet');
+        console.log('[useWeb3Auth] Already authenticated with this wallet');
         setIsAuthenticating(false);
+        toast({
+          title: 'Already Authenticated',
+          description: 'Your wallet is already connected',
+        });
         return;
       }
 
       // Generate message to sign
-      const message = `Sign this message to authenticate with Tempo DePIN Network\n\nWallet: ${walletAddress}\nTimestamp: ${Date.now()}`;
+      const timestamp = Date.now();
+      const message = `Sign this message to authenticate with Tempo DePIN Network\n\nWallet: ${walletAddress}\nTimestamp: ${timestamp}`;
       const encodedMessage = new TextEncoder().encode(message);
       
+      console.log('[useWeb3Auth] Requesting signature from wallet...');
+      
       // Request signature from wallet
-      const signature = await signMessage(encodedMessage);
+      let signature: Uint8Array;
+      try {
+        signature = await signMessage(encodedMessage);
+        console.log('[useWeb3Auth] ✓ Signature obtained');
+      } catch (signError: any) {
+        console.error('[useWeb3Auth] Signature rejected:', signError);
+        throw new Error('Signature rejected by user. Please approve the signature request to continue.');
+      }
+      
       const signatureBase58 = btoa(String.fromCharCode(...signature));
+      console.log('[useWeb3Auth] Calling verify-wallet-signature edge function...');
 
       // Call edge function to verify and create session
-      const { data, error } = await supabase.functions.invoke('verify-wallet-signature', {
+      const { data, error: invokeError } = await supabase.functions.invoke('verify-wallet-signature', {
         body: {
           walletAddress,
           signature: signatureBase58,
@@ -46,19 +68,43 @@ export const useWeb3Auth = () => {
         },
       });
 
-      if (error) throw error;
-
-      if (data?.session) {
-        // Set the session in Supabase
-        await supabase.auth.setSession(data.session);
-        
-        toast({
-          title: 'Authenticated!',
-          description: 'Successfully signed in with your Solana wallet',
-        });
+      if (invokeError) {
+        console.error('[useWeb3Auth] Edge function invocation error:', invokeError);
+        throw new Error(`Failed to send a request to the Edge function: ${invokeError.message}`);
       }
+
+      if (!data?.session) {
+        console.error('[useWeb3Auth] Invalid response from edge function:', data);
+        throw new Error('Invalid session data received from server');
+      }
+
+      if (!data.session.access_token || !data.session.refresh_token) {
+        console.error('[useWeb3Auth] Missing tokens in session:', data.session);
+        throw new Error('Incomplete session tokens received from server');
+      }
+
+      console.log('[useWeb3Auth] Setting session with tokens...');
+
+      // Set the session in Supabase
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+
+      if (sessionError) {
+        console.error('[useWeb3Auth] Failed to set session:', sessionError);
+        throw new Error(`Failed to set session: ${sessionError.message}`);
+      }
+      
+      console.log('[useWeb3Auth] ✓ Authentication successful!');
+      
+      toast({
+        title: 'Authenticated!',
+        description: 'Successfully signed in with your Solana wallet',
+      });
+      
     } catch (error: any) {
-      console.error('Web3 authentication error:', error);
+      console.error('[useWeb3Auth] Authentication error:', error);
       const errorMessage = error.message || 'Failed to authenticate with wallet';
       setAuthError(errorMessage);
       
