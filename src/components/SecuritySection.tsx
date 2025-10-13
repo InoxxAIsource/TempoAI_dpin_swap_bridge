@@ -33,25 +33,29 @@ const SecuritySection = () => {
         </div>
 
         <div className="mb-20">
-          
+          <h3 className="text-sm text-muted-foreground text-center mb-8 uppercase tracking-wider">Audited by leading Web3 security firms</h3>
           <div className="flex flex-wrap justify-center gap-8">
-            {auditors.map((auditor, index) => {})}
+            {auditors.map((auditor, index) => (
+              <div key={index} className="text-lg font-medium text-foreground/60">
+                {auditor}
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {securityFeatures.map((feature, index) => <div key={index} className="text-center">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+          {securityFeatures.map((feature, index) => (
+            <div key={index} className="text-center">
+              <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
                 <div className="w-8 h-8 rounded-full bg-primary" />
               </div>
               <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-sm text-foreground/70 leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {feature.description}
               </p>
-            </div>)}
+            </div>
+          ))}
         </div>
-
-        
       </div>
     </section>;
 };
