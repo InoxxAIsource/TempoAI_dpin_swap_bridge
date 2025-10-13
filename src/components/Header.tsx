@@ -146,6 +146,16 @@ const Header = () => {
               Transactions
             </Link>
             <Link 
+              to="/depin" 
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                isActive('/depin') 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-muted'
+              }`}
+            >
+              DePIN
+            </Link>
+            <Link 
               to="/chat" 
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                 isActive('/chat') 

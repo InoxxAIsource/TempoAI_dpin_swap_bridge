@@ -18,3 +18,9 @@ verify_jwt = false
 [functions.fetch-defi-yields]
 verify_jwt = false
 
+[functions.simulate-device-events]
+verify_jwt = false
+
+[functions.report-device-event]
+verify_jwt = false
+

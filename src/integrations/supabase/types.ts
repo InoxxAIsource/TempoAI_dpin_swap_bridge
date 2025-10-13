@@ -116,6 +116,136 @@ export type Database = {
         }
         Relationships: []
       }
+      depin_rewards: {
+        Row: {
+          amount: number
+          chain: string
+          claimed_at: string | null
+          created_at: string | null
+          device_id: string
+          id: string
+          status: string | null
+          token: string | null
+          tx_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          chain: string
+          claimed_at?: string | null
+          created_at?: string | null
+          device_id: string
+          id?: string
+          status?: string | null
+          token?: string | null
+          tx_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          chain?: string
+          claimed_at?: string | null
+          created_at?: string | null
+          device_id?: string
+          id?: string
+          status?: string | null
+          token?: string | null
+          tx_hash?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "depin_rewards_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "device_registry"
+            referencedColumns: ["device_id"]
+          },
+        ]
+      }
+      device_events: {
+        Row: {
+          created_at: string | null
+          device_id: string
+          event_type: string
+          id: string
+          metrics: Json
+          reward_amount: number | null
+          signature: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_id: string
+          event_type: string
+          id?: string
+          metrics: Json
+          reward_amount?: number | null
+          signature?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string
+          event_type?: string
+          id?: string
+          metrics?: Json
+          reward_amount?: number | null
+          signature?: string | null
+          verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_events_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "device_registry"
+            referencedColumns: ["device_id"]
+          },
+        ]
+      }
+      device_registry: {
+        Row: {
+          created_at: string | null
+          device_id: string
+          device_name: string
+          device_type: string
+          id: string
+          is_verified: boolean | null
+          last_seen_at: string | null
+          metadata: Json | null
+          public_key: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_id: string
+          device_name: string
+          device_type: string
+          id?: string
+          is_verified?: boolean | null
+          last_seen_at?: string | null
+          metadata?: Json | null
+          public_key?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string
+          device_name?: string
+          device_type?: string
+          id?: string
+          is_verified?: boolean | null
+          last_seen_at?: string | null
+          metadata?: Json | null
+          public_key?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       portfolio_snapshots: {
         Row: {
           chains_queried: string[] | null
