@@ -11,14 +11,14 @@ const OptimizedSection = () => {
 
         <div className="max-w-3xl mb-12">
           <p className="text-lg leading-relaxed text-foreground/80 mb-8">
-            Tempo was built by leading blockchain engineers and AI researchers, with backing from 
-            top-tier crypto VCs including Paradigm, a16z crypto, Sequoia Capital, Coinbase Ventures, 
-            Pantera Capital, and institutional investors managing over $50B in digital assets.
+            Tempo is built by passionate blockchain engineers and AI researchers committed to making 
+            DeFi accessible to everyone. Our platform leverages cutting-edge AI technology and seamless 
+            cross-chain infrastructure powered by Wormhole to deliver a unified DeFi experience.
           </p>
           
           <p className="text-lg leading-relaxed text-foreground/80 mb-12">
-            If you're a protocol, DAO, or institutional investor looking to maximize returns through 
-            AI-driven strategies, join our ecosystem.
+            Whether you're new to DeFi or an experienced trader, Tempo provides the tools you need 
+            to maximize your yields, bridge assets across chains, and earn from DePIN networks.
           </p>
 
           <Button 
@@ -26,7 +26,7 @@ const OptimizedSection = () => {
             size="lg"
             className="rounded-full px-8 py-6 text-base hover:bg-primary hover:text-primary-foreground transition-all duration-300"
           >
-            Join our protocol
+            Join our ecosystem
           </Button>
         </div>
 
