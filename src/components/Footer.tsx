@@ -1,41 +1,83 @@
 const Footer = () => {
   const links = {
-    product: [
-      { name: 'Protocol', href: '#' },
-      { name: 'Yield Farming', href: '#' },
-      { name: 'AI Trading', href: '#' },
-      { name: 'Staking', href: '#' },
-      { name: 'Liquidity Pools', href: '#' },
-      { name: 'Governance', href: '#' },
-    ],
-    resources: [
-      { name: 'Documentation', href: '#' },
-      { name: 'API Reference', href: '#' },
-      { name: 'Whitepaper', href: '#' },
-      { name: 'Research', href: '#' },
-      { name: 'Blog', href: '#' },
-      { name: 'Case Studies', href: '#' },
-    ],
-    community: [
-      { name: 'Discord', href: '#' },
-      { name: 'Twitter', href: '#' },
-      { name: 'GitHub', href: '#' },
-      { name: 'Forum', href: '#' },
-      { name: 'Telegram', href: '#' },
-      { name: 'Events', href: '#' },
-    ],
-    company: [
-      { name: 'About Us', href: '#' },
-      { name: 'Careers', href: '#' },
-      { name: 'Partners', href: '#' },
-      { name: 'Press Kit', href: '#' },
-      { name: 'Contact', href: '#' },
-      { name: 'Legal', href: '#' },
-    ],
+    product: [{
+      name: 'Protocol',
+      href: '#'
+    }, {
+      name: 'Yield Farming',
+      href: '#'
+    }, {
+      name: 'AI Trading',
+      href: '#'
+    }, {
+      name: 'Staking',
+      href: '#'
+    }, {
+      name: 'Liquidity Pools',
+      href: '#'
+    }, {
+      name: 'Governance',
+      href: '#'
+    }],
+    resources: [{
+      name: 'Documentation',
+      href: '#'
+    }, {
+      name: 'API Reference',
+      href: '#'
+    }, {
+      name: 'Whitepaper',
+      href: '#'
+    }, {
+      name: 'Research',
+      href: '#'
+    }, {
+      name: 'Blog',
+      href: '#'
+    }, {
+      name: 'Case Studies',
+      href: '#'
+    }],
+    community: [{
+      name: 'Discord',
+      href: '#'
+    }, {
+      name: 'Twitter',
+      href: '#'
+    }, {
+      name: 'GitHub',
+      href: '#'
+    }, {
+      name: 'Forum',
+      href: '#'
+    }, {
+      name: 'Telegram',
+      href: '#'
+    }, {
+      name: 'Events',
+      href: '#'
+    }],
+    company: [{
+      name: 'About Us',
+      href: '#'
+    }, {
+      name: 'Careers',
+      href: '#'
+    }, {
+      name: 'Partners',
+      href: '#'
+    }, {
+      name: 'Press Kit',
+      href: '#'
+    }, {
+      name: 'Contact',
+      href: '#'
+    }, {
+      name: 'Legal',
+      href: '#'
+    }]
   };
-
-  return (
-    <footer className="relative px-6 md:px-12 py-20 border-t border-border">
+  return <footer className="relative px-6 md:px-12 py-20 border-t border-border">
       <div className="max-w-6xl mx-auto">
         {/* Main Footer Content */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-20">
@@ -74,13 +116,11 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider">Product</h3>
             <ul className="space-y-3">
-              {links.product.map((link) => (
-                <li key={link.name}>
+              {links.product.map(link => <li key={link.name}>
                   <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     {link.name}
                   </a>
-                </li>
-              ))}
+                </li>)}
             </ul>
           </div>
 
@@ -88,13 +128,11 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider">Resources</h3>
             <ul className="space-y-3">
-              {links.resources.map((link) => (
-                <li key={link.name}>
+              {links.resources.map(link => <li key={link.name}>
                   <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     {link.name}
                   </a>
-                </li>
-              ))}
+                </li>)}
             </ul>
           </div>
 
@@ -102,13 +140,11 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider">Community</h3>
             <ul className="space-y-3">
-              {links.community.map((link) => (
-                <li key={link.name}>
+              {links.community.map(link => <li key={link.name}>
                   <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     {link.name}
                   </a>
-                </li>
-              ))}
+                </li>)}
             </ul>
           </div>
 
@@ -116,13 +152,11 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider">Company</h3>
             <ul className="space-y-3">
-              {links.company.map((link) => (
-                <li key={link.name}>
+              {links.company.map(link => <li key={link.name}>
                   <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     {link.name}
                   </a>
-                </li>
-              ))}
+                </li>)}
             </ul>
           </div>
         </div>
@@ -135,11 +169,7 @@ const Footer = () => {
               Get the latest updates on protocol improvements, yield opportunities, and AI-powered trading strategies.
             </p>
             <div className="flex gap-4">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-3 rounded-full border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+              <input type="email" placeholder="Enter your email" className="flex-1 px-4 py-3 rounded-full border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
               <button className="px-8 py-3 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-medium">
                 Subscribe
               </button>
@@ -149,9 +179,7 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground">
-            © 2024 Tempo Protocol. All rights reserved.
-          </p>
+          <p className="text-sm text-muted-foreground">© 2025 Tempo Protocol. All rights reserved.</p>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>
@@ -159,8 +187,6 @@ const Footer = () => {
           </div>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
