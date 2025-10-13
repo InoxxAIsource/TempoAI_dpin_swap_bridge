@@ -51,19 +51,7 @@ const SecuritySection = () => {
             </div>)}
         </div>
 
-        <div className="mt-16 p-8 border border-border rounded-2xl bg-card">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="text-2xl font-bold mb-2">View All Audits</h3>
-              <p className="text-muted-foreground">
-                Access our complete audit reports and security documentation
-              </p>
-            </div>
-            <button className="px-8 py-4 rounded-full border border-border hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300 font-medium whitespace-nowrap">
-              Security Docs →
-            </button>
-          </div>
-        </div>
+        
       </div>
     </section>;
 };
