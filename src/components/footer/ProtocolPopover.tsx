@@ -1,40 +1,47 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import uniswapLogo from "@/assets/protocols/uniswap.png";
+import lidoLogo from "@/assets/protocols/lido.png";
+import pendleLogo from "@/assets/protocols/pendle.png";
+import yearnLogo from "@/assets/protocols/yearn.png";
+import aaveLogo from "@/assets/protocols/aave.png";
+import compoundLogo from "@/assets/protocols/compound.png";
+import curveLogo from "@/assets/protocols/curve.png";
 
 const ProtocolPopover = () => {
   const protocols = [
     {
       name: "Uniswap",
-      logo: "https://cryptologos.cc/logos/uniswap-uni-logo.svg",
+      logo: uniswapLogo,
       color: "#FF007A"
     },
     {
       name: "Lido",
-      logo: "https://cryptologos.cc/logos/lido-dao-ldo-logo.svg",
+      logo: lidoLogo,
       color: "#00A3FF"
     },
     {
       name: "Pendle",
-      logo: "https://assets.coingecko.com/coins/images/15069/standard/Pendle_Logo_Normal-03.png",
+      logo: pendleLogo,
       color: "#00D4AA"
     },
     {
       name: "Yearn",
-      logo: "https://cryptologos.cc/logos/yearn-finance-yfi-logo.svg",
+      logo: yearnLogo,
       color: "#0657F9"
     },
     {
       name: "Aave",
-      logo: "https://cryptologos.cc/logos/aave-aave-logo.svg",
+      logo: aaveLogo,
       color: "#B6509E"
     },
     {
       name: "Compound",
-      logo: "https://cryptologos.cc/logos/compound-comp-logo.svg",
+      logo: compoundLogo,
       color: "#00D395"
     },
     {
       name: "Curve",
-      logo: "https://cryptologos.cc/logos/curve-dao-token-crv-logo.svg",
+      logo: curveLogo,
       color: "#FF0000"
     }
   ];
