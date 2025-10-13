@@ -1,23 +1,22 @@
 const SecuritySection = () => {
-  const auditors = ['Trail of Bits', 'OpenZeppelin', 'Quantstamp', 'ConsenSys Diligence', 'Certora', 'Halborn'];
   const securityFeatures = [{
     title: 'Multi-signature Controls',
-    description: 'All protocol upgrades and treasury operations require multiple signatures from trusted parties.'
+    description: 'Protocol upgrades and treasury operations require multiple signatures from trusted parties.'
   }, {
     title: 'Time-locked Upgrades',
-    description: '72-hour timelock on all smart contract upgrades, giving users time to review changes.'
+    description: 'Timelock mechanisms on smart contract upgrades, giving users time to review changes.'
   }, {
     title: 'Emergency Pause',
-    description: 'Decentralized emergency shutdown mechanism to protect funds in case of critical vulnerabilities.'
+    description: 'Emergency shutdown mechanism designed to protect funds in case of critical vulnerabilities.'
   }, {
-    title: 'Insurance Coverage',
-    description: 'Protocol is covered by leading DeFi insurance providers with $50M+ in coverage.'
+    title: 'Smart Contract Security',
+    description: 'Built on battle-tested protocols and following industry best practices for DeFi security.'
   }, {
     title: 'Real-time Monitoring',
-    description: 'AI-powered anomaly detection system monitors all transactions 24/7 for suspicious activity.'
+    description: 'AI-powered monitoring system tracks transactions and detects suspicious activity patterns.'
   }, {
-    title: 'Bug Bounty Program',
-    description: 'Industry-leading bug bounty program with rewards up to $1M for critical vulnerabilities.'
+    title: 'Open Source',
+    description: 'Transparent, open-source codebase enabling community review and contributions.'
   }];
   return <section className="relative px-6 md:px-12 py-32 bg-secondary/30">
       <div className="max-w-6xl mx-auto">
@@ -27,20 +26,9 @@ const SecuritySection = () => {
             <span className="block">always</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Your funds are protected by industry-leading security measures and audited by 
-            the most trusted firms in Web3.
+            Built with security at the core. We're implementing industry-leading security measures 
+            and preparing for comprehensive audits.
           </p>
-        </div>
-
-        <div className="mb-20">
-          <h3 className="text-sm text-muted-foreground text-center mb-8 uppercase tracking-wider">Audited by leading Web3 security firms</h3>
-          <div className="flex flex-wrap justify-center gap-8">
-            {auditors.map((auditor, index) => (
-              <div key={index} className="text-lg font-medium text-foreground/60">
-                {auditor}
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
