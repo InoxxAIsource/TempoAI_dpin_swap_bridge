@@ -1,28 +1,8 @@
 import Mermaid from '../docs/Mermaid';
 import deviceAdditionFlowImage from '@/assets/device-addition-flow.png';
+import earningCalculationFlowImage from '@/assets/earning-calculation-flow.png';
 
 const CompleteFlowDiagram = () => {
-  const earningCalculationFlow = `
-graph LR
-    A[Device Collects Metric] --> B[Sign with Private Key]
-    B --> C[Send to Backend API]
-    C --> D{Verify Signature}
-    D -->|Invalid| E[Reject]
-    D -->|Valid| F[Calculate Base Reward]
-    F --> G{Device Verified?}
-    G -->|Yes - 2x| H[Base × 2]
-    G -->|No - 1x| I[Base × 1]
-    H --> J[Check Uptime]
-    I --> J
-    J --> K{Uptime > 99%?}
-    K -->|Yes| L[Add 10% Bonus]
-    K -->|No| M[No Bonus]
-    L --> N[Store in Database]
-    M --> N
-    N --> O[Update Dashboard]
-    O --> P[User Sees Earnings]
-  `;
-
   const wormholeIntegrationFlow = `
 sequenceDiagram
     participant Device
@@ -66,7 +46,13 @@ sequenceDiagram
         <p className="text-muted-foreground mb-6">
           How your device metrics are verified, calculated, and converted into rewards.
         </p>
-        <Mermaid chart={earningCalculationFlow} />
+        <div className="my-8 p-6 rounded-xl border border-border bg-card/50 overflow-x-auto">
+          <img 
+            src={earningCalculationFlowImage} 
+            alt="Earning Calculation Flow Diagram" 
+            className="w-full h-auto min-w-[800px]"
+          />
+        </div>
       </div>
 
       <div>
