@@ -26,7 +26,7 @@ const WhySection = () => {
             <p className="text-lg leading-relaxed text-foreground/80">
               Our AI assistant guides you through complex strategies, while automated optimization ensures your 
               assets work harder 24/7. From infrastructure to DeFi to cross-chain mobility, Tempo is your complete 
-              omnichain earning platform.
+              unified earning platform.
             </p>
           </div>
         </div>

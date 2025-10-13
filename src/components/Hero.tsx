@@ -15,7 +15,7 @@ const Hero = () => {
         </div>
 
         <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold leading-tight mb-12 max-w-5xl">
-          The omnichain{' '}
+          The unified{' '}
           <span className="block">DeFi platform</span>
           <span className="block">for everyone</span>
         </h1>
@@ -31,7 +31,7 @@ const Hero = () => {
 
         <div className="mt-20 max-w-3xl">
           <p className="text-lg md:text-xl leading-relaxed text-foreground/80">
-            Tempo is an AI-powered omnichain DeFi platform that combines intelligent yield optimization, 
+            Tempo is an AI-powered unified DeFi platform that combines intelligent yield optimization, 
             DePIN infrastructure rewards, seamless cross-chain bridging, and token swaps—all in one place. 
             Earn from multiple sources, move assets across chains instantly with Wormhole, and let AI maximize your returns 24/7.
           </p>
