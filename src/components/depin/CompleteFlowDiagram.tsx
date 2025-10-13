@@ -12,15 +12,29 @@ const CompleteFlowDiagram = () => {
       <div>
         <h3 className="text-2xl font-bold mb-6">Device Addition Flow</h3>
         <p className="text-muted-foreground mb-6">
-          Complete journey from signing up to seeing your first device metrics on the dashboard.
+          Complete journey from signing up to seeing your first device metrics on the dashboard. Click to zoom.
         </p>
-        <div className="my-8 p-6 rounded-xl border border-border bg-card/50">
-          <img 
-            src={deviceAdditionFlowImage} 
-            alt="Device Addition Flow Diagram" 
-            className="w-full h-auto"
-          />
-        </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <div className="my-8 p-6 rounded-xl border border-border bg-card/50 cursor-pointer hover:border-primary/50 transition-colors relative group max-w-2xl mx-auto">
+              <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ZoomIn className="w-5 h-5" />
+              </div>
+              <img 
+                src={deviceAdditionFlowImage} 
+                alt="Device Addition Flow Diagram" 
+                className="w-full h-auto"
+              />
+            </div>
+          </DialogTrigger>
+          <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-auto">
+            <img 
+              src={deviceAdditionFlowImage} 
+              alt="Device Addition Flow Diagram - Zoomed" 
+              className="w-full h-auto"
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div>
