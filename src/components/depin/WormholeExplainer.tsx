@@ -1,18 +1,9 @@
-import { Network, Zap, Lock, TrendingUp, Globe, DollarSign, ArrowRight, Shield } from 'lucide-react';
+import { Network, Zap, Lock, TrendingUp, Globe, DollarSign, ArrowRight, Shield, ZoomIn } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import Mermaid from '../docs/Mermaid';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import diagramTempoImage from '@/assets/diagram_tempo.png';
 
 const WormholeExplainer = () => {
-  const technicalFlow = `
-graph TD
-    A[Your Device Earns USDC on Ethereum] --> B[Click Bridge to Polygon]
-    B --> C[Wormhole Locks USDC on Ethereum]
-    C --> D[19 Guardian Validators Observe]
-    D --> E[Generate VAA Proof]
-    E --> F[Submit VAA to Polygon Contract]
-    F --> G[USDC Released on Polygon]
-    G --> H[Funds in Your Wallet < 2 min]
-  `;
 
   const chains = [
     { name: 'Ethereum', benefit: 'Maximum Security + Liquidity', icon: '🔷' },
@@ -147,7 +138,27 @@ graph TD
       {/* Technical Flow */}
       <div>
         <h3 className="text-3xl font-bold mb-6">How It Works (Technical)</h3>
-        <Mermaid chart={technicalFlow} />
+        <Dialog>
+          <DialogTrigger asChild>
+            <div className="my-8 p-6 rounded-xl border border-border bg-card/50 overflow-x-auto cursor-pointer hover:border-primary/50 transition-colors relative group">
+              <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ZoomIn className="w-5 h-5" />
+              </div>
+              <img 
+                src={diagramTempoImage} 
+                alt="Wormhole Technical Flow Diagram" 
+                className="w-full h-auto min-w-[800px]"
+              />
+            </div>
+          </DialogTrigger>
+          <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-auto">
+            <img 
+              src={diagramTempoImage} 
+              alt="Wormhole Technical Flow Diagram - Zoomed" 
+              className="w-full h-auto"
+            />
+          </DialogContent>
+        </Dialog>
         
         <Card className="p-6 mt-6 bg-muted/30">
           <h4 className="text-lg font-bold mb-4">Step-by-Step Breakdown:</h4>
