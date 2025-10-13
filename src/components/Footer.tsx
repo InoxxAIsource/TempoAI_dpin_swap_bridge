@@ -1,88 +1,35 @@
+import { Link } from 'react-router-dom';
+import ProtocolPopover from './footer/ProtocolPopover';
+import ComingSoonDialog from './footer/ComingSoonDialog';
+
 const Footer = () => {
-  const links = {
-    product: [{
-      name: 'Protocol',
-      href: '#'
-    }, {
-      name: 'Yield Farming',
-      href: '#'
-    }, {
-      name: 'AI Trading',
-      href: '#'
-    }, {
-      name: 'Staking',
-      href: '#'
-    }, {
-      name: 'Liquidity Pools',
-      href: '#'
-    }, {
-      name: 'Governance',
-      href: '#'
-    }],
-    resources: [{
-      name: 'Documentation',
-      href: '#'
-    }, {
-      name: 'API Reference',
-      href: '#'
-    }, {
-      name: 'Whitepaper',
-      href: '#'
-    }, {
-      name: 'Research',
-      href: '#'
-    }, {
-      name: 'Blog',
-      href: '#'
-    }, {
-      name: 'Case Studies',
-      href: '#'
-    }],
-    community: [{
-      name: 'Discord',
-      href: '#'
-    }, {
-      name: 'Twitter',
-      href: '#'
-    }, {
-      name: 'GitHub',
-      href: '#'
-    }, {
-      name: 'Forum',
-      href: '#'
-    }, {
-      name: 'Telegram',
-      href: '#'
-    }, {
-      name: 'Events',
-      href: '#'
-    }],
-    company: [{
-      name: 'About Us',
-      href: '#'
-    }, {
-      name: 'Careers',
-      href: '#'
-    }, {
-      name: 'Partners',
-      href: '#'
-    }, {
-      name: 'Press Kit',
-      href: '#'
-    }, {
-      name: 'Contact',
-      href: '#'
-    }, {
-      name: 'Legal',
-      href: '#'
-    }]
+  const handleResearchClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const productLinks = [
+    { name: 'Protocol', type: 'popover' },
+    { name: 'Yield Farming', href: '/chat', type: 'link' },
+    { name: 'DePIN', href: '/depin', type: 'link' },
+    { name: 'Swap', href: '/swap', type: 'link' },
+    { name: 'Bridge', href: '/bridge', type: 'link' },
+    { name: 'AI Trading', type: 'coming-soon' },
+    { name: 'Staking', type: 'coming-soon' },
+    { name: 'Liquidity Pools', type: 'coming-soon' }
+  ];
+
+  const resourceLinks = [
+    { name: 'Documentation', href: '/docs' },
+    { name: 'Whitepaper', href: '#' },
+    { name: 'Research', href: '#', onClick: handleResearchClick }
+  ];
   return <footer className="relative px-6 md:px-12 py-20 border-t border-border">
       <div className="max-w-6xl mx-auto">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-20">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-20">
           {/* Brand Column */}
-          <div className="col-span-2 md:col-span-4 lg:col-span-1">
+          <div className="col-span-2 md:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2 mb-6">
               <div className="w-10 h-10 rounded-full bg-primary" />
               <span className="text-2xl font-bold">Tempo</span>
@@ -116,11 +63,23 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider">Product</h3>
             <ul className="space-y-3">
-              {links.product.map(link => <li key={link.name}>
-                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    {link.name}
-                  </a>
-                </li>)}
+              {productLinks.map(link => (
+                <li key={link.name}>
+                  {link.type === 'popover' ? (
+                    <ProtocolPopover />
+                  ) : link.type === 'coming-soon' ? (
+                    <ComingSoonDialog featureName={link.name}>
+                      <button className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        {link.name}
+                      </button>
+                    </ComingSoonDialog>
+                  ) : (
+                    <Link to={link.href!} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                      {link.name}
+                    </Link>
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -128,35 +87,23 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider">Resources</h3>
             <ul className="space-y-3">
-              {links.resources.map(link => <li key={link.name}>
-                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    {link.name}
-                  </a>
-                </li>)}
-            </ul>
-          </div>
-
-          {/* Community */}
-          <div>
-            <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider">Community</h3>
-            <ul className="space-y-3">
-              {links.community.map(link => <li key={link.name}>
-                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    {link.name}
-                  </a>
-                </li>)}
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div>
-            <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider">Company</h3>
-            <ul className="space-y-3">
-              {links.company.map(link => <li key={link.name}>
-                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    {link.name}
-                  </a>
-                </li>)}
+              {resourceLinks.map(link => (
+                <li key={link.name}>
+                  {link.onClick ? (
+                    <a 
+                      href={link.href} 
+                      onClick={link.onClick}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {link.name}
+                    </a>
+                  ) : (
+                    <Link to={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                      {link.name}
+                    </Link>
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
         </div>
