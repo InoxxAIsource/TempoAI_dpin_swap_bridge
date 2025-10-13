@@ -5,6 +5,7 @@ import { Badge } from './ui/badge';
 import { Wallet, ChevronDown, Moon, Sun, Menu, Layers, CheckCircle2 } from 'lucide-react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useToast } from '@/hooks/use-toast';
 import WalletModal from './WalletModal';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -22,7 +23,8 @@ const Header = () => {
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [pendingClaimsCount, setPendingClaimsCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
-  const { 
+  const { toast } = useToast();
+  const {
     isAnyWalletConnected, 
     evmAddress, 
     solanaAddress,
@@ -81,7 +83,32 @@ const Header = () => {
   };
 
   const handleDisconnectAll = async () => {
-    await disconnectAll();
+    console.log('[Header] Disconnect All clicked');
+    console.log('[Header] Current state:', { 
+      isAnyWalletConnected, 
+      isAuthenticated, 
+      authMethod 
+    });
+    
+    try {
+      await disconnectAll();
+      console.log('[Header] ✓ Disconnect completed successfully');
+      
+      // Force close the wallet modal if it's open
+      setWalletModalOpen(false);
+      
+      toast({
+        title: 'Disconnected',
+        description: 'All wallets and sessions have been cleared',
+      });
+    } catch (error) {
+      console.error('[Header] Disconnect failed:', error);
+      toast({
+        title: 'Disconnect Failed',
+        description: error instanceof Error ? error.message : 'Failed to disconnect',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

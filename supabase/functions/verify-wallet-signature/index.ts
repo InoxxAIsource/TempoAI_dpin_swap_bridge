@@ -38,6 +38,7 @@ serve(async (req) => {
     }
 
     let userId: string;
+    let tempPassword: string;
     const existingUser = existingUsers.users.find(
       (u) => u.user_metadata?.wallet_address === walletAddress
     );
@@ -45,11 +46,27 @@ serve(async (req) => {
     if (existingUser) {
       console.log('Existing user found:', existingUser.id);
       userId = existingUser.id;
+      tempPassword = `wallet_${walletAddress}_${Date.now()}`;
+      
+      // Update the user to set a password (for existing users)
+      console.log('Updating existing user with temp password');
+      const { error: updateError } = await supabase.auth.admin.updateUserById(
+        userId,
+        { password: tempPassword }
+      );
+      
+      if (updateError) {
+        console.error('Error updating user password:', updateError);
+        throw updateError;
+      }
     } else {
-      // Create new user
+      // Create new user with a temporary password
       console.log('Creating new user for wallet:', walletAddress);
+      tempPassword = `wallet_${walletAddress}_${Date.now()}`;
+      
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: `${walletAddress}@wallet.tempo`,
+        password: tempPassword,
         email_confirm: true,
         user_metadata: {
           wallet_address: walletAddress,
@@ -65,71 +82,34 @@ serve(async (req) => {
       userId = newUser.user.id;
       console.log('✓ New user created:', userId);
     }
-
-    // Generate a sign-in link for the user
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
+    
+    // Sign in the user with the password to get a valid session
+    console.log('Signing in user to create session...');
+    const { data: sessionData, error: signInError } = await supabase.auth.signInWithPassword({
       email: `${walletAddress}@wallet.tempo`,
+      password: tempPassword,
     });
-
-    if (linkError) {
-      console.error('Error generating link:', linkError);
-      throw linkError;
+    
+    if (signInError) {
+      console.error('Error signing in:', signInError);
+      throw signInError;
     }
-
-    console.log('Link data received:', {
-      hasActionLink: !!linkData?.properties?.action_link,
-      actionLinkPreview: linkData?.properties?.action_link?.substring(0, 100)
-    });
-
-    // Extract tokens with better error handling
-    let accessToken: string | null = null;
-    let refreshToken: string | null = null;
-
-    try {
-      if (!linkData?.properties?.action_link) {
-        throw new Error('No action link in response from Supabase');
-      }
-
-      const actionLink = new URL(linkData.properties.action_link);
-      accessToken = actionLink.searchParams.get('access_token');
-      refreshToken = actionLink.searchParams.get('refresh_token');
-
-      console.log('Token extraction:', {
-        hasAccessToken: !!accessToken,
-        hasRefreshToken: !!refreshToken,
-        accessTokenLength: accessToken?.length || 0,
-        refreshTokenLength: refreshToken?.length || 0
-      });
-
-      if (!accessToken || !refreshToken) {
-        console.error('Missing tokens in action link. Search params:', Array.from(actionLink.searchParams.keys()));
-        throw new Error('Failed to extract tokens from action link');
-      }
-    } catch (parseError) {
-      console.error('Error parsing action link:', parseError);
-      console.error('Raw action link:', linkData?.properties?.action_link);
-      const errorMsg = parseError instanceof Error ? parseError.message : 'Unknown parsing error';
-      throw new Error(`Failed to parse session tokens: ${errorMsg}`);
+    
+    if (!sessionData.session) {
+      throw new Error('No session returned from sign in');
     }
-
-    console.log('✓ Session tokens extracted successfully');
+    
+    console.log('✓ Session created successfully');
 
     return new Response(
       JSON.stringify({ 
         session: {
-          access_token: accessToken,
-          refresh_token: refreshToken,
-          expires_in: 3600,
+          access_token: sessionData.session.access_token,
+          refresh_token: sessionData.session.refresh_token,
+          expires_in: sessionData.session.expires_in || 3600,
+          expires_at: sessionData.session.expires_at,
           token_type: 'bearer',
-          user: { 
-            id: userId, 
-            email: `${walletAddress}@wallet.tempo`,
-            user_metadata: {
-              wallet_address: walletAddress,
-              auth_method: 'wallet',
-            }
-          }
+          user: sessionData.session.user
         }
       }),
       { 
