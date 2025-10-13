@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Globe, Shield, Activity, Zap, ArrowRight, AlertCircle } from 'lucide-react';
+import { Globe, Shield, Activity, Zap, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface OnboardingModalProps {
   open: boolean;
@@ -100,8 +100,8 @@ const OnboardingModal = ({
             {isAuthenticated && (
               <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 mt-4">
                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
-                  <Shield className="w-4 h-4" />
-                  <span>Authenticated via {authMethod === 'wallet' ? 'Wallet' : 'Email'}</span>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>✓ Authenticated via {authMethod === 'wallet' ? 'Wallet' : 'Email'}</span>
                 </div>
               </div>
             )}

@@ -7,6 +7,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { useWeb3Auth } from '@/hooks/useWeb3Auth';
 import { Loader2, CheckCircle2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WalletModalProps {
   open: boolean;
@@ -17,6 +18,24 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
   const [activeTab, setActiveTab] = useState('evm');
   const { isEvmConnected, isSolanaConnected, isWalletAuthenticated, solanaAddress } = useWalletContext();
   const { authenticateWithSolana, isAuthenticating } = useWeb3Auth();
+
+  // Check for stale authentication when modal opens
+  useEffect(() => {
+    if (open) {
+      const checkStaleAuth = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        // If there's a wallet session but wallet is not connected, clear it
+        if (session?.user?.user_metadata?.wallet_address) {
+          if (!isSolanaConnected && !isEvmConnected) {
+            await supabase.auth.signOut();
+          }
+        }
+      };
+      
+      checkStaleAuth();
+    }
+  }, [open, isSolanaConnected, isEvmConnected]);
 
   // Auto-authenticate when Solana wallet connects
   useEffect(() => {

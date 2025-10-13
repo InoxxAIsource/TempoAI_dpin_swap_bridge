@@ -21,6 +21,7 @@ interface WalletContextType {
   
   // Combined
   isAnyWalletConnected: boolean;
+  disconnectAll: () => Promise<void>;
   
   // Authentication
   isAuthenticated: boolean;
@@ -94,6 +95,34 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const isWalletAuthenticated = authMethod === 'wallet' && !!walletAuthenticatedAddress;
   const isAuthenticated = !!session;
 
+  // Unified disconnect function
+  const disconnectAll = async () => {
+    // Disconnect wallets
+    if (isEvmConnected) disconnectEvm();
+    if (isSolanaConnected) disconnectSolana();
+    
+    // Sign out from Supabase if authenticated via wallet
+    if (authMethod === 'wallet') {
+      await supabase.auth.signOut();
+    }
+    
+    // Clear state
+    setSession(null);
+    setAuthMethod(null);
+  };
+
+  // Debug logging for wallet state changes
+  useEffect(() => {
+    console.log('[WalletContext] State Update:', {
+      isEvmConnected,
+      isSolanaConnected,
+      isAuthenticated,
+      authMethod,
+      hasSession: !!session,
+      walletAuthenticatedAddress,
+    });
+  }, [isEvmConnected, isSolanaConnected, isAuthenticated, authMethod, session, walletAuthenticatedAddress]);
+
   const value: WalletContextType = {
     evmAddress,
     evmBalance: evmBalanceData ? parseFloat(evmBalanceData.formatted).toFixed(4) : undefined,
@@ -107,6 +136,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     disconnectSolana,
     
     isAnyWalletConnected: isEvmConnected || isSolanaConnected,
+    disconnectAll,
     
     isAuthenticated,
     authMethod,

@@ -22,7 +22,9 @@ console.error = (...args) => {
   if (
     errorMessage.includes('postMessage') ||
     errorMessage.includes('DataCloneError') ||
-    errorMessage.includes('Failed to send message')
+    errorMessage.includes('Failed to send message') ||
+    errorMessage.includes('api.phantom.app') ||
+    errorMessage.includes('Failed to load resource')
   ) {
     // Silently ignore these errors - they don't affect functionality
     return;
@@ -51,7 +53,7 @@ const RootApp = () => {
       <WagmiProvider config={config}>
         <RainbowKitProvider>
           <ConnectionProvider endpoint={solanaEndpoint}>
-            <SolanaWalletProvider wallets={solanaWallets} autoConnect>
+            <SolanaWalletProvider wallets={solanaWallets} autoConnect={false}>
               <WalletModalProvider>
                 <WalletProvider>
                   <App />

@@ -28,8 +28,7 @@ const Header = () => {
     solanaAddress,
     evmBalance,
     solanaBalance,
-    disconnectEvm,
-    disconnectSolana,
+    disconnectAll,
     isWalletAuthenticated,
     isAuthenticated,
     authMethod,
@@ -82,13 +81,7 @@ const Header = () => {
   };
 
   const handleDisconnectAll = async () => {
-    if (evmAddress) disconnectEvm();
-    if (solanaAddress) disconnectSolana();
-    
-    // Also sign out from Supabase if authenticated via wallet
-    if (authMethod === 'wallet') {
-      await supabase.auth.signOut();
-    }
+    await disconnectAll();
   };
 
   return (

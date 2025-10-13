@@ -42,7 +42,7 @@ const DePIN = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [showWalletModal, setShowWalletModal] = useState(false);
   const { toast } = useToast();
-  const { isAuthenticated, authMethod, walletAuthenticatedAddress } = useWalletContext();
+  const { isAuthenticated, authMethod, walletAuthenticatedAddress, isSolanaConnected, isAnyWalletConnected } = useWalletContext();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -68,6 +68,24 @@ const DePIN = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Validate wallet connection state
+  useEffect(() => {
+    const validateWalletState = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // If session exists but wallet is disconnected, show warning
+      if (session?.user?.user_metadata?.wallet_address && !isAnyWalletConnected) {
+        toast({
+          title: "Wallet Disconnected",
+          description: "Please reconnect your wallet to continue using DePIN features",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    validateWalletState();
+  }, [isAnyWalletConnected]);
 
   const checkFirstVisit = async () => {
     const hasVisited = localStorage.getItem('depin_visited');

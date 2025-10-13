@@ -37,6 +37,20 @@ const Bridge = () => {
     fetchTransactions();
     fetchPendingClaims();
   }, [isAnyWalletConnected, evmAddress, solanaAddress]);
+
+  // Validate wallet connection state
+  useEffect(() => {
+    const validateWalletState = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // If session exists but wallet is disconnected, show warning
+      if (session?.user?.user_metadata?.wallet_address && !isAnyWalletConnected) {
+        console.warn('[Bridge] Wallet session exists but wallet not connected');
+      }
+    };
+    
+    validateWalletState();
+  }, [isAnyWalletConnected]);
   
   // Listen for bridge completion event
   useEffect(() => {
