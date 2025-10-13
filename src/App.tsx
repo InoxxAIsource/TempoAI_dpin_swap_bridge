@@ -13,6 +13,7 @@ import Transactions from "./pages/Transactions";
 import Auth from "./pages/Auth";
 import Docs from "./pages/Docs";
 import DePIN from "./pages/DePIN";
+import DePINDocs from "./pages/DePINDocs";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
@@ -31,6 +32,7 @@ const App = () => {
             <Route path="/claim" element={<Claim />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/depin" element={<DePIN />} />
+            <Route path="/depin-docs" element={<DePINDocs />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/docs" element={<Docs />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

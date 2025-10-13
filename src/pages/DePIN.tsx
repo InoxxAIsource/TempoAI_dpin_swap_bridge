@@ -1,10 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Activity, Zap, Clock, TrendingUp } from 'lucide-react';
+import { Activity, Zap, Clock, TrendingUp, Plus } from 'lucide-react';
 import PageLayout from '../components/layout/PageLayout';
 import PageHero from '../components/layout/PageHero';
 import StatCard from '../components/ui/StatCard';
 import DeviceCard from '../components/depin/DeviceCard';
 import WorldMap from '../components/depin/WorldMap';
+import OnboardingModal from '../components/depin/OnboardingModal';
+import ExplainerPanel from '../components/depin/ExplainerPanel';
+import AddDeviceModal from '../components/depin/AddDeviceModal';
+import SetupGuideModal from '../components/depin/SetupGuideModal';
+import RewardsCalculator from '../components/depin/RewardsCalculator';
+import ProcessFlowSection from '../components/depin/ProcessFlowSection';
+import FloatingHelpButton from '../components/depin/FloatingHelpButton';
+import { Button } from '../components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,10 +34,14 @@ const DePIN = () => {
   const [avgUptime, setAvgUptime] = useState(0);
   const [dailyRate, setDailyRate] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAddDevice, setShowAddDevice] = useState(false);
+  const [showSetupGuide, setShowSetupGuide] = useState(false);
+  const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
-    initializeDemo();
+    checkFirstVisit();
     fetchDevices();
     fetchEarnings();
     startSimulation();
@@ -51,6 +63,28 @@ const DePIN = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const checkFirstVisit = async () => {
+    const hasVisited = localStorage.getItem('depin_visited');
+    if (!hasVisited) {
+      setShowOnboarding(true);
+      localStorage.setItem('depin_visited', 'true');
+    }
+  };
+
+  const handleStartDemo = async () => {
+    await initializeDemo();
+    fetchDevices();
+  };
+
+  const handleConnectReal = () => {
+    setShowAddDevice(true);
+  };
+
+  const handleOpenSetupGuide = (deviceId: string) => {
+    setSelectedDeviceId(deviceId);
+    setShowSetupGuide(true);
+  };
 
   const initializeDemo = async () => {
     try {
@@ -228,6 +262,29 @@ const DePIN = () => {
         description="Monitor your physical infrastructure devices and track cross-chain rewards"
       />
 
+      {/* Onboarding Modal */}
+      <OnboardingModal
+        open={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onStartDemo={handleStartDemo}
+        onConnectReal={handleConnectReal}
+      />
+
+      {/* Add Device Modal */}
+      <AddDeviceModal
+        open={showAddDevice}
+        onClose={() => setShowAddDevice(false)}
+        onDeviceAdded={fetchDevices}
+        onOpenSetupGuide={handleOpenSetupGuide}
+      />
+
+      {/* Setup Guide Modal */}
+      <SetupGuideModal
+        open={showSetupGuide}
+        onClose={() => setShowSetupGuide(false)}
+        deviceId={selectedDeviceId}
+      />
+
       {/* Stats Grid */}
       <section className="px-6 md:px-12 py-8">
         <div className="max-w-6xl mx-auto">
@@ -242,6 +299,7 @@ const DePIN = () => {
       {/* World Map Section */}
       <section className="px-6 md:px-12 py-8 bg-muted/20">
         <div className="max-w-6xl mx-auto">
+          <ExplainerPanel />
           <div className="mb-6">
             <h2 className="text-3xl font-bold mb-2">Global Device Network</h2>
             <p className="text-muted-foreground">
@@ -252,12 +310,32 @@ const DePIN = () => {
         </div>
       </section>
 
-      {/* Device Grid */}
+      {/* Process Flow */}
+      <section className="px-6 md:px-12 py-8">
+        <div className="max-w-6xl mx-auto">
+          <ProcessFlowSection />
+        </div>
+      </section>
+
+      {/* Rewards Calculator & Device Grid */}
       <section className="px-6 md:px-12 py-8 pb-20">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold">Your Devices</h2>
-          </div>
+          <div className="grid lg:grid-cols-3 gap-8 mb-8">
+            <div className="lg:col-span-1">
+              <RewardsCalculator
+                deviceCount={devices.length}
+                avgKwhPerDay={35}
+                verifiedDeviceCount={devices.filter(d => d.is_verified).length}
+              />
+            </div>
+            <div className="lg:col-span-2">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-bold">Your Devices</h2>
+                <Button onClick={() => setShowAddDevice(true)} className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add Device
+                </Button>
+              </div>
           
           {loading ? (
             <div className="text-center py-12 text-muted-foreground">Loading devices...</div>
@@ -265,17 +343,25 @@ const DePIN = () => {
             <div className="border border-border rounded-2xl p-12 text-center">
               <Activity className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-xl font-semibold mb-2">No Devices Yet</h3>
-              <p className="text-muted-foreground">Connect your first device to start earning rewards</p>
+              <p className="text-muted-foreground mb-4">Connect your first device to start earning rewards</p>
+              <Button onClick={() => setShowAddDevice(true)} className="gap-2">
+                <Plus className="w-4 h-4" />
+                Add Your First Device
+              </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {devices.map((device) => (
                 <DeviceCard key={device.id} device={device} />
               ))}
             </div>
           )}
+            </div>
+          </div>
         </div>
       </section>
+
+      <FloatingHelpButton />
     </PageLayout>
   );
 };

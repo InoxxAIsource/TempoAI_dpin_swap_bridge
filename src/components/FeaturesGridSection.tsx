@@ -1,36 +1,38 @@
+import { Link } from 'react-router-dom';
+import { MessageSquare, TrendingUp, Repeat, RefreshCw, Activity } from 'lucide-react';
+
 const FeaturesGridSection = () => {
   const features = [
     {
-      title: 'Gas Optimization',
-      description: 'AI batches transactions and chooses optimal timing to minimize gas costs by up to 60%.',
+      title: 'DePIN Network',
+      description: 'Earn rewards from physical infrastructure devices. Monitor solar panels, sensors, and IoT devices cross-chain.',
+      icon: Activity,
+      link: '/depin',
+      highlight: true,
     },
     {
-      title: 'Portfolio Analytics',
-      description: 'Real-time dashboard showing APY, risk metrics, historical performance, and projected earnings.',
+      title: 'AI Assistant',
+      description: 'Chat with AI to optimize yields, execute strategies, and get personalized recommendations.',
+      icon: MessageSquare,
+      link: '/chat',
     },
     {
-      title: 'Tax Reporting',
-      description: 'Automatic transaction tracking and tax report generation compatible with major tax software.',
+      title: 'Yield Strategies',
+      description: 'Automated allocation across Aave, Compound, Curve optimized for highest returns.',
+      icon: TrendingUp,
+      link: '/portfolio',
     },
     {
-      title: 'Mobile App',
-      description: 'Manage your yields on the go with our native iOS and Android apps with biometric security.',
+      title: 'Cross-Chain Bridge',
+      description: 'Seamlessly move assets between chains using Wormhole with instant confirmation.',
+      icon: Repeat,
+      link: '/bridge',
     },
     {
-      title: 'Social Trading',
-      description: 'Follow top-performing strategies and automatically mirror their allocations.',
-    },
-    {
-      title: 'Referral Rewards',
-      description: 'Earn 20% of protocol fees from users you refer, paid directly to your wallet.',
-    },
-    {
-      title: 'No Lock-ups',
-      description: 'Withdraw your assets anytime without penalties or waiting periods.',
-    },
-    {
-      title: 'DAO Governance',
-      description: 'Token holders vote on protocol upgrades, fee structures, and treasury allocations.',
+      title: 'Token Swap',
+      description: 'Best rates aggregated from multiple DEXs with zero slippage protection.',
+      icon: RefreshCw,
+      link: '/swap',
     },
   ];
 
@@ -46,8 +48,57 @@ const FeaturesGridSection = () => {
           </p>
         </div>
 
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          {features.map((feature, index) => {
+            const Icon = feature.icon;
+            return (
+              <Link key={index} to={feature.link} className="group">
+                <div className={`h-full p-8 rounded-2xl border-2 transition-all duration-300 ${
+                  feature.highlight 
+                    ? 'border-primary/50 bg-gradient-to-br from-primary/10 to-secondary/10 hover:border-primary hover:shadow-lg hover:shadow-primary/20' 
+                    : 'border-border hover:border-primary/50'
+                }`}>
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-colors ${
+                    feature.highlight 
+                      ? 'bg-primary/20 group-hover:bg-primary/30' 
+                      : 'bg-primary/10 group-hover:bg-primary/20'
+                  }`}>
+                    <Icon className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </p>
+                  {feature.highlight && (
+                    <div className="mt-4 text-xs font-semibold text-primary">
+                      New Feature ✨
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, index) => (
+          {[
+            {
+              title: 'Gas Optimization',
+              description: 'AI batches transactions and chooses optimal timing to minimize gas costs by up to 60%.',
+            },
+            {
+              title: 'Portfolio Analytics',
+              description: 'Real-time dashboard showing APY, risk metrics, historical performance, and projected earnings.',
+            },
+            {
+              title: 'Tax Reporting',
+              description: 'Automatic transaction tracking and tax report generation compatible with major tax software.',
+            },
+            {
+              title: 'No Lock-ups',
+              description: 'Withdraw your assets anytime without penalties or waiting periods.',
+            },
+          ].map((feature, index) => (
             <div key={index} className="group">
               <div className="h-full p-6 rounded-xl border border-border hover:border-primary/50 transition-all duration-300">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
