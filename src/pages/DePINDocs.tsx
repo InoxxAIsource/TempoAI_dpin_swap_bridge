@@ -2,7 +2,15 @@ import PageLayout from '@/components/layout/PageLayout';
 import PageHero from '@/components/layout/PageHero';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Globe, Zap, Shield, DollarSign, Terminal, HelpCircle, Activity, Code } from 'lucide-react';
+import { Book, TrendingUp, Shield } from 'lucide-react';
+import CompleteFlowDiagram from '@/components/depin/CompleteFlowDiagram';
+import DePINTimeline from '@/components/depin/DePINTimeline';
+import ComparisonCards from '@/components/depin/ComparisonCards';
+import BenefitsShowcase from '@/components/depin/BenefitsShowcase';
+import WormholeExplainer from '@/components/depin/WormholeExplainer';
+import CalculationExamples from '@/components/depin/CalculationExamples';
+import ROICalculator from '@/components/depin/ROICalculator';
+import LearningPath from '@/components/depin/LearningPath';
 
 const DePINDocs = () => {
   return (
@@ -14,15 +22,18 @@ const DePINDocs = () => {
 
       <section className="px-6 md:px-12 py-8 pb-20">
         <div className="max-w-4xl mx-auto">
-          <Tabs defaultValue="overview" className="space-y-8">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="setup">Setup</TabsTrigger>
-              <TabsTrigger value="rewards">Rewards</TabsTrigger>
+          <Tabs defaultValue="getting-started" className="space-y-8">
+            <TabsList className="grid w-full grid-cols-7">
+              <TabsTrigger value="getting-started">Getting Started</TabsTrigger>
+              <TabsTrigger value="benefits">Benefits</TabsTrigger>
+              <TabsTrigger value="wormhole">Wormhole</TabsTrigger>
+              <TabsTrigger value="economics">Economics</TabsTrigger>
+              <TabsTrigger value="advanced">Advanced</TabsTrigger>
               <TabsTrigger value="faq">FAQ</TabsTrigger>
+              <TabsTrigger value="learning">Learning</TabsTrigger>
             </TabsList>
 
-            {/* Overview Tab */}
+            
         {/* Getting Started Tab */}
         <TabsContent value="getting-started" className="space-y-8">
           <Card className="p-8">
