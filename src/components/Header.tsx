@@ -8,6 +8,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useToast } from '@/hooks/use-toast';
 import WalletModal from './WalletModal';
 import { supabase } from '@/integrations/supabase/client';
+import logoLight from '@/assets/logo-light.png';
+import logoDark from '@/assets/logo-dark.png';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +26,7 @@ const Header = () => {
   const [pendingClaimsCount, setPendingClaimsCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
+  const logoSrc = theme === 'dark' ? logoDark : logoLight;
   const {
     isAnyWalletConnected, 
     evmAddress, 
@@ -114,9 +117,12 @@ const Header = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
       <div className="flex items-center justify-between max-w-7xl mx-auto px-6 md:px-12 py-4">
-        <Link to="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 rounded-full bg-primary" />
-          <span className="text-2xl font-bold">Tempo</span>
+        <Link to="/" className="flex items-center group shrink-0">
+          <img 
+            src={logoSrc} 
+            alt="Tempo" 
+            className="h-8 transition-opacity duration-200 group-hover:opacity-80"
+          />
         </Link>
 
         {/* Navigation */}
