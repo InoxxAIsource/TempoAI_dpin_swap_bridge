@@ -67,59 +67,51 @@ serve(async (req) => {
       console.log('✓ New user created:', userId);
     }
     
-    // Generate properly scoped session tokens using recovery link
-    console.log('Generating session tokens for user...');
+    // Generate session using admin password method
+    console.log('Generating admin session for user...');
     
-    // First ensure user is confirmed (needed for token generation)
+    // Set a secure temporary password
+    const tempPassword = crypto.randomUUID();
+    
+    // Update user with confirmed email and temporary password
     const { error: updateError } = await supabase.auth.admin.updateUserById(
       userId,
-      { email_confirm: true }
+      { 
+        email_confirm: true,
+        password: tempPassword,
+        user_metadata: {
+          wallet_address: walletAddress,
+          auth_method: 'wallet',
+        }
+      }
     );
 
     if (updateError) {
-      console.error('Error confirming user:', updateError);
+      console.error('Error updating user:', updateError);
       throw updateError;
     }
 
-    // Generate recovery link which includes tokens in URL parameters
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
+    // Sign in with temporary password to get proper session tokens
+    const { data: sessionData, error: signInError } = await supabase.auth.signInWithPassword({
       email: `${walletAddress}@wallet.tempo`,
+      password: tempPassword,
     });
-    
-    if (linkError) {
-      console.error('Error generating recovery link:', linkError);
-      throw linkError;
+
+    if (signInError || !sessionData.session) {
+      console.error('Error signing in:', signInError);
+      throw signInError || new Error('No session returned from sign in');
     }
-    
-    // Recovery links have tokens in the URL
-    const url = new URL(linkData.properties.action_link);
-    const access_token = url.searchParams.get('access_token');
-    const refresh_token = url.searchParams.get('refresh_token');
-    
-    if (!access_token || !refresh_token) {
-      console.error('Recovery link URL:', linkData.properties.action_link);
-      console.error('URL params:', Array.from(url.searchParams.entries()));
-      throw new Error('Failed to extract tokens from recovery link');
-    }
-    
+
     console.log('✓ Session tokens generated successfully');
 
     return new Response(
       JSON.stringify({ 
         session: {
-          access_token,
-          refresh_token,
-          expires_in: 3600,
+          access_token: sessionData.session.access_token,
+          refresh_token: sessionData.session.refresh_token,
+          expires_in: sessionData.session.expires_in,
           token_type: 'bearer',
-          user: {
-            id: userId,
-            email: `${walletAddress}@wallet.tempo`,
-            user_metadata: {
-              wallet_address: walletAddress,
-              auth_method: 'wallet',
-            }
-          }
+          user: sessionData.user
         }
       }),
       { 
