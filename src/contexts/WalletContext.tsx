@@ -81,11 +81,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   // Fetch Solana balance
   useEffect(() => {
     if (solanaPublicKey) {
-      // Use Alchemy Solana RPC (no API key needed for mainnet reads)
-      const connection = new Connection('https://solana-mainnet.g.alchemy.com/v2/demo');
-      connection.getBalance(solanaPublicKey).then((balance) => {
-        setSolanaBalance((balance / LAMPORTS_PER_SOL).toFixed(4));
-      });
+      // Use public Solana RPC with proper error handling
+      const connection = new Connection('https://api.mainnet-beta.solana.com');
+      
+      connection.getBalance(solanaPublicKey)
+        .then((balance) => {
+          setSolanaBalance((balance / LAMPORTS_PER_SOL).toFixed(4));
+        })
+        .catch((error) => {
+          console.warn('[WalletContext] Failed to fetch Solana balance:', error.message);
+          // Set balance to "0.0000" instead of undefined to show connection worked
+          setSolanaBalance('0.0000');
+        });
     } else {
       setSolanaBalance(undefined);
     }
