@@ -118,8 +118,8 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
       <div className="flex items-center justify-between max-w-7xl mx-auto px-6 md:px-12 py-4">
         <Link to="/" className="flex items-center group shrink-0 focus:outline-none">
-          <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent transition-opacity duration-200 group-hover:opacity-80">
-            Tempo
+          <span className="text-3xl md:text-4xl font-archivo tracking-wider bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent transition-opacity duration-200 group-hover:opacity-80">
+            TEMPO
           </span>
         </Link>
 
