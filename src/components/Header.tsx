@@ -121,7 +121,7 @@ const Header = () => {
           <img 
             src={logoSrc} 
             alt="Tempo" 
-            className="h-8 transition-opacity duration-200 group-hover:opacity-80"
+            className="h-12 transition-opacity duration-200 group-hover:opacity-80"
           />
         </Link>
 
