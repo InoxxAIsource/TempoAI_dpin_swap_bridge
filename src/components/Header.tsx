@@ -115,26 +115,26 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
-      <div className="flex items-center justify-between max-w-7xl mx-auto px-6 md:px-12 py-4">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+      <div className="flex items-center justify-between max-w-7xl mx-auto px-3 md:px-6 lg:px-12 py-2 md:py-4">
         <Link to="/" className="flex items-center group shrink-0 focus:outline-none">
-          <span className="text-3xl md:text-4xl font-archivo tracking-wider bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent transition-opacity duration-200 group-hover:opacity-80">
+          <span className="text-2xl md:text-3xl lg:text-4xl font-archivo tracking-wider bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent transition-opacity duration-200 group-hover:opacity-80">
             TEMPO
           </span>
         </Link>
 
         {/* Navigation */}
-        <nav className="flex items-center gap-2 md:gap-3 flex-1 mx-4 md:mx-8">
+        <nav className="flex items-center gap-1 md:gap-2 flex-1 mx-2 md:mx-4 lg:mx-8">
           {/* Menu Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="rounded-full gap-1">
-                <Menu className="w-4 h-4" />
-                <span className="text-sm font-medium">Menu</span>
+              <Button variant="ghost" size="sm" className="rounded-full gap-1 text-xs md:text-sm px-2 md:px-3">
+                <Menu className="w-3 h-3 md:w-4 md:h-4" />
+                <span className="hidden sm:inline font-medium">Menu</span>
                 <ChevronDown className="w-3 h-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuContent align="start" className="w-56 bg-background z-[100]">
               <ScrollArea className="max-h-[400px]">
                 <Link to="/portfolio">
                   <DropdownMenuItem className={isActive('/portfolio') ? 'bg-muted' : ''}>
@@ -173,13 +173,13 @@ const Header = () => {
           {/* Products Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="rounded-full gap-1">
-                <Layers className="w-4 h-4" />
-                <span className="text-sm font-medium">Products</span>
+              <Button variant="ghost" size="sm" className="rounded-full gap-1 text-xs md:text-sm px-2 md:px-3">
+                <Layers className="w-3 h-3 md:w-4 md:h-4" />
+                <span className="hidden sm:inline font-medium">Products</span>
                 <ChevronDown className="w-3 h-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuContent align="start" className="w-56 bg-background z-[100]">
               <ScrollArea className="max-h-[400px]">
                 <div className="px-2 py-1.5">
                   <ProtocolPopover />
@@ -226,7 +226,7 @@ const Header = () => {
           {/* Docs Tab */}
           <Link 
             to="/docs" 
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+            className={`px-2 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
               isActive('/docs') 
                 ? 'bg-primary text-primary-foreground' 
                 : 'hover:bg-muted'
@@ -241,34 +241,34 @@ const Header = () => {
           variant="ghost"
           size="sm"
           onClick={toggleTheme}
-          className="rounded-full shrink-0 mr-2"
+          className="rounded-full shrink-0 mr-1 md:mr-2 h-8 w-8 md:h-9 md:w-9 p-0"
           aria-label="Toggle theme"
         >
-          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {theme === 'dark' ? <Sun className="w-3 h-3 md:w-4 md:h-4" /> : <Moon className="w-3 h-3 md:w-4 md:h-4" />}
         </Button>
 
         {/* Wallet Connection Button */}
         {!isAnyWalletConnected ? (
           <Button 
-            className="rounded-full shrink-0" 
+            className="rounded-full shrink-0 text-xs md:text-sm px-2 md:px-4" 
             size="sm"
             onClick={() => setWalletModalOpen(true)}
           >
-            <Wallet className="w-4 h-4" />
-            <span className="hidden sm:inline ml-2">Connect</span>
+            <Wallet className="w-3 h-3 md:w-4 md:h-4" />
+            <span className="hidden sm:inline ml-1 md:ml-2">Connect</span>
           </Button>
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="rounded-full shrink-0" size="sm" variant="outline">
-                <Wallet className="w-4 h-4" />
-                <span className="hidden sm:inline ml-2">
+              <Button className="rounded-full shrink-0 text-xs md:text-sm px-2 md:px-3" size="sm" variant="outline">
+                <Wallet className="w-3 h-3 md:w-4 md:h-4" />
+                <span className="hidden sm:inline ml-1 md:ml-2 max-w-[80px] lg:max-w-[120px] truncate">
                   {evmAddress ? formatAddress(evmAddress) : formatAddress(solanaAddress!)}
                 </span>
                 <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuContent align="end" className="w-64 bg-background z-[100]">
               {/* Authentication Status */}
               {isAuthenticated && (
                 <DropdownMenuItem className="flex items-center gap-2 bg-muted/50">

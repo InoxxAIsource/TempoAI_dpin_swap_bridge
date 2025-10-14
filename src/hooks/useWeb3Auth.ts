@@ -53,7 +53,11 @@ export const useWeb3Auth = () => {
         console.log('[useWeb3Auth] ✓ Signature obtained');
       } catch (signError: any) {
         console.error('[useWeb3Auth] Signature rejected:', signError);
-        throw new Error('Signature rejected by user. Please approve the signature request to continue.');
+        const errorMsg = signError.message?.includes('rejected') || signError.message?.includes('denied')
+          ? 'Signature request was rejected. Please try again and approve the request.'
+          : 'Failed to sign message. Please ensure your wallet is unlocked.';
+        setAuthError(errorMsg);
+        throw new Error(errorMsg);
       }
       
       const signatureBase58 = btoa(String.fromCharCode(...signature));
@@ -70,17 +74,23 @@ export const useWeb3Auth = () => {
 
       if (invokeError) {
         console.error('[useWeb3Auth] Edge function invocation error:', invokeError);
-        throw new Error(`Failed to send a request to the Edge function: ${invokeError.message}`);
+        const errorMsg = 'Failed to verify signature. Please try again.';
+        setAuthError(errorMsg);
+        throw new Error(errorMsg);
       }
 
       if (!data?.session) {
         console.error('[useWeb3Auth] Invalid response from edge function:', data);
-        throw new Error('Invalid session data received from server');
+        const errorMsg = 'Invalid response from server. Please try again.';
+        setAuthError(errorMsg);
+        throw new Error(errorMsg);
       }
 
       if (!data.session.access_token || !data.session.refresh_token) {
         console.error('[useWeb3Auth] Missing tokens in session:', data.session);
-        throw new Error('Incomplete session tokens received from server');
+        const errorMsg = 'Authentication incomplete. Please try again.';
+        setAuthError(errorMsg);
+        throw new Error(errorMsg);
       }
 
       console.log('[useWeb3Auth] Setting session with tokens...');
@@ -93,6 +103,8 @@ export const useWeb3Auth = () => {
 
       if (sessionError) {
         console.error('[useWeb3Auth] Failed to set session:', sessionError);
+        const errorMsg = 'Failed to establish session. Please try again.';
+        setAuthError(errorMsg);
         throw new Error(`Failed to set session: ${sessionError.message}`);
       }
       

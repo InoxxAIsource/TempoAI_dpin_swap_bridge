@@ -13,18 +13,18 @@ const Hero = () => {
           </div>
         </div>
 
-        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-bold leading-tight mb-8 md:mb-12 max-w-5xl">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold leading-tight mb-6 md:mb-12 max-w-5xl">
           The unified{' '}
           <span className="block">DeFi platform</span>
           <span className="block">for everyone</span>
         </h1>
 
-        <Button variant="outline" size="lg" onClick={() => navigate('/chat')} className="rounded-full px-6 md:px-8 py-4 md:py-6 text-sm md:text-base hover:bg-primary hover:text-primary-foreground transition-all duration-300">
+        <Button variant="outline" size="lg" onClick={() => navigate('/chat')} className="rounded-full px-4 md:px-8 py-3 md:py-6 text-xs md:text-base hover:bg-primary hover:text-primary-foreground transition-all duration-300">
           Get started
         </Button>
 
-        <div className="mt-12 md:mt-20 max-w-3xl">
-          <p className="text-base md:text-lg lg:text-xl leading-relaxed text-foreground/80">
+        <div className="mt-8 md:mt-20 max-w-3xl">
+          <p className="text-sm md:text-lg lg:text-xl leading-relaxed text-foreground/80">
             Tempo is an AI-native DeFi ecosystem that powers yield farming, DePIN rewards, cross-chain bridges, and token swaps all in one unified hub. Earn from multiple sources, move assets across chains instantly.
           </p>
         </div>

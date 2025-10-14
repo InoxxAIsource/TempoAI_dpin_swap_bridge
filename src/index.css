@@ -102,9 +102,17 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   h1, h2, h3 {
@@ -120,5 +128,13 @@ All colors MUST be HSL.
   .scrollbar-hide {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
+  }
+
+  /* Mobile touch optimization */
+  @media (max-width: 768px) {
+    button, a {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
 }
