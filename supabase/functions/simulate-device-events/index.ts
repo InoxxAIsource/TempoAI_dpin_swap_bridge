@@ -65,29 +65,37 @@ serve(async (req) => {
         }
       }
 
-      const event = {
-        device_id: device.device_id,
-        event_type: 'metrics_update',
-        metrics,
-        signature,
-        verified: false,
-        reward_amount: parseFloat(reward_amount.toFixed(4)),
-      };
+      // Call report-device-event to trigger signature verification
+      try {
+        const reportResponse = await fetch(`${supabaseUrl}/functions/v1/report-device-event`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({
+            device_id: device.device_id,
+            metrics,
+            signature,
+          }),
+        });
 
-      events.push(event);
+        const result = await reportResponse.json();
+        
+        if (result.verified) {
+          console.log(`✅ Device ${device.device_id}: VERIFIED - Reward: ${result.reward_amount} USDC (2x multiplier)`);
+        } else {
+          console.log(`⚠️ Device ${device.device_id}: UNVERIFIED - Reward: ${result.reward_amount} USDC`);
+        }
 
-      // Insert event
-      await supabase.from('device_events').insert(event);
-
-      // Create reward entry
-      await supabase.from('depin_rewards').insert({
-        user_id: device.user_id,
-        device_id: device.device_id,
-        amount: reward_amount,
-        token: 'USDC',
-        chain: 'Solana', // Default to Solana for testnet
-        status: 'pending',
-      });
+        events.push({
+          device_id: device.device_id,
+          verified: result.verified,
+          reward_amount: result.reward_amount,
+        });
+      } catch (error) {
+        console.error(`❌ Error reporting event for device ${device.device_id}:`, error);
+      }
 
       // Update last_seen_at
       await supabase
