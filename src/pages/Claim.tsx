@@ -6,12 +6,13 @@ import ClaimGuideSection from '@/components/claim/ClaimGuideSection';
 import ClaimableTransferCard from '@/components/claim/ClaimableTransferCard';
 import EmptyClaimState from '@/components/claim/EmptyClaimState';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWalletContext } from '@/contexts/WalletContext';
 import WalletModal from '@/components/WalletModal';
-import { Wallet } from 'lucide-react';
+import { Wallet, Sprout } from 'lucide-react';
 
 interface ClaimableTransfer {
   id: string;
@@ -26,6 +27,8 @@ interface ClaimableTransfer {
   created_at: string;
   wormhole_vaa: string | null;
   wallet_address: string;
+  source_type?: string;
+  source_reference_ids?: string[];
 }
 
 const Claim = () => {
@@ -143,12 +146,19 @@ const Claim = () => {
           ) : (
             <div className="grid gap-6">
               {transfers.map(transfer => (
-                <ClaimableTransferCard 
-                  key={transfer.id} 
-                  transfer={transfer}
-                  currentWallet={currentWallet}
-                  onRefresh={fetchClaimableTransfers}
-                />
+                <div key={transfer.id} className="relative">
+                  {transfer.source_type === 'depin_rewards' && (
+                    <Badge className="absolute -top-3 -right-3 z-10 gap-1 bg-green-500/10 text-green-500 border-green-500/20">
+                      <Sprout className="w-3 h-3" />
+                      DePIN Batch Claim
+                    </Badge>
+                  )}
+                  <ClaimableTransferCard 
+                    transfer={transfer}
+                    currentWallet={currentWallet}
+                    onRefresh={fetchClaimableTransfers}
+                  />
+                </div>
               ))}
             </div>
           )}

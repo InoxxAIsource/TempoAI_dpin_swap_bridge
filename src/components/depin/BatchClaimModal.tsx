@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useWalletContext } from '@/contexts/WalletContext';
 import { Loader2, ArrowRight } from 'lucide-react';
 import BridgeFeeEstimator from '@/components/bridge/BridgeFeeEstimator';
 
@@ -37,16 +39,29 @@ const BatchClaimModal = ({
   const [loading, setLoading] = useState(false);
   const [feeEstimate, setFeeEstimate] = useState<any>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { evmAddress, solanaAddress } = useWalletContext();
 
   const handleConfirmClaim = async () => {
     setLoading(true);
     try {
       const deviceIds = deviceBreakdown.map(d => d.deviceId);
+      const walletAddress = evmAddress || solanaAddress;
+
+      if (!walletAddress) {
+        toast({
+          title: "Error",
+          description: "Please connect your wallet first",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const { data, error } = await supabase.functions.invoke('create-batch-claim', {
         body: {
           deviceIds,
           destinationChain: preferredChain,
+          walletAddress,
         },
       });
 
@@ -54,11 +69,14 @@ const BatchClaimModal = ({
 
       toast({
         title: "Claim Initiated",
-        description: `Claiming $${totalAmount.toFixed(2)} from ${deviceBreakdown.length} device(s)`,
+        description: `Now redirecting to bridge to complete the transfer...`,
       });
 
       onSuccess();
       onClose();
+
+      // Redirect to bridge page with prefilled data
+      navigate(`/bridge?amount=${data.totalAmount}&toChain=${preferredChain}&fromChain=${data.fromChain}&token=${data.token}&claimId=${data.claimId}`);
     } catch (error) {
       console.error('Error creating batch claim:', error);
       toast({

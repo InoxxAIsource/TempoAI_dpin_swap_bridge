@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { deviceIds, destinationChain } = await req.json();
+    const { deviceIds, destinationChain, walletAddress } = await req.json();
 
     if (!deviceIds || !Array.isArray(deviceIds) || deviceIds.length === 0) {
       throw new Error('deviceIds array is required');
@@ -19,6 +19,10 @@ Deno.serve(async (req) => {
 
     if (!destinationChain) {
       throw new Error('destinationChain is required');
+    }
+
+    if (!walletAddress) {
+      throw new Error('walletAddress is required');
     }
 
     console.log(`🔄 Creating batch claim for ${deviceIds.length} devices to ${destinationChain}`);
@@ -82,6 +86,31 @@ Deno.serve(async (req) => {
     // Create the batch claim record
     const batchClaimId = crypto.randomUUID();
 
+    // Create wormhole transaction record for the bridge
+    const { data: wormholeTx, error: txError } = await supabase
+      .from('wormhole_transactions')
+      .insert({
+        user_id: user.id,
+        wallet_address: walletAddress.toLowerCase(),
+        from_chain: rewards[0].chain,
+        to_chain: destinationChain,
+        from_token: rewards[0].token || 'USDC',
+        to_token: rewards[0].token || 'USDC',
+        amount: totalAmount,
+        status: 'pending',
+        source_type: 'depin_rewards',
+        source_reference_ids: deviceIds,
+      })
+      .select()
+      .single();
+
+    if (txError) {
+      console.error('Error creating wormhole transaction:', txError);
+      throw txError;
+    }
+
+    console.log(`✅ Wormhole transaction created: ${wormholeTx.id}`);
+
     const { data: claimRecord, error: claimError } = await supabase
       .from('depin_reward_claims')
       .insert({
@@ -90,6 +119,7 @@ Deno.serve(async (req) => {
         total_amount: totalAmount,
         destination_chain: destinationChain,
         status: 'pending_approval',
+        wormhole_tx_id: wormholeTx.id,
       })
       .select()
       .single();
@@ -99,23 +129,30 @@ Deno.serve(async (req) => {
       throw claimError;
     }
 
-    // Update rewards with batch_claim_id
+    // Update rewards with batch_claim_id and set to claiming status
     await supabase
       .from('depin_rewards')
-      .update({ batch_claim_id: claimRecord.id })
+      .update({ 
+        batch_claim_id: claimRecord.id,
+        status: 'claiming',
+        claimed_via_tx: wormholeTx.id
+      })
       .in('id', rewards.map(r => r.id));
 
     const result = {
       claimId: claimRecord.id,
+      wormholeTxId: wormholeTx.id,
       totalAmount,
       deviceCount: deviceIds.length,
       estimatedFees,
       destinationChain,
+      fromChain: rewards[0].chain,
+      token: rewards[0].token || 'USDC',
       status: 'pending_approval',
       rewardIds: rewards.map(r => r.id),
     };
 
-    console.log(`✅ Batch claim created: ${claimRecord.id} for $${totalAmount.toFixed(2)}`);
+    console.log(`✅ Batch claim created: ${claimRecord.id} with Wormhole TX: ${wormholeTx.id} for $${totalAmount.toFixed(2)}`);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
