@@ -117,11 +117,11 @@ const Header = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
       <div className="flex items-center justify-between max-w-7xl mx-auto px-6 md:px-12 py-4">
-        <Link to="/" className="flex items-center group shrink-0">
+        <Link to="/" className="flex items-center group shrink-0 focus:outline-none">
           <img 
             src={logoSrc} 
             alt="Tempo" 
-            className="h-16 transition-opacity duration-200 group-hover:opacity-80"
+            className="h-20 md:h-24 transition-opacity duration-200 group-hover:opacity-80"
           />
         </Link>
 
