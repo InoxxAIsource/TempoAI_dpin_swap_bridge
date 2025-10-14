@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      bridge_fee_estimates: {
+        Row: {
+          amount: number
+          bridge_fee: number | null
+          created_at: string | null
+          estimated_gas_usd: number | null
+          from_chain: string
+          id: string
+          to_chain: string
+          token: string
+          total_cost_usd: number | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          bridge_fee?: number | null
+          created_at?: string | null
+          estimated_gas_usd?: number | null
+          from_chain: string
+          id?: string
+          to_chain: string
+          token: string
+          total_cost_usd?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          bridge_fee?: number | null
+          created_at?: string | null
+          estimated_gas_usd?: number | null
+          from_chain?: string
+          id?: string
+          to_chain?: string
+          token?: string
+          total_cost_usd?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      bridge_preferences: {
+        Row: {
+          auto_claim_enabled: boolean | null
+          claim_threshold: number | null
+          created_at: string | null
+          gas_alert_enabled: boolean | null
+          preferred_chain: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_claim_enabled?: boolean | null
+          claim_threshold?: number | null
+          created_at?: string | null
+          gas_alert_enabled?: boolean | null
+          preferred_chain?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_claim_enabled?: boolean | null
+          claim_threshold?: number | null
+          created_at?: string | null
+          gas_alert_enabled?: boolean | null
+          preferred_chain?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           content: string
@@ -116,11 +185,54 @@ export type Database = {
         }
         Relationships: []
       }
+      depin_reward_claims: {
+        Row: {
+          claimed_at: string | null
+          destination_chain: string
+          device_ids: string[]
+          id: string
+          status: string | null
+          total_amount: number
+          user_id: string
+          wormhole_tx_id: string | null
+        }
+        Insert: {
+          claimed_at?: string | null
+          destination_chain: string
+          device_ids: string[]
+          id?: string
+          status?: string | null
+          total_amount: number
+          user_id: string
+          wormhole_tx_id?: string | null
+        }
+        Update: {
+          claimed_at?: string | null
+          destination_chain?: string
+          device_ids?: string[]
+          id?: string
+          status?: string | null
+          total_amount?: number
+          user_id?: string
+          wormhole_tx_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "depin_reward_claims_wormhole_tx_id_fkey"
+            columns: ["wormhole_tx_id"]
+            isOneToOne: false
+            referencedRelation: "wormhole_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       depin_rewards: {
         Row: {
           amount: number
+          batch_claim_id: string | null
           chain: string
           claimed_at: string | null
+          claimed_via_tx: string | null
           created_at: string | null
           device_id: string
           id: string
@@ -131,8 +243,10 @@ export type Database = {
         }
         Insert: {
           amount: number
+          batch_claim_id?: string | null
           chain: string
           claimed_at?: string | null
+          claimed_via_tx?: string | null
           created_at?: string | null
           device_id: string
           id?: string
@@ -143,8 +257,10 @@ export type Database = {
         }
         Update: {
           amount?: number
+          batch_claim_id?: string | null
           chain?: string
           claimed_at?: string | null
+          claimed_via_tx?: string | null
           created_at?: string | null
           device_id?: string
           id?: string
@@ -154,6 +270,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "depin_rewards_claimed_via_tx_fkey"
+            columns: ["claimed_via_tx"]
+            isOneToOne: false
+            referencedRelation: "wormhole_transactions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "depin_rewards_device_id_fkey"
             columns: ["device_id"]
@@ -419,6 +542,8 @@ export type Database = {
           needs_redemption: boolean | null
           redemption_completed_at: string | null
           redemption_tx_hash: string | null
+          source_reference_ids: string[] | null
+          source_type: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           to_chain: string
           to_token: string
@@ -437,6 +562,8 @@ export type Database = {
           needs_redemption?: boolean | null
           redemption_completed_at?: string | null
           redemption_tx_hash?: string | null
+          source_reference_ids?: string[] | null
+          source_type?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           to_chain: string
           to_token: string
@@ -455,6 +582,8 @@ export type Database = {
           needs_redemption?: boolean | null
           redemption_completed_at?: string | null
           redemption_tx_hash?: string | null
+          source_reference_ids?: string[] | null
+          source_type?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           to_chain?: string
           to_token?: string

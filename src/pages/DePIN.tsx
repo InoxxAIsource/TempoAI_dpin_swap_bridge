@@ -12,6 +12,7 @@ import SetupGuideModal from '../components/depin/SetupGuideModal';
 import RewardsCalculator from '../components/depin/RewardsCalculator';
 import ProcessFlowSection from '../components/depin/ProcessFlowSection';
 import FloatingHelpButton from '../components/depin/FloatingHelpButton';
+import RewardClaimBanner from '../components/depin/RewardClaimBanner';
 import { Button } from '../components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
