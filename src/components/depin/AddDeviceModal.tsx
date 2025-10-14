@@ -11,6 +11,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useWalletContext } from '@/contexts/WalletContext';
 import nacl from 'tweetnacl';
 
+// Browser-compatible base64 encoding
+const uint8ArrayToBase64 = (bytes: Uint8Array): string => {
+  return btoa(String.fromCharCode(...bytes));
+};
+
 interface AddDeviceModalProps {
   open: boolean;
   onClose: () => void;
@@ -47,8 +52,8 @@ const AddDeviceModal = ({ open, onClose, onDeviceAdded, onOpenSetupGuide }: AddD
       
       // Generate Ed25519 keypair for device signature verification
       const keypair = nacl.sign.keyPair();
-      const publicKeyBase64 = Buffer.from(keypair.publicKey).toString('base64');
-      const privateKeyBase64 = Buffer.from(keypair.secretKey).toString('base64');
+      const publicKeyBase64 = uint8ArrayToBase64(keypair.publicKey);
+      const privateKeyBase64 = uint8ArrayToBase64(keypair.secretKey);
       
       const { error } = await supabase.from('device_registry').insert({
         user_id: user.id,
