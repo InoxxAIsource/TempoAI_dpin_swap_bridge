@@ -91,6 +91,7 @@ const Bridge = () => {
             status: tx.status,
             time: formatTimeAgo(new Date(tx.created_at)),
             txHash: tx.tx_hash,
+            sourceType: tx.source_type,
           }));
           setRecentTransfers(formattedTransfers);
         } else {
@@ -195,6 +196,11 @@ const Bridge = () => {
                 ) : (
                   recentTransfers.map((transfer, index) => (
                     <div key={index} className="border border-border rounded-xl p-4 space-y-3 hover:border-primary/50 transition-all duration-300">
+                      {transfer.sourceType === 'depin_rewards' && (
+                        <Badge variant="secondary" className="text-xs bg-green-500/20 text-green-400 border-green-500/50">
+                          🌱 DePIN Batch Claim
+                        </Badge>
+                      )}
                       <div className="flex items-center justify-between gap-2 text-sm">
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{transfer.from}</span>

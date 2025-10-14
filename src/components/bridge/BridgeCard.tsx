@@ -1,18 +1,36 @@
 import { ArrowDownUp, Wallet } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import ChainSelector from './ChainSelector';
 import TokenSelector from './TokenSelector';
 import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { toast } from 'sonner';
 
 const BridgeCard = () => {
   const { evmAddress, evmBalance, solanaAddress, solanaBalance, isAnyWalletConnected } = useWalletContext();
+  const [searchParams] = useSearchParams();
   const [fromChain, setFromChain] = useState('Ethereum');
   const [toChain, setToChain] = useState('Polygon');
   const [amount, setAmount] = useState('');
   const [token, setToken] = useState('USDC');
   const [realBalance, setRealBalance] = useState<string>('0.00');
+  
+  // Read URL parameters for DePIN claim flow
+  const urlAmount = searchParams.get('amount');
+  const urlFromChain = searchParams.get('fromChain');
+  const urlToChain = searchParams.get('toChain');
+  const urlToken = searchParams.get('token');
+  const urlClaimId = searchParams.get('claimId');
+
+  // Pre-fill form with URL parameters for DePIN claim flow
+  useEffect(() => {
+    if (urlAmount) setAmount(urlAmount);
+    if (urlFromChain) setFromChain(urlFromChain);
+    if (urlToChain) setToChain(urlToChain);
+    if (urlToken) setToken(urlToken);
+  }, [urlAmount, urlFromChain, urlToChain, urlToken]);
 
   // Update real balance based on selected chain
   useEffect(() => {
@@ -58,6 +76,20 @@ const BridgeCard = () => {
 
   return (
     <div className="border border-border rounded-2xl p-6 md:p-8 bg-card max-w-2xl mx-auto overflow-hidden">
+      {/* DePIN Claim Flow Indicator */}
+      {urlClaimId && (
+        <div className="mb-4 p-3 border border-green-500/50 rounded-xl bg-green-500/10">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/50">
+              🌱 DePIN Rewards Claim
+            </Badge>
+            <span className="text-sm text-green-400">
+              {urlAmount} {urlToken} from {urlFromChain} to {urlToChain}
+            </span>
+          </div>
+        </div>
+      )}
+      
       {/* FROM Section */}
       <div className="space-y-4 mb-6">
         <div className="flex items-center justify-between flex-wrap gap-2">

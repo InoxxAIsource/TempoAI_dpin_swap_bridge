@@ -40,18 +40,19 @@ const BatchClaimModal = ({
   const [feeEstimate, setFeeEstimate] = useState<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { evmAddress, solanaAddress } = useWalletContext();
+  const { evmAddress, solanaAddress, walletAuthenticatedAddress } = useWalletContext();
 
   const handleConfirmClaim = async () => {
     setLoading(true);
     try {
       const deviceIds = deviceBreakdown.map(d => d.deviceId);
-      const walletAddress = evmAddress || solanaAddress;
+      // Priority: physical wallet connection > authenticated session address
+      const walletAddress = evmAddress || solanaAddress || walletAuthenticatedAddress;
 
       if (!walletAddress) {
         toast({
           title: "Error",
-          description: "Please connect your wallet first",
+          description: "Please authenticate with your wallet first",
           variant: "destructive",
         });
         return;
@@ -68,8 +69,8 @@ const BatchClaimModal = ({
       if (error) throw error;
 
       toast({
-        title: "Claim Initiated",
-        description: `Now redirecting to bridge to complete the transfer...`,
+        title: "✅ Claim Initiated Successfully!",
+        description: `Redirecting to bridge ${data.totalAmount} USDC to ${preferredChain}...`,
       });
 
       onSuccess();
@@ -77,6 +78,14 @@ const BatchClaimModal = ({
 
       // Redirect to bridge page with prefilled data
       navigate(`/bridge?amount=${data.totalAmount}&toChain=${preferredChain}&fromChain=${data.fromChain}&token=${data.token}&claimId=${data.claimId}`);
+      
+      // Follow-up guidance after navigation
+      setTimeout(() => {
+        toast({
+          title: "Complete Your Claim",
+          description: "Connect your wallet in the bridge widget and confirm the transaction to receive your DePIN rewards.",
+        });
+      }, 2000);
     } catch (error) {
       console.error('Error creating batch claim:', error);
       toast({

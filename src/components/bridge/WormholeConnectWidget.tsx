@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import WormholeConnect, { type config } from '@wormhole-foundation/wormhole-connect';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -10,9 +11,16 @@ import { AlertCircle } from 'lucide-react';
 const WormholeConnectWidget = () => {
   const { theme } = useTheme();
   const { isAnyWalletConnected, evmAddress, solanaAddress } = useWalletContext();
+  const [searchParams] = useSearchParams();
   const [widgetKey, setWidgetKey] = useState(0);
   const [rpcError, setRpcError] = useState<string | null>(null);
   const [rpcHealthy, setRpcHealthy] = useState<boolean | null>(null);
+  
+  // Read URL parameters for DePIN claim flow
+  const defaultAmount = searchParams.get('amount');
+  const defaultFromChain = searchParams.get('fromChain');
+  const defaultToChain = searchParams.get('toChain');
+  const claimId = searchParams.get('claimId');
 
   // Force widget remount on initial load
   useEffect(() => {
@@ -37,27 +45,52 @@ const WormholeConnectWidget = () => {
           const { data: { user } } = await supabase.auth.getUser();
           const txData = event.detail;
           
-          await supabase.from('wormhole_transactions').insert({
-            user_id: user?.id || null,
-            from_chain: txData.fromChain || 'Unknown',
-            to_chain: txData.toChain || 'Unknown',
-            from_token: txData.token || 'Unknown',
-            to_token: txData.token || 'Unknown',
-            amount: txData.amount || 0,
-            tx_hash: txData.txHash,
-            status: 'pending',
-            wormhole_vaa: txData.vaa || null,
-            wallet_address: walletAddress,
-          });
+          // CHECK: Is this a DePIN claim flow?
+          if (claimId) {
+            // UPDATE existing transaction instead of creating new one
+            const { error: updateError } = await supabase
+              .from('wormhole_transactions')
+              .update({
+                tx_hash: txData.txHash,
+                status: 'pending' as any,
+                wormhole_vaa: txData.vaa || null,
+              })
+              .eq('user_id', user?.id)
+              .eq('source_type', 'depin_rewards')
+              .is('tx_hash', null)
+              .order('created_at', { ascending: false })
+              .limit(1);
+              
+            if (updateError) throw updateError;
+            
+            toast({
+              title: "🌱 DePIN Claim Transaction Submitted",
+              description: "Your rewards are being bridged. Check Claims page to track progress.",
+            });
+          } else {
+            // CREATE new transaction (existing behavior)
+            await supabase.from('wormhole_transactions').insert({
+              user_id: user?.id || null,
+              from_chain: txData.fromChain || 'Unknown',
+              to_chain: txData.toChain || 'Unknown',
+              from_token: txData.token || 'Unknown',
+              to_token: txData.token || 'Unknown',
+              amount: txData.amount || 0,
+              tx_hash: txData.txHash,
+              status: 'pending',
+              wormhole_vaa: txData.vaa || null,
+              wallet_address: walletAddress,
+            });
 
-          toast({
-            title: "Transaction Submitted",
-            description: "Your bridge transaction is being tracked. Check the Claims page to monitor progress.",
-          });
+            toast({
+              title: "Transaction Submitted",
+              description: "Your bridge transaction is being tracked. Check the Claims page to monitor progress.",
+            });
+          }
           
           // Emit completion event for yield deposit flow
           window.dispatchEvent(new CustomEvent('wormhole-transfer-complete', {
-            detail: txData
+            detail: { ...txData, claimId }
           }));
         } catch (error) {
           console.error('Error saving transaction:', error);
@@ -75,7 +108,7 @@ const WormholeConnectWidget = () => {
     return () => {
       window.removeEventListener('wormhole-transfer', handleWormholeEvent as EventListener);
     };
-  }, [evmAddress, solanaAddress]);
+  }, [evmAddress, solanaAddress, claimId]);
 
   // Create a proper MUI theme
   const muiTheme = useMemo(() => createTheme({
@@ -85,17 +118,13 @@ const WormholeConnectWidget = () => {
   }), [theme]);
 
   // Memoize config to prevent unnecessary recreations
-  const wormholeConfig: config.WormholeConnectConfig = useMemo(() => {
+  const wormholeConfig = useMemo(() => {
     const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
     
-    return {
+    const baseConfig = {
       network: 'Testnet',
       chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
-      
-      // Specify supported testnet tokens
       tokens: ['ETH', 'WETH', 'USDC'],
-      
-      // Use Alchemy RPC for Sepolia with fallback to public RPCs
       rpcs: {
         Sepolia: alchemyKey 
           ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
@@ -106,11 +135,24 @@ const WormholeConnectWidget = () => {
         OptimismSepolia: 'https://sepolia.optimism.io',
         PolygonSepolia: 'https://rpc-amoy.polygon.technology',
       },
-      
-      // Required for wallet functionality - enables WalletConnect support
       walletConnectProjectId: '7cb724bf60c8e3b1b67fdadd7bafcace',
-    };
-  }, []);
+    } as config.WormholeConnectConfig;
+    
+    // Add bridge defaults if URL params exist (DePIN claim flow)
+    if (defaultAmount && defaultFromChain && defaultToChain) {
+      return {
+        ...baseConfig,
+        bridgeDefaults: {
+          fromChain: defaultFromChain,
+          toChain: defaultToChain,
+          token: 'USDC',
+          amount: defaultAmount,
+        }
+      } as config.WormholeConnectConfig;
+    }
+    
+    return baseConfig;
+  }, [defaultAmount, defaultFromChain, defaultToChain]);
 
   // RPC Health Check using Alchemy
   useEffect(() => {
