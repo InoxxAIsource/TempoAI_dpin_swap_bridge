@@ -38,7 +38,6 @@ serve(async (req) => {
     }
 
     let userId: string;
-    let tempPassword: string;
     const existingUser = existingUsers.users.find(
       (u) => u.user_metadata?.wallet_address === walletAddress
     );
@@ -46,27 +45,12 @@ serve(async (req) => {
     if (existingUser) {
       console.log('Existing user found:', existingUser.id);
       userId = existingUser.id;
-      tempPassword = `wallet_${walletAddress}_${Date.now()}`;
-      
-      // Update the user to set a password (for existing users)
-      console.log('Updating existing user with temp password');
-      const { error: updateError } = await supabase.auth.admin.updateUserById(
-        userId,
-        { password: tempPassword }
-      );
-      
-      if (updateError) {
-        console.error('Error updating user password:', updateError);
-        throw updateError;
-      }
     } else {
-      // Create new user with a temporary password
+      // Create new user with email confirmation
       console.log('Creating new user for wallet:', walletAddress);
-      tempPassword = `wallet_${walletAddress}_${Date.now()}`;
       
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: `${walletAddress}@wallet.tempo`,
-        password: tempPassword,
         email_confirm: true,
         user_metadata: {
           wallet_address: walletAddress,
@@ -83,33 +67,44 @@ serve(async (req) => {
       console.log('✓ New user created:', userId);
     }
     
-    // Sign in the user with the password to get a valid session
-    console.log('Signing in user to create session...');
-    const { data: sessionData, error: signInError } = await supabase.auth.signInWithPassword({
+    // Generate properly scoped session tokens using admin API
+    console.log('Generating session tokens for user...');
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
       email: `${walletAddress}@wallet.tempo`,
-      password: tempPassword,
     });
     
-    if (signInError) {
-      console.error('Error signing in:', signInError);
-      throw signInError;
+    if (linkError) {
+      console.error('Error generating session link:', linkError);
+      throw linkError;
     }
     
-    if (!sessionData.session) {
-      throw new Error('No session returned from sign in');
+    // Extract tokens from the magic link
+    const url = new URL(linkData.properties.action_link);
+    const access_token = url.searchParams.get('access_token');
+    const refresh_token = url.searchParams.get('refresh_token');
+    
+    if (!access_token || !refresh_token) {
+      throw new Error('Failed to extract tokens from session link');
     }
     
-    console.log('✓ Session created successfully');
+    console.log('✓ Session tokens generated successfully');
 
     return new Response(
       JSON.stringify({ 
         session: {
-          access_token: sessionData.session.access_token,
-          refresh_token: sessionData.session.refresh_token,
-          expires_in: sessionData.session.expires_in || 3600,
-          expires_at: sessionData.session.expires_at,
+          access_token,
+          refresh_token,
+          expires_in: 3600,
           token_type: 'bearer',
-          user: sessionData.session.user
+          user: {
+            id: userId,
+            email: `${walletAddress}@wallet.tempo`,
+            user_metadata: {
+              wallet_address: walletAddress,
+              auth_method: 'wallet',
+            }
+          }
         }
       }),
       { 

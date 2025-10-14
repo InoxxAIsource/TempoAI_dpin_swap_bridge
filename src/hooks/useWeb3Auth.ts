@@ -96,6 +96,13 @@ export const useWeb3Auth = () => {
         throw new Error(`Failed to set session: ${sessionError.message}`);
       }
       
+      // Verify session was actually set and persisted
+      const { data: { session: verifiedSession } } = await supabase.auth.getSession();
+      if (!verifiedSession) {
+        throw new Error('Session was set but could not be verified');
+      }
+      
+      console.log('[useWeb3Auth] ✓ Session verified and persisted');
       console.log('[useWeb3Auth] ✓ Authentication successful!');
       
       toast({

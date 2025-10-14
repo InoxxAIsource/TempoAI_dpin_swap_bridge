@@ -20,6 +20,8 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
   const { authenticateWithSolana, isAuthenticating } = useWeb3Auth();
   const [authFailed, setAuthFailed] = useState(false);
   const [authErrorMessage, setAuthErrorMessage] = useState('');
+  const [lastAuthAttempt, setLastAuthAttempt] = useState(0);
+  const AUTH_COOLDOWN = 5000; // 5 seconds cooldown between auth attempts
 
   // Check for stale authentication when modal opens
   useEffect(() => {
@@ -39,11 +41,21 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
     }
   }, [open, isSolanaConnected, isEvmConnected]);
 
-  // Auto-authenticate when Solana wallet connects
+  // Auto-authenticate when Solana wallet connects (with cooldown to prevent loops)
   useEffect(() => {
     if (isSolanaConnected && !isWalletAuthenticated && !isAuthenticating) {
+      const now = Date.now();
+      const timeSinceLastAttempt = now - lastAuthAttempt;
+      
+      // Only attempt if cooldown period has passed
+      if (timeSinceLastAttempt < AUTH_COOLDOWN) {
+        console.log('[WalletModal] Authentication cooldown active, skipping...');
+        return;
+      }
+      
       setAuthFailed(false);
       setAuthErrorMessage('');
+      setLastAuthAttempt(now);
       
       const timer = setTimeout(async () => {
         try {
@@ -57,7 +69,7 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
       
       return () => clearTimeout(timer);
     }
-  }, [isSolanaConnected, isWalletAuthenticated, isAuthenticating]);
+  }, [isSolanaConnected, isWalletAuthenticated, isAuthenticating, lastAuthAttempt]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
