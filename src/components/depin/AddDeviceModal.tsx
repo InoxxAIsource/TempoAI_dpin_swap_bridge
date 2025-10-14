@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Activity, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Activity, Shield, ArrowRight, CheckCircle2, Key } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useWalletContext } from '@/contexts/WalletContext';
+import nacl from 'tweetnacl';
 
 interface AddDeviceModalProps {
   open: boolean;
@@ -44,16 +45,23 @@ const AddDeviceModal = ({ open, onClose, onDeviceAdded, onOpenSetupGuide }: AddD
 
       const deviceId = `${deviceType}_${Date.now()}`;
       
+      // Generate Ed25519 keypair for device signature verification
+      const keypair = nacl.sign.keyPair();
+      const publicKeyBase64 = Buffer.from(keypair.publicKey).toString('base64');
+      const privateKeyBase64 = Buffer.from(keypair.secretKey).toString('base64');
+      
       const { error } = await supabase.from('device_registry').insert({
         user_id: user.id,
         device_id: deviceId,
         device_type: deviceType,
         device_name: deviceName,
-        is_verified: false,
+        is_verified: setupMode === 'real', // Real hardware starts as verified
+        public_key: publicKeyBase64,
         metadata: {
           location,
           capacity_kw: capacity ? parseFloat(capacity) : undefined,
-          setup_mode: setupMode
+          setup_mode: setupMode,
+          private_key: setupMode === 'demo' ? privateKeyBase64 : undefined // Store for demo mode only
         }
       });
 
@@ -61,7 +69,10 @@ const AddDeviceModal = ({ open, onClose, onDeviceAdded, onOpenSetupGuide }: AddD
 
       toast({
         title: 'Device Added',
-        description: `${deviceName} has been added successfully`,
+        description: setupMode === 'real' 
+          ? `${deviceName} added with cryptographic verification enabled`
+          : `${deviceName} added in demo mode`,
+        duration: 5000,
       });
 
       if (setupMode === 'real') {
@@ -179,8 +190,12 @@ const AddDeviceModal = ({ open, onClose, onDeviceAdded, onOpenSetupGuide }: AddD
                     <span className="font-semibold">Real Hardware</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Connect Raspberry Pi for 2x rewards (setup guide provided)
+                    Connect Raspberry Pi with Ed25519 signatures for 2x rewards
                   </p>
+                  <div className="flex items-center gap-1 mt-2 text-xs text-green-600 dark:text-green-400">
+                    <Key className="w-3 h-3" />
+                    <span>Cryptographic verification enabled</span>
+                  </div>
                 </label>
               </div>
             </RadioGroup>

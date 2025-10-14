@@ -36,13 +36,42 @@ serve(async (req) => {
     let verified = false;
     let reward_multiplier = 1;
 
-    // For verified devices with signatures, we'd verify here
-    // For now, we'll accept the signature but not verify it (placeholder for future Ed25519 verification)
-    if (device.is_verified && device.public_key && signature) {
-      // In a real implementation, verify the Ed25519 signature here
-      verified = true;
-      reward_multiplier = 2; // 2x rewards for verified devices
-      console.log(`✅ Signature accepted for device ${device_id}`);
+    // Verify Ed25519 signature for devices with public keys
+    if (device.public_key && signature) {
+      try {
+        const publicKeyBytes = Uint8Array.from(
+          atob(device.public_key).split('').map(c => c.charCodeAt(0))
+        );
+        const messageBytes = new TextEncoder().encode(JSON.stringify(metrics));
+        const signatureBytes = Uint8Array.from(
+          atob(signature).split('').map(c => c.charCodeAt(0))
+        );
+
+        const publicKey = await crypto.subtle.importKey(
+          'raw',
+          publicKeyBytes,
+          { name: 'Ed25519' },
+          false,
+          ['verify']
+        );
+
+        verified = await crypto.subtle.verify(
+          { name: 'Ed25519' },
+          publicKey,
+          signatureBytes,
+          messageBytes
+        );
+
+        if (verified) {
+          reward_multiplier = 2; // 2x rewards for verified signatures
+          console.log(`✅ Signature verified for device ${device_id}`);
+        } else {
+          console.log(`❌ Invalid signature for device ${device_id}`);
+        }
+      } catch (error) {
+        console.error('❌ Error verifying signature:', error);
+        verified = false;
+      }
     }
 
     // Calculate reward (example: $0.05 per kWh, 2x for verified)

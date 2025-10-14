@@ -34,14 +34,42 @@ serve(async (req) => {
       const uptime_percent = Math.random() * 10 + 90; // 90-100%
       const reward_amount = energy_kwh * 0.05; // $0.05 per kWh
 
+      const metrics = {
+        energy_kwh: parseFloat(energy_kwh.toFixed(2)),
+        uptime_percent: parseFloat(uptime_percent.toFixed(2)),
+        timestamp: Date.now(),
+      };
+
+      // Sign metrics if device has private key (demo devices only)
+      let signature = null;
+      if (device.metadata?.private_key) {
+        try {
+          const privateKeyBytes = Uint8Array.from(
+            atob(device.metadata.private_key).split('').map(c => c.charCodeAt(0))
+          );
+          const messageBytes = new TextEncoder().encode(JSON.stringify(metrics));
+          const signatureBytes = await crypto.subtle.sign(
+            { name: 'Ed25519' },
+            await crypto.subtle.importKey(
+              'raw',
+              privateKeyBytes.slice(0, 32),
+              { name: 'Ed25519' },
+              false,
+              ['sign']
+            ),
+            messageBytes
+          );
+          signature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)));
+        } catch (error) {
+          console.error('❌ Error signing metrics:', error);
+        }
+      }
+
       const event = {
         device_id: device.device_id,
         event_type: 'metrics_update',
-        metrics: {
-          energy_kwh: parseFloat(energy_kwh.toFixed(2)),
-          uptime_percent: parseFloat(uptime_percent.toFixed(2)),
-          timestamp: Date.now(),
-        },
+        metrics,
+        signature,
         verified: false,
         reward_amount: parseFloat(reward_amount.toFixed(4)),
       };

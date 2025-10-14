@@ -98,7 +98,13 @@ const DeviceCard = ({ device, onDelete }: DeviceCardProps) => {
         ) : (
           <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg">
             <Activity className="w-4 h-4" />
-            <span>Demo Mode</span>
+            <span>Demo Mode • Signed Payloads</span>
+          </div>
+        )}
+        
+        {device.metadata?.private_key && (
+          <div className="text-xs text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-md flex items-center gap-1.5">
+            🔐 Ed25519 signatures enabled
           </div>
         )}
 

@@ -71,6 +71,7 @@
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
+    "tweetnacl": "^1.0.3",
     "vaul": "^0.9.9",
     "viem": "^2.38.0",
     "wagmi": "^2.17.5",
