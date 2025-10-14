@@ -42,6 +42,7 @@ const DePIN = () => {
   const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [userId, setUserId] = useState<string>('');
   const { toast } = useToast();
   const { isAuthenticated, authMethod, walletAuthenticatedAddress, isSolanaConnected, isAnyWalletConnected } = useWalletContext();
   const navigate = useNavigate();
@@ -52,6 +53,13 @@ const DePIN = () => {
     fetchDevices();
     fetchEarnings();
     startSimulation();
+    
+    // Fetch current user ID
+    const fetchUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUserId(user.id);
+    };
+    fetchUserId();
 
     // Real-time updates
     const channel = supabase
@@ -62,6 +70,13 @@ const DePIN = () => {
         table: 'device_events'
       }, () => {
         fetchDevices();
+        fetchEarnings();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'depin_rewards'
+      }, () => {
         fetchEarnings();
       })
       .subscribe();
@@ -432,6 +447,17 @@ const DePIN = () => {
       {/* Stats Grid */}
       <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8">
         <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Network Overview</h2>
+            <Button 
+              onClick={() => navigate('/portfolio')} 
+              variant="outline"
+              className="gap-2"
+            >
+              <TrendingUp className="w-4 h-4" />
+              View Portfolio
+            </Button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {stats.map((stat, index) => (
               <StatCard key={index} {...stat} />
@@ -439,6 +465,21 @@ const DePIN = () => {
           </div>
         </div>
       </section>
+
+      {/* Reward Claim Banner */}
+      {isAuthenticated && userId && (
+        <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8">
+          <div className="max-w-6xl mx-auto">
+            <RewardClaimBanner 
+              userId={userId} 
+              onRefresh={() => {
+                fetchDevices();
+                fetchEarnings();
+              }}
+            />
+          </div>
+        </section>
+      )}
 
       {/* World Map Section */}
       <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8 bg-muted/20">

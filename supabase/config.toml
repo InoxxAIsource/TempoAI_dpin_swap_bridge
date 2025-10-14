@@ -27,3 +27,12 @@ verify_jwt = false
 [functions.verify-wallet-signature]
 verify_jwt = false
 
+[functions.check-pending-rewards]
+verify_jwt = false
+
+[functions.estimate-bridge-fees]
+verify_jwt = false
+
+[functions.create-batch-claim]
+verify_jwt = false
+
