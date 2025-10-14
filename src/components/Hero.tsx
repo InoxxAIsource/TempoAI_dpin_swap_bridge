@@ -7,8 +7,9 @@ const Hero = () => {
         <div className="flex items-center gap-2 mb-6 md:mb-8 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-primary" />
-            <span>
-          </span>
+            <span className="font-archivo tracking-wider text-foreground">
+              TEMPO
+            </span>
           </div>
         </div>
 
