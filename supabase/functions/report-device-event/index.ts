@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
+import nacl from 'https://esm.sh/tweetnacl@1.0.3?target=deno';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,30 +37,25 @@ serve(async (req) => {
     let verified = false;
     let reward_multiplier = 1;
 
-    // Verify Ed25519 signature for devices with public keys
+    // Verify Ed25519 signature using tweetnacl (compatible with frontend)
     if (device.public_key && signature) {
       try {
+        // Decode base64-encoded keys and signature
         const publicKeyBytes = Uint8Array.from(
           atob(device.public_key).split('').map(c => c.charCodeAt(0))
         );
-        const messageBytes = new TextEncoder().encode(JSON.stringify(metrics));
         const signatureBytes = Uint8Array.from(
           atob(signature).split('').map(c => c.charCodeAt(0))
         );
-
-        const publicKey = await crypto.subtle.importKey(
-          'raw',
-          publicKeyBytes,
-          { name: 'Ed25519' },
-          false,
-          ['verify']
-        );
-
-        verified = await crypto.subtle.verify(
-          { name: 'Ed25519' },
-          publicKey,
+        
+        // Create canonical message (same as frontend)
+        const messageBytes = new TextEncoder().encode(JSON.stringify(metrics));
+        
+        // Verify using tweetnacl (matches frontend key format)
+        verified = nacl.sign.detached.verify(
+          messageBytes,
           signatureBytes,
-          messageBytes
+          publicKeyBytes
         );
 
         if (verified) {
