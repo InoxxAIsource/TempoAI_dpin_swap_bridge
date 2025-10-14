@@ -67,25 +67,40 @@ serve(async (req) => {
       console.log('✓ New user created:', userId);
     }
     
-    // Generate properly scoped session tokens using admin API
+    // Generate properly scoped session tokens using recovery link
     console.log('Generating session tokens for user...');
+    
+    // First ensure user is confirmed (needed for token generation)
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
+      userId,
+      { email_confirm: true }
+    );
+
+    if (updateError) {
+      console.error('Error confirming user:', updateError);
+      throw updateError;
+    }
+
+    // Generate recovery link which includes tokens in URL parameters
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
+      type: 'recovery',
       email: `${walletAddress}@wallet.tempo`,
     });
     
     if (linkError) {
-      console.error('Error generating session link:', linkError);
+      console.error('Error generating recovery link:', linkError);
       throw linkError;
     }
     
-    // Extract tokens from the magic link
+    // Recovery links have tokens in the URL
     const url = new URL(linkData.properties.action_link);
     const access_token = url.searchParams.get('access_token');
     const refresh_token = url.searchParams.get('refresh_token');
     
     if (!access_token || !refresh_token) {
-      throw new Error('Failed to extract tokens from session link');
+      console.error('Recovery link URL:', linkData.properties.action_link);
+      console.error('URL params:', Array.from(url.searchParams.entries()));
+      throw new Error('Failed to extract tokens from recovery link');
     }
     
     console.log('✓ Session tokens generated successfully');
