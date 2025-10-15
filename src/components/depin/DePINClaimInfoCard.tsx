@@ -3,11 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle2, AlertCircle, ExternalLink, Link as LinkIcon, DollarSign } from 'lucide-react';
-import { useAccount } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { sepolia } from 'wagmi/chains';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useEvmWalletLink } from '@/hooks/useEvmWalletLink';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { TEMPO_DEPIN_FAUCET_ADDRESS, TEMPO_DEPIN_FAUCET_ABI } from '@/contracts/TempoDePINFaucet';
 
 interface DePINClaimInfoCardProps {
   claimId: string;
@@ -22,18 +24,21 @@ const DePINClaimInfoCard = ({
   contractPreparedAt,
   onContractPrepared 
 }: DePINClaimInfoCardProps) => {
-  const [transferring, setTransferring] = useState(false);
-  const [transferData, setTransferData] = useState<{
-    txHash: string;
-    ethAmount: string;
-    usdcAmount: number;
-    ethPrice: number;
-    explorerUrl: string;
-  } | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const [contractPrepared, setContractPrepared] = useState(false);
+  const [prepareTxHash, setPrepareTxHash] = useState<string | null>(null);
+  const [ethAmount, setEthAmount] = useState<number | null>(null);
   
   const { address } = useAccount();
   const { toast } = useToast();
   const { isLinked, isLinking, linkError, linkEvmWallet } = useEvmWalletLink();
+
+  // Wagmi hooks for claiming from smart contract
+  const { writeContract, data: claimTxHash, isPending: isClaimPending } = useWriteContract();
+  
+  const { isLoading: isClaimConfirming, isSuccess: isClaimSuccess } = useWaitForTransactionReceipt({
+    hash: claimTxHash,
+  });
 
   // Link wallet handler
   const handleLinkWallet = async () => {
@@ -46,8 +51,8 @@ const DePINClaimInfoCard = ({
     }
   };
 
-  // Transfer reward to user's wallet
-  const handleTransferReward = async () => {
+  // Prepare smart contract
+  const handlePrepareContract = async () => {
     if (!address) {
       toast({
         title: "Error",
@@ -66,73 +71,116 @@ const DePINClaimInfoCard = ({
       return;
     }
 
-    setTransferring(true);
+    setPreparing(true);
     try {
-      console.log('Initiating reward transfer...');
+      console.log('[DePINClaimInfoCard] Preparing smart contract...');
+      
       const { data, error } = await supabase.functions.invoke('transfer-reward-eth', {
-        body: { 
+        body: {
           claimId,
-          evmWalletAddress: address 
-        },
+          evmWalletAddress: address
+        }
       });
 
       if (error) throw error;
 
-      console.log('Transfer successful:', data);
-      setTransferData({
-        txHash: data.txHash,
-        ethAmount: data.sepoliaEthAmount,
-        usdcAmount: data.usdcAmount,
-        ethPrice: data.ethPriceUSD,
-        explorerUrl: data.explorerUrl,
-      });
-
+      console.log('[DePINClaimInfoCard] Contract prepared:', data);
+      
+      setContractPrepared(true);
+      setPrepareTxHash(data.prepareTxHash);
+      setEthAmount(parseFloat(data.sepoliaEthAmount));
+      
       toast({
-        title: "Transfer Complete! 🎉",
-        description: `${parseFloat(data.sepoliaEthAmount).toFixed(6)} ETH sent to your wallet`,
+        title: "Contract Prepared! ✅",
+        description: `${parseFloat(data.sepoliaEthAmount).toFixed(6)} ETH is ready to claim. Click "Claim from Contract" to proceed.`,
       });
-
-      // Wait a bit before calling onContractPrepared to let the UI update
-      setTimeout(() => {
-        onContractPrepared(parseFloat(data.sepoliaEthAmount));
-      }, 1000);
-    } catch (error) {
-      console.error('Error transferring reward:', error);
+    } catch (error: any) {
+      console.error('Error preparing contract:', error);
       toast({
-        title: "Transfer Failed",
-        description: error instanceof Error ? error.message : "Failed to transfer reward",
+        title: "Error",
+        description: error?.message || "Failed to prepare contract",
         variant: "destructive",
       });
     } finally {
-      setTransferring(false);
+      setPreparing(false);
     }
   };
 
-  if (contractPreparedAt || transferData) {
+  // User claims from smart contract
+  const handleClaimFromContract = () => {
+    if (!address) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('[DePINClaimInfoCard] User claiming from contract...');
+    
+    writeContract({
+      address: TEMPO_DEPIN_FAUCET_ADDRESS,
+      abi: TEMPO_DEPIN_FAUCET_ABI,
+      functionName: 'claimReward',
+      chain: sepolia,
+      account: address,
+    });
+  };
+
+  // Handle successful claim
+  useEffect(() => {
+    if (isClaimSuccess && ethAmount) {
+      console.log('[DePINClaimInfoCard] Claim successful, updating database...');
+      
+      // Update database with user's claim transaction
+      supabase
+        .from('depin_reward_claims')
+        .update({
+          user_claim_tx: claimTxHash,
+          user_claim_confirmed_at: new Date().toISOString(),
+          status: 'claimed'
+        })
+        .eq('id', claimId)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Failed to update claim:', error);
+          }
+        });
+
+      toast({
+        title: "Claim Complete! 🎉",
+        description: `Successfully claimed ${ethAmount.toFixed(6)} ETH from smart contract!`,
+      });
+      
+      onContractPrepared(ethAmount);
+    }
+  }, [isClaimSuccess, ethAmount, claimTxHash, claimId, onContractPrepared, toast]);
+
+  // Show success state after claiming
+  if (isClaimSuccess && ethAmount) {
     return (
       <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
         <CheckCircle2 className="h-4 w-4 text-green-600" />
         <AlertDescription className="space-y-2">
           <div className="text-green-800 dark:text-green-200 font-semibold">
-            ✓ Reward Transferred Successfully!
+            ✓ Successfully Claimed from Smart Contract!
           </div>
-          {transferData && (
-            <>
-              <div className="text-sm text-green-700 dark:text-green-300">
-                {parseFloat(transferData.ethAmount).toFixed(6)} ETH sent to your Sepolia wallet
-              </div>
-              <a 
-                href={transferData.explorerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
-              >
-                View on Etherscan <ExternalLink className="h-3 w-3" />
-              </a>
-            </>
+          <div className="text-sm text-green-700 dark:text-green-300">
+            {ethAmount.toFixed(6)} ETH claimed to your Sepolia wallet
+          </div>
+          {claimTxHash && (
+            <a 
+              href={`https://sepolia.etherscan.io/tx/${claimTxHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+            >
+              View claim transaction <ExternalLink className="h-3 w-3" />
+            </a>
           )}
           <div className="text-sm text-green-700 dark:text-green-300 mt-2">
-            You can now proceed to bridge your funds to Solana.
+            ETH transfer complete! Click "Proceed to Bridge" to continue.
           </div>
         </AlertDescription>
       </Alert>
@@ -215,29 +263,84 @@ const DePINClaimInfoCard = ({
               </div>
             </div>
 
-            <Button 
-              onClick={handleTransferReward}
-              disabled={transferring}
-              className="w-full"
-              size="lg"
-            >
-              {transferring ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Transferring Reward...
-                </>
-              ) : (
-                <>
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  Transfer Reward to Sepolia
-                </>
-              )}
-            </Button>
+            {/* Step 1: Prepare Contract (backend sets claimable amount) */}
+            {!contractPrepared && !prepareTxHash && (
+              <>
+                <Button 
+                  onClick={handlePrepareContract}
+                  disabled={preparing}
+                  className="w-full"
+                  size="lg"
+                >
+                  {preparing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Preparing Smart Contract...
+                    </>
+                  ) : (
+                    <>
+                      <DollarSign className="mr-2 h-4 w-4" />
+                      Prepare Smart Contract
+                    </>
+                  )}
+                </Button>
+                <div className="text-xs text-muted-foreground text-center space-y-1">
+                  <p>Your USDC rewards will be converted to ETH at current market price</p>
+                  <p>The smart contract will be prepared for you to claim</p>
+                </div>
+              </>
+            )}
 
-            <div className="text-xs text-muted-foreground text-center space-y-1">
-              <p>Your USDC rewards will be converted to ETH at current market price</p>
-              <p>A 2% buffer is added to account for price fluctuations</p>
-            </div>
+            {/* Step 2: User Claims from Contract */}
+            {contractPrepared && !isClaimSuccess && (
+              <div className="space-y-4">
+                <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                  <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="space-y-2">
+                    <div className="text-blue-800 dark:text-blue-200 font-semibold">
+                      Contract Prepared! Ready to Claim
+                    </div>
+                    <div className="text-sm text-blue-700 dark:text-blue-300">
+                      {ethAmount?.toFixed(6)} ETH is ready to claim from the smart contract.
+                      You'll need to approve this transaction in your wallet (MetaMask/etc).
+                    </div>
+                    {prepareTxHash && (
+                      <a 
+                        href={`https://sepolia.etherscan.io/tx/${prepareTxHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+                      >
+                        View preparation tx <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </AlertDescription>
+                </Alert>
+                
+                <Button 
+                  onClick={handleClaimFromContract}
+                  disabled={isClaimPending || isClaimConfirming}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isClaimPending || isClaimConfirming ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {isClaimPending ? 'Approve in Wallet...' : 'Confirming Claim...'}
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Claim from Contract (Approve in Wallet)
+                    </>
+                  )}
+                </Button>
+
+                <div className="text-xs text-muted-foreground text-center">
+                  This will trigger a MetaMask popup for you to approve the claim transaction
+                </div>
+              </div>
+            )}
           </>
         )}
       </CardContent>

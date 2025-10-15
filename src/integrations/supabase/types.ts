@@ -199,6 +199,8 @@ export type Database = {
           sepolia_eth_amount: number | null
           status: string | null
           total_amount: number
+          user_claim_confirmed_at: string | null
+          user_claim_tx: string | null
           user_id: string
           wormhole_tx_id: string | null
         }
@@ -215,6 +217,8 @@ export type Database = {
           sepolia_eth_amount?: number | null
           status?: string | null
           total_amount: number
+          user_claim_confirmed_at?: string | null
+          user_claim_tx?: string | null
           user_id: string
           wormhole_tx_id?: string | null
         }
@@ -231,6 +235,8 @@ export type Database = {
           sepolia_eth_amount?: number | null
           status?: string | null
           total_amount?: number
+          user_claim_confirmed_at?: string | null
+          user_claim_tx?: string | null
           user_id?: string
           wormhole_tx_id?: string | null
         }

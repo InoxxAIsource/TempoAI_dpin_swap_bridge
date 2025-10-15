@@ -20,6 +20,7 @@ const WormholeConnectWidget = () => {
   const defaultAmount = searchParams.get('amount');
   const defaultFromChain = searchParams.get('fromChain');
   const defaultToChain = searchParams.get('toChain');
+  const defaultToken = searchParams.get('token');
   const claimId = searchParams.get('claimId');
 
   // Force widget remount on initial load
@@ -142,19 +143,27 @@ const WormholeConnectWidget = () => {
     
     // Add bridge defaults if URL params exist (DePIN claim flow)
     if (defaultAmount && defaultFromChain && defaultToChain) {
+      console.log('🌉 Wormhole Bridge Defaults:', {
+        fromChain: defaultFromChain,
+        toChain: defaultToChain,
+        token: defaultToken || 'USDC',
+        amount: defaultAmount,
+        claimId: claimId
+      });
+      
       return {
         ...baseConfig,
         bridgeDefaults: {
           fromChain: defaultFromChain,
           toChain: defaultToChain,
-          token: 'USDC',
+          token: defaultToken || 'USDC',
           amount: defaultAmount,
         }
       } as config.WormholeConnectConfig;
     }
     
     return baseConfig;
-  }, [defaultAmount, defaultFromChain, defaultToChain]);
+  }, [defaultAmount, defaultFromChain, defaultToChain, defaultToken]);
 
   // RPC Health Check using Alchemy
   useEffect(() => {

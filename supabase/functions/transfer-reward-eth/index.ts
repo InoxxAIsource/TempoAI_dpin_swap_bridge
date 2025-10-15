@@ -136,56 +136,70 @@ serve(async (req) => {
     const wallet = new ethers.Wallet(deployerPrivateKey, provider);
     console.log(`Deployer wallet address: ${wallet.address}`);
 
-    // Check deployer balance
+    // Smart contract setup
+    const FAUCET_ADDRESS = '0xb90bb7616bc138a177bec31a4571f4fd8fe113a1';
+    const FAUCET_ABI = [
+      'function setClaimableReward(address user, uint256 amount) external',
+      'function getClaimableAmount(address user) view returns (uint256)',
+      'function claimReward() external',
+    ];
+
+    const faucetContract = new ethers.Contract(FAUCET_ADDRESS, FAUCET_ABI, wallet);
+
+    // Check deployer balance for gas
     const balance = await provider.getBalance(wallet.address);
     const balanceInEth = parseFloat(ethers.formatEther(balance));
     console.log(`Deployer balance: ${balanceInEth} ETH`);
 
-    if (balanceInEth < ethAmountWithBuffer) {
-      throw new Error(`Insufficient deployer balance. Has ${balanceInEth} ETH, needs ${ethAmountWithBuffer} ETH`);
-    }
-
-    if (balanceInEth < 5) {
+    if (balanceInEth < 0.1) {
       console.warn(`⚠️ Deployer balance is low: ${balanceInEth} ETH`);
     }
 
-    // Create and send transaction
-    console.log(`Sending ${ethAmountWithBuffer} ETH to ${evmWalletAddress}...`);
-    
-    const tx = await wallet.sendTransaction({
-      to: evmWalletAddress,
-      value: ethers.parseEther(ethAmountWithBuffer.toString()),
-    });
+    // Check contract balance
+    const contractBalance = await provider.getBalance(FAUCET_ADDRESS);
+    const contractBalanceInEth = parseFloat(ethers.formatEther(contractBalance));
+    console.log(`Contract balance: ${contractBalanceInEth} ETH`);
 
+    if (contractBalanceInEth < ethAmountWithBuffer) {
+      throw new Error(`Insufficient contract balance. Has ${contractBalanceInEth} ETH, needs ${ethAmountWithBuffer} ETH`);
+    }
+
+    // Convert ETH amount to Wei
+    const ethAmountInWei = ethers.parseEther(ethAmountWithBuffer.toString());
+
+    console.log(`Setting claimable reward for ${evmWalletAddress}: ${ethAmountWithBuffer} ETH`);
+
+    // Call smart contract to set claimable amount (deployer signs this)
+    const tx = await faucetContract.setClaimableReward(evmWalletAddress, ethAmountInWei);
     console.log(`Transaction sent: ${tx.hash}`);
 
-    // Wait for confirmation (1 block)
+    // Wait for confirmation
     console.log('Waiting for transaction confirmation...');
     const receipt = await tx.wait(1);
     console.log(`Transaction confirmed in block ${receipt?.blockNumber}`);
 
-    // Update the claim record
+    // Update the claim record with contract preparation details
     const { error: updateError } = await supabase
       .from('depin_reward_claims')
       .update({
         sepolia_eth_amount: ethAmountWithBuffer,
+        eth_price_at_transfer: ethPriceUSD,
+        conversion_rate: conversionRate,
         contract_prepared_at: new Date().toISOString(),
       })
       .eq('id', claimId);
 
     if (updateError) {
       console.error('Failed to update claim:', updateError);
-      // Transaction succeeded but database update failed - log for manual resolution
-      throw new Error(`Transfer succeeded but database update failed: ${updateError.message}`);
+      throw new Error(`Contract preparation succeeded but database update failed: ${updateError.message}`);
     }
 
-    // Update wormhole_transactions if exists
+    // Update wormhole_transactions status
     if (claim.wormhole_tx_id) {
       const { error: txUpdateError } = await supabase
         .from('wormhole_transactions')
         .update({
-          contract_claim_tx: tx.hash,
-          contract_claim_status: 'completed',
+          contract_claim_status: 'ready_to_claim',
         })
         .eq('id', claim.wormhole_tx_id);
 
@@ -194,19 +208,20 @@ serve(async (req) => {
       }
     }
 
-    console.log('✓ Reward transfer completed successfully');
+    console.log('✓ Smart contract prepared for user claim');
 
     return new Response(
       JSON.stringify({
         success: true,
-        txHash: tx.hash,
+        prepareTxHash: tx.hash,
         sepoliaEthAmount: ethAmountWithBuffer.toString(),
         ethAmountWithoutBuffer: ethAmount.toString(),
         usdcAmount: claim.total_amount,
         ethPriceUSD: ethPriceUSD,
         conversionRate: conversionRate,
         blockNumber: receipt?.blockNumber,
-        claimId: claim.id,
+        contractAddress: FAUCET_ADDRESS,
+        userNeedsToClaim: true,
         explorerUrl: `https://sepolia.etherscan.io/tx/${tx.hash}`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
