@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Wallet, TrendingUp, Coins, Link2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, XAxis, YAxis } from 'recharts';
+import { RefreshButton } from './RefreshButton';
 
 interface PortfolioOverviewProps {
   userId: string;
@@ -12,48 +13,11 @@ const PortfolioOverview = ({ userId }: PortfolioOverviewProps) => {
   const [portfolioData, setPortfolioData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [deviceCount, setDeviceCount] = useState(0);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(Date.now());
 
-  useEffect(() => {
-    fetchPortfolioData();
-
-    // Subscribe to updates
-    const channel = supabase
-      .channel('portfolio-updates')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'depin_rewards',
-        filter: `user_id=eq.${userId}`
-      }, fetchPortfolioData)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'wormhole_transactions',
-        filter: `user_id=eq.${userId}`
-      }, fetchPortfolioData)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'device_registry',
-        filter: `user_id=eq.${userId}`
-      }, fetchPortfolioData)
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'device_registry',
-        filter: `user_id=eq.${userId}`
-      }, () => {
-        console.log('🗑️ Device deleted, force refreshing portfolio');
-        fetchPortfolioData();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId]);
-
-  const fetchPortfolioData = async () => {
+  const fetchPortfolioData = useCallback(async () => {
+    console.log(`[PortfolioOverview] Fetching data for user: ${userId.substring(0, 8)}...`);
     try {
       // Fetch device count
       const { data: devices, count } = await supabase
@@ -146,7 +110,87 @@ const PortfolioOverview = ({ userId }: PortfolioOverviewProps) => {
       console.error('Error fetching portfolio data:', error);
     } finally {
       setLoading(false);
+      setLastRefreshed(new Date());
+      setLastFetchTime(Date.now());
+      console.log(`[PortfolioOverview] Data fetched. Device count: ${deviceCount}`);
     }
+  }, [userId, deviceCount]);
+
+  // Polling mechanism to detect data discrepancies
+  useEffect(() => {
+    const pollInterval = setInterval(async () => {
+      const { count } = await supabase
+        .from('device_registry')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('status', 'active');
+      
+      if (count !== null && count !== deviceCount) {
+        console.log(`[PortfolioOverview] Device count mismatch detected. DB: ${count}, State: ${deviceCount}. Force refreshing...`);
+        fetchPortfolioData();
+      }
+    }, 30000); // Poll every 30 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [userId, deviceCount, fetchPortfolioData]);
+
+  useEffect(() => {
+    console.log(`[PortfolioOverview] Component mounted for user: ${userId.substring(0, 8)}...`);
+    fetchPortfolioData();
+
+    // Subscribe to updates
+    const channel = supabase
+      .channel('portfolio-updates')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'depin_rewards',
+        filter: `user_id=eq.${userId}`
+      }, () => {
+        console.log(`[PortfolioOverview] Rewards updated`);
+        fetchPortfolioData();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'wormhole_transactions',
+        filter: `user_id=eq.${userId}`
+      }, () => {
+        console.log(`[PortfolioOverview] Transactions updated`);
+        fetchPortfolioData();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'device_registry',
+        filter: `user_id=eq.${userId}`
+      }, () => {
+        console.log(`[PortfolioOverview] Device registry updated`);
+        fetchPortfolioData();
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'device_registry',
+        filter: `user_id=eq.${userId}`
+      }, () => {
+        console.log('🗑️ Device deleted, force refreshing portfolio');
+        fetchPortfolioData();
+      })
+      .subscribe((status) => {
+        console.log(`[PortfolioOverview] Subscription status:`, status);
+      });
+
+    return () => {
+      console.log(`[PortfolioOverview] Cleaning up subscriptions for user: ${userId.substring(0, 8)}...`);
+      supabase.removeChannel(channel);
+    };
+  }, [userId, fetchPortfolioData]);
+
+  const handleManualRefresh = async () => {
+    setLoading(true);
+    await fetchPortfolioData();
+    setLoading(false);
   };
 
   if (loading) {
@@ -161,6 +205,10 @@ const PortfolioOverview = ({ userId }: PortfolioOverviewProps) => {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Portfolio Overview</h2>
+        <RefreshButton onRefresh={handleManualRefresh} lastRefreshed={lastRefreshed} />
+      </div>
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
