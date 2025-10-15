@@ -201,6 +201,22 @@ serve(async (req) => {
     const receipt = await tx.wait(1);
     console.log(`Transaction confirmed in block ${receipt?.blockNumber}`);
 
+    // CRITICAL: Verify the transaction succeeded by reading back the claimable amount
+    console.log('Verifying on-chain claimable amount...');
+    const verifyClaimable = await faucetContract.getClaimableAmount(evmWalletAddress);
+    const verifyClaimableEth = parseFloat(ethers.formatEther(verifyClaimable));
+    console.log(`On-chain claimable amount: ${verifyClaimableEth} ETH`);
+
+    if (verifyClaimableEth === 0) {
+      throw new Error(`Verification failed: On-chain claimable amount is 0 after setClaimableReward. Transaction may have reverted silently.`);
+    }
+
+    if (Math.abs(verifyClaimableEth - ethAmountWithBuffer) > 0.0001) {
+      console.warn(`⚠️ Claimable amount mismatch: expected ${ethAmountWithBuffer}, got ${verifyClaimableEth}`);
+    }
+
+    console.log('✓ On-chain verification successful');
+
     // Update the claim record with contract preparation details
     const { error: updateError } = await supabase
       .from('depin_reward_claims')

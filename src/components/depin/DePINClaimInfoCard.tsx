@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle2, AlertCircle, ExternalLink, Link as LinkIcon, DollarSign } from 'lucide-react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { Loader2, CheckCircle2, AlertCircle, ExternalLink, Link as LinkIcon, DollarSign, RefreshCcw } from 'lucide-react';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useBalance } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useEvmWalletLink } from '@/hooks/useEvmWalletLink';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { TEMPO_DEPIN_FAUCET_ADDRESS, TEMPO_DEPIN_FAUCET_ABI } from '@/contracts/TempoDePINFaucet';
+import { formatEther } from 'viem';
 
 interface DePINClaimInfoCardProps {
   claimId: string;
@@ -28,17 +29,49 @@ const DePINClaimInfoCard = ({
   const [contractPrepared, setContractPrepared] = useState(false);
   const [prepareTxHash, setPrepareTxHash] = useState<string | null>(null);
   const [ethAmount, setEthAmount] = useState<number | null>(null);
+  const [useManualGas, setUseManualGas] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
   
   const { address } = useAccount();
   const { toast } = useToast();
   const { isLinked, isLinking, linkError, linkEvmWallet } = useEvmWalletLink();
 
+  // Check on-chain claimable amount
+  const { data: onChainClaimableAmount, isLoading: isLoadingClaimable, refetch: refetchClaimable } = useReadContract({
+    address: TEMPO_DEPIN_FAUCET_ADDRESS,
+    abi: TEMPO_DEPIN_FAUCET_ABI,
+    functionName: 'getClaimableAmount',
+    args: address ? [address] : undefined,
+    chainId: sepolia.id,
+    query: {
+      enabled: !!address && contractPrepared,
+      refetchInterval: 10000, // Refetch every 10 seconds
+    }
+  });
+
+  // Check contract balance
+  const { data: contractBalance } = useBalance({
+    address: TEMPO_DEPIN_FAUCET_ADDRESS,
+    chainId: sepolia.id,
+    query: {
+      enabled: contractPrepared,
+      refetchInterval: 10000,
+    }
+  });
+
   // Wagmi hooks for claiming from smart contract
-  const { writeContract, data: claimTxHash, isPending: isClaimPending } = useWriteContract();
+  const { writeContract, data: claimTxHash, isPending: isClaimPending, error: writeError } = useWriteContract();
   
   const { isLoading: isClaimConfirming, isSuccess: isClaimSuccess } = useWaitForTransactionReceipt({
     hash: claimTxHash,
   });
+
+  // Check if claim is ready
+  const isClaimReady = contractPrepared && 
+    onChainClaimableAmount && 
+    Number(onChainClaimableAmount) > 0 &&
+    contractBalance &&
+    Number(contractBalance.value) >= Number(onChainClaimableAmount);
 
   // Link wallet handler
   const handleLinkWallet = async () => {
@@ -90,9 +123,14 @@ const DePINClaimInfoCard = ({
       setPrepareTxHash(data.prepareTxHash);
       setEthAmount(parseFloat(data.sepoliaEthAmount));
       
+      // Refetch on-chain claimable amount to verify
+      setTimeout(() => {
+        refetchClaimable();
+      }, 3000); // Wait 3 seconds for blockchain to settle
+      
       toast({
         title: "Contract Prepared! ✅",
-        description: `${parseFloat(data.sepoliaEthAmount).toFixed(6)} ETH is ready to claim. Click "Claim from Contract" to proceed.`,
+        description: `${parseFloat(data.sepoliaEthAmount).toFixed(6)} ETH is ready to claim. Verifying on-chain...`,
       });
     } catch (error: any) {
       console.error('Error preparing contract:', error);
@@ -117,16 +155,39 @@ const DePINClaimInfoCard = ({
       return;
     }
 
+    setClaimError(null);
     console.log('[DePINClaimInfoCard] User claiming from contract...');
     
-    writeContract({
+    const config: any = {
       address: TEMPO_DEPIN_FAUCET_ADDRESS,
       abi: TEMPO_DEPIN_FAUCET_ABI,
       functionName: 'claimReward',
       chain: sepolia,
       account: address,
-    });
+    };
+
+    // Add manual gas limit if enabled
+    if (useManualGas) {
+      config.gas = 100000n; // Set manual gas limit
+      console.log('Using manual gas limit: 100000');
+    }
+    
+    writeContract(config);
   };
+
+  // Handle write errors
+  useEffect(() => {
+    if (writeError) {
+      console.error('Claim error:', writeError);
+      const errorMsg = writeError.message || 'Unknown error';
+      
+      if (errorMsg.includes('gas')) {
+        setClaimError('Gas estimation failed. This usually means the transaction would revert. Try using manual gas limit or wait 30 seconds and retry.');
+      } else {
+        setClaimError(errorMsg);
+      }
+    }
+  }, [writeError]);
 
   // Handle successful claim
   useEffect(() => {
@@ -294,32 +355,123 @@ const DePINClaimInfoCard = ({
             {/* Step 2: User Claims from Contract */}
             {contractPrepared && !isClaimSuccess && (
               <div className="space-y-4">
-                <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-                  <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="space-y-2">
-                    <div className="text-blue-800 dark:text-blue-200 font-semibold">
-                      Contract Prepared! Ready to Claim
-                    </div>
-                    <div className="text-sm text-blue-700 dark:text-blue-300">
-                      {ethAmount?.toFixed(6)} ETH is ready to claim from the smart contract.
-                      You'll need to approve this transaction in your wallet (MetaMask/etc).
-                    </div>
-                    {prepareTxHash && (
-                      <a 
-                        href={`https://sepolia.etherscan.io/tx/${prepareTxHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+                {/* On-chain verification status */}
+                {isLoadingClaimable ? (
+                  <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                    <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                    <AlertDescription>
+                      <div className="text-blue-800 dark:text-blue-200 font-semibold">
+                        Verifying on-chain state...
+                      </div>
+                      <div className="text-sm text-blue-700 dark:text-blue-300">
+                        Checking your claimable amount on the blockchain
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                ) : !isClaimReady ? (
+                  <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="space-y-2">
+                      <div className="text-amber-800 dark:text-amber-200 font-semibold">
+                        ⚠️ On-Chain Verification Issue
+                      </div>
+                      <div className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
+                        <p>On-chain claimable: {onChainClaimableAmount ? formatEther(onChainClaimableAmount) : '0'} ETH</p>
+                        <p>Contract balance: {contractBalance ? formatEther(contractBalance.value) : '0'} ETH</p>
+                        {Number(onChainClaimableAmount || 0) === 0 && (
+                          <p className="font-semibold mt-2">
+                            The smart contract shows 0 claimable amount. The preparation transaction may have failed.
+                          </p>
+                        )}
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          refetchClaimable();
+                          toast({ title: "Refreshing...", description: "Checking on-chain state again" });
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
                       >
-                        View preparation tx <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </AlertDescription>
-                </Alert>
+                        <RefreshCcw className="mr-2 h-3 w-3" />
+                        Refresh On-Chain State
+                      </Button>
+                      {prepareTxHash && (
+                        <a 
+                          href={`https://sepolia.etherscan.io/tx/${prepareTxHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-amber-600 hover:text-amber-800 flex items-center gap-1 mt-2"
+                        >
+                          Check preparation tx on Etherscan <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="space-y-2">
+                      <div className="text-green-800 dark:text-green-200 font-semibold">
+                        ✓ Verified On-Chain! Ready to Claim
+                      </div>
+                      <div className="text-sm text-green-700 dark:text-green-300 space-y-1">
+                        <p>Claimable: {formatEther(onChainClaimableAmount!)} ETH</p>
+                        <p>Contract balance: {formatEther(contractBalance!.value)} ETH</p>
+                      </div>
+                      {prepareTxHash && (
+                        <a 
+                          href={`https://sepolia.etherscan.io/tx/${prepareTxHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 flex items-center gap-1"
+                        >
+                          View preparation tx <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Error display */}
+                {claimError && (
+                  <Alert className="bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="space-y-2">
+                      <div className="text-red-800 dark:text-red-200 font-semibold">
+                        Transaction Error
+                      </div>
+                      <div className="text-sm text-red-700 dark:text-red-300">
+                        {claimError}
+                      </div>
+                      {!useManualGas && claimError.includes('gas') && (
+                        <Button 
+                          onClick={() => setUseManualGas(true)}
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                        >
+                          Enable Manual Gas Limit
+                        </Button>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Manual gas option */}
+                {useManualGas && (
+                  <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                    <AlertDescription>
+                      <div className="text-sm text-blue-800 dark:text-blue-200">
+                        Manual gas limit enabled (100,000 gas). This bypasses automatic estimation.
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
                 
                 <Button 
                   onClick={handleClaimFromContract}
-                  disabled={isClaimPending || isClaimConfirming}
+                  disabled={!isClaimReady || isClaimPending || isClaimConfirming}
                   className="w-full"
                   size="lg"
                 >
@@ -331,13 +483,15 @@ const DePINClaimInfoCard = ({
                   ) : (
                     <>
                       <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Claim from Contract (Approve in Wallet)
+                      Claim from Contract {useManualGas && '(Manual Gas)'}
                     </>
                   )}
                 </Button>
 
                 <div className="text-xs text-muted-foreground text-center">
-                  This will trigger a MetaMask popup for you to approve the claim transaction
+                  {!isClaimReady 
+                    ? 'Waiting for on-chain verification...' 
+                    : 'This will trigger a wallet popup to approve the claim transaction'}
                 </div>
               </div>
             )}
