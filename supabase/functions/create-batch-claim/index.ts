@@ -182,17 +182,17 @@ Deno.serve(async (req) => {
     // Create the batch claim record
     const batchClaimId = crypto.randomUUID();
 
-    // Create wormhole transaction record for the bridge
+    // Create wormhole transaction record for the bridge (Sepolia -> destination)
     const { data: wormholeTx, error: txError } = await supabase
       .from('wormhole_transactions')
       .insert({
         user_id: user.id,
         wallet_address: walletAddress.toLowerCase(),
-        from_chain: rewards[0].chain,
+        from_chain: 'Ethereum', // Sepolia is Ethereum testnet
         to_chain: destinationChain,
-        from_token: rewards[0].token || 'USDC',
-        to_token: rewards[0].token || 'USDC',
-        amount: totalAmount,
+        from_token: 'ETH',
+        to_token: destinationChain === 'Solana' ? 'SOL' : 'ETH',
+        amount: totalAmount, // USD amount, will be converted to ETH in transfer-reward-eth
         status: 'pending',
         source_type: 'depin_rewards',
         source_reference_ids: deviceIds,

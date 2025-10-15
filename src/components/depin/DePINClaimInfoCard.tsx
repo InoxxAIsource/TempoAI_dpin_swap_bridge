@@ -13,7 +13,7 @@ interface DePINClaimInfoCardProps {
   claimId: string;
   sepoliaEthAmount: number | null;
   contractPreparedAt: string | null;
-  onContractPrepared: () => void;
+  onContractPrepared: (ethAmount: number) => void;
 }
 
 const DePINClaimInfoCard = ({ 
@@ -94,7 +94,7 @@ const DePINClaimInfoCard = ({
 
       // Wait a bit before calling onContractPrepared to let the UI update
       setTimeout(() => {
-        onContractPrepared();
+        onContractPrepared(parseFloat(data.sepoliaEthAmount));
       }, 1000);
     } catch (error) {
       console.error('Error transferring reward:', error);

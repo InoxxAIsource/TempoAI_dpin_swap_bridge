@@ -130,13 +130,8 @@ const BatchClaimModal = ({
 
       setClaimId(data.claimId);
       
-      // For Solana, skip the Sepolia contract preparation step
-      if (preferredChain === 'Solana') {
-        setStep('bridge');
-        setContractPrepared(true);
-      } else {
-        setStep('prepare');
-      }
+      // Always go to 'prepare' step to transfer ETH on Sepolia first
+      setStep('prepare');
     } catch (error: any) {
       console.error('[BatchClaimModal] Error creating batch claim:', error);
       toast({
@@ -149,22 +144,22 @@ const BatchClaimModal = ({
     }
   };
 
-  const handleContractPrepared = () => {
+  const handleContractPrepared = (ethAmount: number) => {
+    setSepoliaEthAmount(ethAmount);
     setContractPrepared(true);
     setStep('bridge');
   };
 
   const handleProceedToBridge = () => {
-    if (!claimId) return;
+    if (!claimId || !sepoliaEthAmount) return;
     
-    const bridgeAmount = actualClaimAmount || totalAmount;
-    console.log(`[BatchClaimModal] Proceeding to bridge with amount: $${bridgeAmount.toFixed(2)}`);
+    console.log(`[BatchClaimModal] Proceeding to bridge with ${sepoliaEthAmount.toFixed(6)} ETH from Sepolia to ${preferredChain}`);
     
     onSuccess();
     onClose();
 
-    // Redirect to bridge page with prefilled data
-    navigate(`/bridge?amount=${bridgeAmount}&toChain=${preferredChain}&fromChain=Polygon&token=USDC&claimId=${claimId}`);
+    // Redirect to bridge page with Sepolia ETH data
+    navigate(`/bridge?amount=${sepoliaEthAmount.toFixed(6)}&toChain=${preferredChain}&fromChain=Sepolia&token=ETH&claimId=${claimId}`);
     
     setTimeout(() => {
       toast({
