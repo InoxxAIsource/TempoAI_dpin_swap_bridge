@@ -113,9 +113,11 @@ serve(async (req) => {
     // Calculate ETH amount based on real market price
     const ethAmount = claim.total_amount / ethPriceUSD;
     const ethAmountWithBuffer = ethAmount * 1.02; // Add 2% buffer
+    // Round to 6 decimals to avoid parseEther precision errors
+    const ethAmountRounded = parseFloat(ethAmountWithBuffer.toFixed(6));
     const conversionRate = 1 / ethPriceUSD;
 
-    console.log(`Converting $${claim.total_amount} USDC to ${ethAmountWithBuffer.toFixed(6)} ETH (with 2% buffer)`);
+    console.log(`Converting $${claim.total_amount} USDC to ${ethAmountRounded} ETH (with 2% buffer)`);
 
     // Sanity check: Reject if ETH price is outside reasonable range
     if (ethPriceUSD < 1000 || ethPriceUSD > 10000) {
@@ -123,8 +125,8 @@ serve(async (req) => {
     }
 
     // Sanity check: Reject if transfer amount is too large
-    if (ethAmountWithBuffer > 10) {
-      throw new Error(`Transfer amount ${ethAmountWithBuffer} ETH exceeds maximum (10 ETH)`);
+    if (ethAmountRounded > 10) {
+      throw new Error(`Transfer amount ${ethAmountRounded} ETH exceeds maximum (10 ETH)`);
     }
 
     // Initialize provider and wallet
@@ -163,14 +165,15 @@ serve(async (req) => {
     console.log(`Contract balance: ${contractBalanceInEth} ETH`);
 
     // Auto-fund contract if balance is insufficient
-    if (contractBalanceInEth < ethAmountWithBuffer) {
+    if (contractBalanceInEth < ethAmountRounded) {
       console.log(`⚠️ Contract balance insufficient. Funding contract...`);
       
       // Transfer ETH from deployer wallet to contract (2x the needed amount for buffer)
-      const fundingAmount = ethAmountWithBuffer * 2;
-      const fundingAmountInWei = ethers.parseEther(fundingAmount.toString());
+      const fundingAmount = ethAmountRounded * 2;
+      const fundingAmountRounded = parseFloat(fundingAmount.toFixed(6));
+      const fundingAmountInWei = ethers.parseEther(fundingAmountRounded.toString());
       
-      console.log(`Transferring ${fundingAmount} ETH from deployer to contract...`);
+      console.log(`Transferring ${fundingAmountRounded} ETH from deployer to contract...`);
       
       const fundingTx = await wallet.sendTransaction({
         to: FAUCET_ADDRESS,
@@ -179,7 +182,7 @@ serve(async (req) => {
       
       console.log(`Funding tx sent: ${fundingTx.hash}`);
       await fundingTx.wait(1);
-      console.log(`✓ Contract funded with ${fundingAmount} ETH`);
+      console.log(`✓ Contract funded with ${fundingAmountRounded} ETH`);
       
       // Re-check contract balance
       const newContractBalance = await provider.getBalance(FAUCET_ADDRESS);
@@ -188,9 +191,9 @@ serve(async (req) => {
     }
 
     // Convert ETH amount to Wei
-    const ethAmountInWei = ethers.parseEther(ethAmountWithBuffer.toString());
+    const ethAmountInWei = ethers.parseEther(ethAmountRounded.toString());
 
-    console.log(`Setting claimable reward for ${evmWalletAddress}: ${ethAmountWithBuffer} ETH`);
+    console.log(`Setting claimable reward for ${evmWalletAddress}: ${ethAmountRounded} ETH`);
 
     // Call smart contract to set claimable amount (deployer signs this)
     const tx = await faucetContract.setClaimableReward(evmWalletAddress, ethAmountInWei);
@@ -211,8 +214,8 @@ serve(async (req) => {
       throw new Error(`Verification failed: On-chain claimable amount is 0 after setClaimableReward. Transaction may have reverted silently.`);
     }
 
-    if (Math.abs(verifyClaimableEth - ethAmountWithBuffer) > 0.0001) {
-      console.warn(`⚠️ Claimable amount mismatch: expected ${ethAmountWithBuffer}, got ${verifyClaimableEth}`);
+    if (Math.abs(verifyClaimableEth - ethAmountRounded) > 0.0001) {
+      console.warn(`⚠️ Claimable amount mismatch: expected ${ethAmountRounded}, got ${verifyClaimableEth}`);
     }
 
     console.log('✓ On-chain verification successful');
@@ -221,7 +224,7 @@ serve(async (req) => {
     const { error: updateError } = await supabase
       .from('depin_reward_claims')
       .update({
-        sepolia_eth_amount: ethAmountWithBuffer,
+        sepolia_eth_amount: ethAmountRounded,
         eth_price_at_transfer: ethPriceUSD,
         conversion_rate: conversionRate,
         contract_prepared_at: new Date().toISOString(),
@@ -253,8 +256,8 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         prepareTxHash: tx.hash,
-        sepoliaEthAmount: ethAmountWithBuffer.toString(),
-        ethAmountWithoutBuffer: ethAmount.toString(),
+        sepoliaEthAmount: ethAmountRounded.toString(),
+        ethAmountWithoutBuffer: ethAmount.toFixed(6),
         usdcAmount: claim.total_amount,
         ethPriceUSD: ethPriceUSD,
         conversionRate: conversionRate,
