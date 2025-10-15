@@ -6,8 +6,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import ClaimStatusTracker from '@/components/claim/ClaimStatusTracker';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
+import DePINClaimInfoCard from '@/components/depin/DePINClaimInfoCard';
+import { ArrowLeft, ExternalLink, CheckCircle2 } from 'lucide-react';
 
 interface PendingClaim {
   id: string;
@@ -17,6 +19,8 @@ interface PendingClaim {
   device_ids: string[];
   wormhole_tx_id: string | null;
   claimed_at: string;
+  sepolia_eth_amount: number | null;
+  contract_prepared_at: string | null;
   wormhole_tx?: {
     from_chain: string;
     to_chain: string;
@@ -24,6 +28,8 @@ interface PendingClaim {
     tx_hash: string | null;
     wormhole_vaa: string | null;
     needs_redemption: boolean;
+    contract_claim_status: string | null;
+    contract_claim_tx: string | null;
   };
 }
 
@@ -102,7 +108,40 @@ const Portfolio = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {claim.wormhole_tx && (
+                    {/* Contract Preparation Status */}
+                    {!claim.contract_prepared_at ? (
+                      <DePINClaimInfoCard
+                        claimId={claim.id}
+                        sepoliaEthAmount={claim.sepolia_eth_amount}
+                        contractPreparedAt={claim.contract_prepared_at}
+                        onContractPrepared={() => fetchPendingClaims(user.id)}
+                      />
+                    ) : (
+                      <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <div>
+                          <div className="font-semibold text-green-900 dark:text-green-100">Contract Prepared</div>
+                          <div className="text-sm text-green-700 dark:text-green-300">
+                            Ready to bridge {claim.sepolia_eth_amount?.toFixed(4)} ETH
+                          </div>
+                        </div>
+                        {claim.wormhole_tx?.contract_claim_tx && (
+                          <a
+                            href={`https://sepolia.etherscan.io/tx/${claim.wormhole_tx.contract_claim_tx}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-auto"
+                          >
+                            <Badge variant="outline" className="gap-1">
+                              View TX <ExternalLink className="w-3 h-3" />
+                            </Badge>
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Wormhole Transaction Status */}
+                    {claim.wormhole_tx && claim.contract_prepared_at && (
                       <ClaimStatusTracker
                         status={claim.wormhole_tx.status}
                         txHash={claim.wormhole_tx.tx_hash}
@@ -111,8 +150,10 @@ const Portfolio = () => {
                         toChain={claim.wormhole_tx.to_chain}
                       />
                     )}
+                    
+                    {/* Action Buttons */}
                     <div className="flex gap-2">
-                      {claim.status === 'pending_approval' && (
+                      {claim.status === 'pending_approval' && claim.contract_prepared_at && (
                         <Button
                           onClick={() => navigate(`/bridge?claimId=${claim.id}`)}
                           className="gap-2"

@@ -100,6 +100,8 @@ Deno.serve(async (req) => {
         status: 'pending',
         source_type: 'depin_rewards',
         source_reference_ids: deviceIds,
+        contract_address: '0xb90bb7616bc138a177bec31a4571f4fd8fe113a1',
+        contract_claim_status: 'pending',
       })
       .select()
       .single();

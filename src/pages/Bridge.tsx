@@ -7,6 +7,7 @@ import ChainBadge from '../components/ui/ChainBadge';
 import { ArrowRight, ExternalLink, Zap, Settings } from 'lucide-react';
 import StatusBadge from '../components/ui/StatusBadge';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -24,6 +25,7 @@ const Bridge = () => {
   const [activeTab, setActiveTab] = useState('simple');
   const [pendingClaimsCount, setPendingClaimsCount] = useState(0);
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [claimContext, setClaimContext] = useState<any>(null);
   
   // Check if this is part of a yield strategy flow
   const nextAction = searchParams.get('nextAction');
@@ -32,11 +34,34 @@ const Bridge = () => {
   const token = searchParams.get('token');
   const chain = searchParams.get('targetChain');
   const amount = searchParams.get('amount');
+  const claimId = searchParams.get('claimId');
 
   useEffect(() => {
     fetchTransactions();
     fetchPendingClaims();
-  }, [isAnyWalletConnected, evmAddress, solanaAddress]);
+    if (claimId) {
+      fetchClaimContext(claimId);
+    }
+  }, [isAnyWalletConnected, evmAddress, solanaAddress, claimId]);
+
+  const fetchClaimContext = async (id: string) => {
+    try {
+      const { data: claim } = await supabase
+        .from('depin_reward_claims')
+        .select(`
+          *,
+          wormhole_tx:wormhole_transactions(*)
+        `)
+        .eq('id', id)
+        .single();
+      
+      if (claim) {
+        setClaimContext(claim);
+      }
+    } catch (error) {
+      console.error('Error fetching claim context:', error);
+    }
+  };
 
   // Validate wallet connection state
   useEffect(() => {
@@ -149,6 +174,23 @@ const Bridge = () => {
       
       <div className="px-4 md:px-6 lg:px-12 pt-3 md:pt-4">
         <PendingClaimsBanner count={pendingClaimsCount} />
+        
+        {/* DePIN Claim Context Banner */}
+        {claimContext && (
+          <Alert className="mb-4 bg-primary/10 border-primary">
+            <AlertDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <strong className="font-semibold">DePIN Claim in Progress:</strong>
+                  {' '}Bridging ${claimContext.total_amount.toFixed(2)} USDC to {claimContext.destination_chain}
+                  {claimContext.wormhole_tx?.contract_claim_status === 'completed' && (
+                    <span className="ml-2 text-green-600">✓ Contract Prepared</span>
+                  )}
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
 
       <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8">
