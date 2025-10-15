@@ -100,7 +100,10 @@ const BridgeFeeEstimator = ({
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              You need ~{(estimate.recommendedGasAmount / 1000000).toFixed(4)} {estimate.gasSymbol} on {toChain} to complete the claim
+              You need ~{estimate.recommendedNativeAmount?.toFixed(6) || '0.0023'} {estimate.gasSymbol} on {toChain} to complete the claim
+              <span className="block text-xs mt-1 text-muted-foreground">
+                (Estimated gas: {(estimate.recommendedGasAmount / 1.5).toLocaleString()} units + 50% buffer)
+              </span>
             </AlertDescription>
           </Alert>
         )}

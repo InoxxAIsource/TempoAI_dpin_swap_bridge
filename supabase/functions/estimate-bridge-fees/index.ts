@@ -69,6 +69,19 @@ Deno.serve(async (req) => {
     const gasPriceUSD = GAS_PRICES_USD[gasSymbol as keyof typeof GAS_PRICES_USD] || 0;
     const estimatedGasUSD = gasEstimate.gasUnits * gasPriceUSD;
 
+    // Calculate actual native token amount needed for gas
+    let recommendedNativeAmount = 0;
+    if (gasSymbol === 'ETH') {
+      // For ETH: gasUnits × 15 gwei × 1.5 buffer / 1e9
+      recommendedNativeAmount = (gasEstimate.gasUnits * 15 * 1.5) / 1e9;
+    } else if (gasSymbol === 'SOL') {
+      // For Solana: lamports to SOL
+      recommendedNativeAmount = (gasEstimate.gasUnits * 1.5) / 1e9;
+    } else if (gasSymbol === 'MATIC' || gasSymbol === 'BNB' || gasSymbol === 'AVAX') {
+      // For other chains with similar gas mechanics
+      recommendedNativeAmount = (gasEstimate.gasUnits * 15 * 1.5) / 1e9;
+    }
+
     // Total cost
     const totalCostUSD = bridgeFee + estimatedGasUSD;
 
@@ -81,6 +94,7 @@ Deno.serve(async (req) => {
       totalCostUSD,
       hasGasOnDestination: false, // Would need to check user's wallet
       recommendedGasAmount: gasEstimate.gasUnits * 1.5, // 50% buffer
+      recommendedNativeAmount, // Actual native token amount needed
       savings: 0, // Calculate based on individual vs batch
     };
 

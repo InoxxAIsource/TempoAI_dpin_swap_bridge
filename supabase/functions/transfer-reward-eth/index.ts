@@ -160,8 +160,29 @@ serve(async (req) => {
     const contractBalanceInEth = parseFloat(ethers.formatEther(contractBalance));
     console.log(`Contract balance: ${contractBalanceInEth} ETH`);
 
+    // Auto-fund contract if balance is insufficient
     if (contractBalanceInEth < ethAmountWithBuffer) {
-      throw new Error(`Insufficient contract balance. Has ${contractBalanceInEth} ETH, needs ${ethAmountWithBuffer} ETH`);
+      console.log(`⚠️ Contract balance insufficient. Funding contract...`);
+      
+      // Transfer ETH from deployer wallet to contract (2x the needed amount for buffer)
+      const fundingAmount = ethAmountWithBuffer * 2;
+      const fundingAmountInWei = ethers.parseEther(fundingAmount.toString());
+      
+      console.log(`Transferring ${fundingAmount} ETH from deployer to contract...`);
+      
+      const fundingTx = await wallet.sendTransaction({
+        to: FAUCET_ADDRESS,
+        value: fundingAmountInWei,
+      });
+      
+      console.log(`Funding tx sent: ${fundingTx.hash}`);
+      await fundingTx.wait(1);
+      console.log(`✓ Contract funded with ${fundingAmount} ETH`);
+      
+      // Re-check contract balance
+      const newContractBalance = await provider.getBalance(FAUCET_ADDRESS);
+      const newContractBalanceInEth = parseFloat(ethers.formatEther(newContractBalance));
+      console.log(`New contract balance: ${newContractBalanceInEth} ETH`);
     }
 
     // Convert ETH amount to Wei

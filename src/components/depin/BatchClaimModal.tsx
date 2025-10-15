@@ -265,8 +265,8 @@ const BatchClaimModal = ({
 
               <BridgeFeeEstimator
                 amount={displayAmount}
-                fromChain="Polygon"
-                toChain="Ethereum"
+                fromChain="Sepolia"
+                toChain={preferredChain}
                 token="ETH"
                 onEstimateUpdate={setFeeEstimate}
               />
