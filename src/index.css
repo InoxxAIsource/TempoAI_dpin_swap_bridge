@@ -137,4 +137,25 @@ All colors MUST be HSL.
       min-width: 44px;
     }
   }
+
+  /* Safe area insets for notched devices */
+  @supports (padding: env(safe-area-inset-top)) {
+    .dialog-content {
+      padding-top: max(1rem, env(safe-area-inset-top));
+    }
+  }
+
+  /* Smooth scrolling for modal content */
+  .dialog-scrollable {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Mobile-specific touch optimization */
+  @media (max-width: 767px) {
+    /* Prevent text selection on buttons */
+    button, a {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+  }
 }
