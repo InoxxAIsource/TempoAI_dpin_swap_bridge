@@ -109,25 +109,49 @@ Deno.serve(async (req) => {
     console.log(`🔄 Creating batch claim for ${selectedDeviceIds.length} devices to ${destinationChain}`);
 
     // Fetch pending rewards for the selected devices
-    const { data: rewards, error: rewardsError } = await supabase
+    const { data: allRewards, error: rewardsError } = await supabase
       .from('depin_rewards')
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'pending')
       .in('device_id', selectedDeviceIds)
-      .is('claimed_via_tx', null);
+      .is('claimed_via_tx', null)
+      .order('amount', { ascending: false }); // Fetch largest first for better selection
 
     if (rewardsError) {
       console.error('Error fetching rewards:', rewardsError);
       throw rewardsError;
     }
 
-    if (!rewards || rewards.length === 0) {
+    if (!allRewards || allRewards.length === 0) {
       throw new Error('No pending rewards found for selected devices');
+    }
+
+    // Select only enough rewards to match claimAmount (if provided)
+    let rewards = allRewards;
+    if (claimAmount) {
+      let runningTotal = 0;
+      const selectedRewards = [];
+      
+      for (const reward of allRewards) {
+        if (runningTotal >= claimAmount) break;
+        selectedRewards.push(reward);
+        runningTotal += Number(reward.amount);
+      }
+      
+      rewards = selectedRewards;
+      console.log(`💰 Selected ${rewards.length} rewards totaling $${runningTotal.toFixed(2)} from ${allRewards.length} available rewards`);
     }
 
     // Calculate total amount
     const totalAmount = rewards.reduce((sum, reward) => sum + Number(reward.amount), 0);
+
+    console.log(`📊 Reward breakdown:`, {
+      totalRewardsForDevices: allRewards.length,
+      selectedRewards: rewards.length,
+      requestedAmount: claimAmount || 'ALL',
+      actualTotal: totalAmount.toFixed(2)
+    });
 
     // ⚠️ TEST MODE: Maximum claim limit
     const TEST_MODE_MAX_CLAIM = 50;
