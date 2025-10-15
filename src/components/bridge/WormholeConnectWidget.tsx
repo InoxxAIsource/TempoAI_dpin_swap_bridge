@@ -124,12 +124,14 @@ const WormholeConnectWidget = () => {
     const baseConfig = {
       network: 'Testnet',
       chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
-      tokens: ['ETH', 'WETH', 'USDC'],
+      tokens: ['ETH', 'WETH', 'USDC', 'SOL'],
       rpcs: {
         Sepolia: alchemyKey 
           ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
           : 'https://ethereum-sepolia-rpc.publicnode.com',
-        Solana: 'https://api.devnet.solana.com',
+        Solana: alchemyKey
+          ? `https://solana-devnet.g.alchemy.com/v2/${alchemyKey}`
+          : 'https://api.devnet.solana.com',
         ArbitrumSepolia: 'https://sepolia-rollup.arbitrum.io/rpc',
         BaseSepolia: 'https://sepolia.base.org',
         OptimismSepolia: 'https://sepolia.optimism.io',

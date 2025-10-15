@@ -921,47 +921,131 @@ Remember: Explain the strategy first, THEN show the cards, THEN ask an engaging 
 `;
     }
 
-    // Call Lovable AI with better system prompt
-    console.log('Calling Lovable AI Gateway...');
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call Claude API with streaming
+    console.log('Calling Claude API...');
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+    
+    if (!ANTHROPIC_API_KEY) {
+      console.error('ANTHROPIC_API_KEY is not configured');
+      return new Response(
+        JSON.stringify({ error: 'Claude API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt,
-          },
-          ...messages,
-        ],
+        model: 'claude-sonnet-4-5',
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: messages,
         stream: true,
       }),
     });
 
-    console.log('Lovable AI response status:', response.status);
+    console.log('Claude API response status:', response.status);
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Claude API error:', errorText);
+      
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Rate limit exceeded, please try again later.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (response.status === 402) {
+      if (response.status === 401) {
         return new Response(
-          JSON.stringify({ error: 'Payment required, please add credits to your workspace.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Invalid API key. Please check your Claude API key.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error(`Claude API error: ${response.status} - ${errorText}`);
     }
 
-    // Stream the response directly back to client
-    return new Response(response.body, {
+    // Transform Claude's SSE stream to OpenAI-compatible format
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        if (!reader) {
+          controller.close();
+          return;
+        }
+
+        let buffer = '';
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) {
+              // Send final [DONE] message
+              controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+              controller.close();
+              break;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (!line.trim() || line.startsWith(':')) continue;
+              
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                
+                try {
+                  const parsed = JSON.parse(data);
+                  
+                  // Transform Claude format to OpenAI format
+                  if (parsed.type === 'content_block_delta') {
+                    const content = parsed.delta?.text || '';
+                    if (content) {
+                      const openAIFormat = {
+                        choices: [{
+                          delta: { content },
+                          index: 0,
+                          finish_reason: null
+                        }]
+                      };
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIFormat)}\n\n`));
+                    }
+                  } else if (parsed.type === 'message_stop') {
+                    // Stream completed
+                    const openAIFormat = {
+                      choices: [{
+                        delta: {},
+                        index: 0,
+                        finish_reason: 'stop'
+                      }]
+                    };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIFormat)}\n\n`));
+                  }
+                } catch (e) {
+                  console.error('Error parsing Claude SSE:', e);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Stream error:', error);
+          controller.error(error);
+        }
+      }
+    });
+
+    return new Response(stream, {
       headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
     });
   } catch (error) {
