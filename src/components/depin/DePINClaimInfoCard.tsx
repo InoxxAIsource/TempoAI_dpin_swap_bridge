@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, ExternalLink, Link as LinkIcon } from 'lucide-react';
 import { useAccount, useWriteContract, useSwitchChain, useWaitForTransactionReceipt } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
 import { getFaucetContractConfig } from '@/lib/contracts/faucetInteraction';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useEvmWalletLink } from '@/hooks/useEvmWalletLink';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 interface DePINClaimInfoCardProps {
   claimId: string;
@@ -29,18 +31,33 @@ const DePINClaimInfoCard = ({
   
   const { address, chain } = useAccount();
   const { toast } = useToast();
+  const { isLinked, isLinking, linkError, linkEvmWallet } = useEvmWalletLink();
   const { switchChain } = useSwitchChain();
   const { writeContract, data: hash, isPending: isWritePending, error: writeError } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
   });
 
+  // Link wallet handler
+  const handleLinkWallet = async () => {
+    const success = await linkEvmWallet(chain?.name || 'Ethereum');
+    if (success) {
+      toast({
+        title: 'Wallet Linked',
+        description: 'Your EVM wallet has been linked to your account',
+      });
+    }
+  };
+
   // Prepare claim calculation
   const handlePrepareCalculation = async () => {
     setPreparing(true);
     try {
       const { data, error } = await supabase.functions.invoke('prepare-claim-funds', {
-        body: { claimId },
+        body: { 
+          claimId,
+          evmWalletAddress: address 
+        },
       });
 
       if (error) throw error;
@@ -69,6 +86,16 @@ const DePINClaimInfoCard = ({
         title: "Error",
         description: "Wallet not connected or amount not calculated",
         variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if wallet is linked
+    if (!isLinked) {
+      toast({
+        title: 'Wallet Not Linked',
+        description: 'Please link your EVM wallet first',
+        variant: 'destructive',
       });
       return;
     }
@@ -173,7 +200,59 @@ const DePINClaimInfoCard = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!calculatedAmount && (
+        {/* EVM Wallet Connection & Linking */}
+        {!address ? (
+          <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-blue-600" />
+              <h4 className="font-semibold text-blue-900 dark:text-blue-100">
+                EVM Wallet Required
+              </h4>
+            </div>
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              This step requires an EVM-compatible wallet (MetaMask, Rainbow, Coinbase Wallet, etc.) 
+              to interact with the Sepolia testnet smart contract.
+            </p>
+            <div className="flex justify-center pt-2">
+              <ConnectButton />
+            </div>
+          </div>
+        ) : !isLinked ? (
+          <div className="space-y-3 p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div className="flex items-center gap-2">
+              <LinkIcon className="h-5 w-5 text-amber-600" />
+              <h4 className="font-semibold text-amber-900 dark:text-amber-100">
+                Link Your EVM Wallet
+              </h4>
+            </div>
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              Connect this EVM wallet ({address.slice(0, 6)}...{address.slice(-4)}) to your account 
+              to proceed with contract preparation.
+            </p>
+            {linkError && (
+              <p className="text-sm text-red-600 dark:text-red-400">{linkError}</p>
+            )}
+            <Button 
+              onClick={handleLinkWallet}
+              disabled={isLinking}
+              className="w-full"
+            >
+              {isLinking ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Linking Wallet...
+                </>
+              ) : (
+                <>
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                  Link This Wallet to My Account
+                </>
+              )}
+            </Button>
+          </div>
+        ) : null}
+
+        {!calculatedAmount && isLinked && (
           <Button 
             onClick={handlePrepareCalculation} 
             disabled={preparing}
@@ -184,7 +263,7 @@ const DePINClaimInfoCard = ({
           </Button>
         )}
 
-        {calculatedAmount && (
+        {calculatedAmount && isLinked && (
           <>
             <div className="p-4 bg-muted rounded-lg">
               <div className="text-sm text-muted-foreground mb-1">Sepolia ETH Required</div>

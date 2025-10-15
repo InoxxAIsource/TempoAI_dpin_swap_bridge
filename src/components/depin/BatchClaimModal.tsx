@@ -9,12 +9,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useWalletContext } from '@/contexts/WalletContext';
-import { Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
 import BridgeFeeEstimator from '@/components/bridge/BridgeFeeEstimator';
 import DePINClaimInfoCard from './DePINClaimInfoCard';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 interface BatchClaimModalProps {
   open: boolean;
@@ -188,6 +190,22 @@ const BatchClaimModal = ({
                 token="USDC"
                 onEstimateUpdate={setFeeEstimate}
               />
+
+              {/* EVM Wallet Warning if not connected */}
+              {!evmAddress && (solanaAddress || walletAuthenticatedAddress) && (
+                <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-800 dark:text-amber-200">
+                    <p className="font-medium mb-2">EVM Wallet Needed for Next Step</p>
+                    <p className="text-sm mb-3">
+                      You'll need an EVM wallet (MetaMask, Rainbow, etc.) to prepare the smart contract on Sepolia testnet.
+                    </p>
+                    <div className="flex justify-center">
+                      <ConnectButton />
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <Separator />
 

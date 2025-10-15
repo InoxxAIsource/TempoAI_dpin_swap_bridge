@@ -115,6 +115,25 @@ export const useWeb3Auth = () => {
       }
       
       console.log('[useWeb3Auth] ✓ Session verified and persisted');
+      
+      // Link the Solana wallet to the user account
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('wallet_connections').insert({
+            user_id: user.id,
+            wallet_address: walletAddress.toLowerCase(),
+            chain_type: 'SOLANA',
+            chain_name: 'Solana',
+            is_primary: true,
+          });
+          console.log('[useWeb3Auth] ✓ Solana wallet linked to user account');
+        }
+      } catch (linkError: any) {
+        console.error('[useWeb3Auth] Failed to link Solana wallet:', linkError);
+        // Don't throw - authentication succeeded, linking is secondary
+      }
+      
       console.log('[useWeb3Auth] ✓ Authentication successful!');
       
       toast({

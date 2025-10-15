@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { claimId } = await req.json();
+    const { claimId, evmWalletAddress } = await req.json();
     
     if (!claimId) {
       throw new Error('Claim ID is required');
@@ -49,6 +49,28 @@ serve(async (req) => {
 
     if (claimError || !claim) {
       throw new Error('Claim not found or unauthorized');
+    }
+
+    // Verify EVM wallet is linked to the claim owner if provided
+    if (evmWalletAddress) {
+      const { data: walletLink, error: linkError } = await supabase
+        .from('wallet_connections')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('wallet_address', evmWalletAddress.toLowerCase())
+        .eq('chain_type', 'EVM')
+        .maybeSingle();
+
+      if (linkError) {
+        console.error('Wallet link verification error:', linkError);
+        throw new Error('Failed to verify wallet ownership');
+      }
+
+      if (!walletLink) {
+        throw new Error('EVM wallet not linked to your account. Please link it first.');
+      }
+
+      console.log('✓ EVM wallet ownership verified');
     }
 
     // Check if already prepared
