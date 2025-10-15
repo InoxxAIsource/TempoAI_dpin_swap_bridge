@@ -27,6 +27,7 @@ interface BatchClaimModalProps {
     amount: number;
   }>;
   totalAmount: number;
+  requestedAmount: number | null;
   preferredChain: string;
   onSuccess: () => void;
 }
@@ -36,6 +37,7 @@ const BatchClaimModal = ({
   onClose,
   deviceBreakdown,
   totalAmount,
+  requestedAmount,
   preferredChain,
   onSuccess,
 }: BatchClaimModalProps) => {
@@ -45,6 +47,8 @@ const BatchClaimModal = ({
   const [sepoliaEthAmount, setSepoliaEthAmount] = useState<number | null>(null);
   const [contractPrepared, setContractPrepared] = useState(false);
   const [step, setStep] = useState<'create' | 'prepare' | 'bridge'>('create');
+  const [autoSelectedDevices, setAutoSelectedDevices] = useState<string[]>([]);
+  const [actualClaimAmount, setActualClaimAmount] = useState<number>(0);
   const { toast } = useToast();
   
   // Test mode configuration
@@ -66,8 +70,6 @@ const BatchClaimModal = ({
   const handleConfirmClaim = async () => {
     setLoading(true);
     try {
-      const deviceIds = deviceBreakdown.map(d => d.deviceId);
-      // Priority: physical wallet connection > authenticated session address
       const walletAddress = evmAddress || solanaAddress || walletAuthenticatedAddress;
 
       if (!walletAddress) {
@@ -81,7 +83,7 @@ const BatchClaimModal = ({
 
       const { data, error } = await supabase.functions.invoke('create-batch-claim', {
         body: {
-          deviceIds,
+          claimAmount: requestedAmount || totalAmount,
           destinationChain: preferredChain,
           walletAddress,
         },
@@ -89,18 +91,21 @@ const BatchClaimModal = ({
 
       if (error) throw error;
 
+      setAutoSelectedDevices(data.selectedDeviceIds || []);
+      setActualClaimAmount(data.actualAmount || requestedAmount || totalAmount);
+
       toast({
         title: "✅ Claim Created Successfully!",
-        description: "Now we'll transfer your reward to Sepolia.",
+        description: `Selected ${data.deviceCount} device(s) for $${data.actualAmount.toFixed(2)}`,
       });
 
       setClaimId(data.claimId);
       setStep('prepare');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating batch claim:', error);
       toast({
         title: "Error",
-        description: "Failed to create claim. Please try again.",
+        description: error?.message || "Failed to create claim. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -134,9 +139,14 @@ const BatchClaimModal = ({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Batch Claim Rewards - {step === 'create' ? 'Review' : step === 'prepare' ? 'Step 1/2' : 'Step 2/2'}</DialogTitle>
+          <DialogTitle>
+            Batch Claim Rewards - {step === 'create' ? 'Review Selection' : step === 'prepare' ? 'Step 1/2' : 'Step 2/2'}
+          </DialogTitle>
           <DialogDescription>
-            {step === 'create' && 'Review and confirm your cross-chain reward claim'}
+            {step === 'create' && (requestedAmount 
+              ? `Claiming $${requestedAmount.toFixed(2)} from auto-selected devices`
+              : 'Review and confirm your cross-chain reward claim'
+            )}
             {step === 'prepare' && 'Prepare the smart contract on Sepolia testnet'}
             {step === 'bridge' && 'Ready to bridge your funds'}
           </DialogDescription>
@@ -179,7 +189,17 @@ const BatchClaimModal = ({
               </Alert>
 
               <div className="rounded-lg border p-4 bg-muted/50">
-                <h3 className="font-semibold mb-3">Selected Devices ({deviceBreakdown.length})</h3>
+                {requestedAmount ? (
+                  <div className="mb-3">
+                    <h3 className="font-semibold mb-2">Auto-Selected Devices</h3>
+                    <p className="text-sm text-muted-foreground">
+                      We selected the best combination to match your ${requestedAmount.toFixed(2)} request
+                    </p>
+                  </div>
+                ) : (
+                  <h3 className="font-semibold mb-3">Selected Devices ({deviceBreakdown.length})</h3>
+                )}
+                
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {deviceBreakdown.map((device) => (
                     <div key={device.deviceId} className="flex justify-between items-center text-sm">

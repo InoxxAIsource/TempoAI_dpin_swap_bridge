@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import ClaimStatusTracker from '@/components/claim/ClaimStatusTracker';
 import DePINClaimInfoCard from '@/components/depin/DePINClaimInfoCard';
-import { ArrowLeft, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, CheckCircle2, Activity } from 'lucide-react';
 
 interface PendingClaim {
   id: string;
@@ -36,6 +36,7 @@ interface PendingClaim {
 const Portfolio = () => {
   const [user, setUser] = useState<any>(null);
   const [pendingClaims, setPendingClaims] = useState<PendingClaim[]>([]);
+  const [deviceCount, setDeviceCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,9 +46,20 @@ const Portfolio = () => {
         navigate('/auth');
       } else {
         fetchPendingClaims(user.id);
+        fetchDeviceCount(user.id);
       }
     });
   }, [navigate]);
+
+  const fetchDeviceCount = async (userId: string) => {
+    const { count } = await supabase
+      .from('device_registry')
+      .select('*', { count: 'exact' })
+      .eq('user_id', userId)
+      .eq('status', 'active');
+    
+    setDeviceCount(count || 0);
+  };
 
   const fetchPendingClaims = async (userId: string) => {
     const { data, error } = await supabase
@@ -89,6 +101,20 @@ const Portfolio = () => {
               Back to DePIN
             </Button>
           </div>
+
+          {/* Active Devices Card */}
+          <Card className="mb-8">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Active Devices</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{deviceCount}</div>
+              <p className="text-xs text-muted-foreground">
+                {deviceCount === 0 ? 'No devices connected' : 'Connected to network'}
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Pending Claims Section */}
           {pendingClaims.length > 0 && (

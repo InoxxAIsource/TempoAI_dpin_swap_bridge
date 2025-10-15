@@ -11,6 +11,7 @@ interface PortfolioOverviewProps {
 const PortfolioOverview = ({ userId }: PortfolioOverviewProps) => {
   const [portfolioData, setPortfolioData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [deviceCount, setDeviceCount] = useState(0);
 
   useEffect(() => {
     fetchPortfolioData();
@@ -36,6 +37,15 @@ const PortfolioOverview = ({ userId }: PortfolioOverviewProps) => {
         table: 'device_registry',
         filter: `user_id=eq.${userId}`
       }, fetchPortfolioData)
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'device_registry',
+        filter: `user_id=eq.${userId}`
+      }, () => {
+        console.log('🗑️ Device deleted, force refreshing portfolio');
+        fetchPortfolioData();
+      })
       .subscribe();
 
     return () => {
@@ -45,6 +55,31 @@ const PortfolioOverview = ({ userId }: PortfolioOverviewProps) => {
 
   const fetchPortfolioData = async () => {
     try {
+      // Fetch device count
+      const { data: devices, count } = await supabase
+        .from('device_registry')
+        .select('*', { count: 'exact' })
+        .eq('user_id', userId)
+        .eq('status', 'active');
+
+      setDeviceCount(count || 0);
+
+      // If no devices, clear all data and return early
+      if (!devices || devices.length === 0) {
+        setPortfolioData({
+          totalEarned: 0,
+          pendingRewards: 0,
+          claimedRewards: 0,
+          inTransit: 0,
+          dailyRate: 0,
+          chartData: [],
+          chainData: [],
+          deviceCount: 0
+        });
+        setLoading(false);
+        return;
+      }
+
       // Fetch DePIN rewards
       const { data: rewards } = await supabase
         .from('depin_rewards')
@@ -104,7 +139,8 @@ const PortfolioOverview = ({ userId }: PortfolioOverviewProps) => {
         inTransit,
         dailyRate,
         chartData,
-        chainData
+        chainData,
+        deviceCount: count || 0
       });
     } catch (error) {
       console.error('Error fetching portfolio data:', error);

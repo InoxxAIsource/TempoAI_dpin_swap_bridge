@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ClaimSettingsModal from './ClaimSettingsModal';
 import BatchClaimModal from './BatchClaimModal';
+import ClaimAmountModal from './ClaimAmountModal';
 
 interface RewardClaimBannerProps {
   userId: string;
@@ -16,7 +17,9 @@ const RewardClaimBanner = ({ userId, onRefresh }: RewardClaimBannerProps) => {
   const [pendingRewards, setPendingRewards] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAmountModal, setShowAmountModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const { toast } = useToast();
 
   const fetchPendingRewards = async () => {
@@ -59,6 +62,12 @@ const RewardClaimBanner = ({ userId, onRefresh }: RewardClaimBannerProps) => {
   const isOverLimit = pendingRewards.totalAmount > TEST_MODE_MAX_CLAIM;
 
   const handleClaim = () => {
+    setShowAmountModal(true);
+  };
+
+  const handleAmountConfirmed = (amount: number) => {
+    setSelectedAmount(amount);
+    setShowAmountModal(false);
     setShowClaimModal(true);
   };
 
@@ -70,7 +79,7 @@ const RewardClaimBanner = ({ userId, onRefresh }: RewardClaimBannerProps) => {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <p className="font-semibold text-lg">
-                💰 ${pendingRewards.totalAmount.toFixed(2)} Ready to Claim!
+                💰 ${pendingRewards.totalAmount.toFixed(2)} Available to Claim!
               </p>
               {isOverLimit && (
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
@@ -114,18 +123,27 @@ const RewardClaimBanner = ({ userId, onRefresh }: RewardClaimBannerProps) => {
         onUpdate={fetchPendingRewards}
       />
 
+      <ClaimAmountModal
+        open={showAmountModal}
+        onClose={() => setShowAmountModal(false)}
+        totalAvailable={pendingRewards.totalAmount}
+        preferredChain={pendingRewards.preferredChain}
+        onAmountConfirmed={handleAmountConfirmed}
+      />
+
       <BatchClaimModal
         open={showClaimModal}
         onClose={() => setShowClaimModal(false)}
         deviceBreakdown={pendingRewards.deviceBreakdown}
         totalAmount={pendingRewards.totalAmount}
+        requestedAmount={selectedAmount}
         preferredChain={pendingRewards.preferredChain}
         onSuccess={() => {
           fetchPendingRewards();
           onRefresh?.();
           toast({
             title: "Claim Initiated",
-            description: "Your rewards are being bridged to " + pendingRewards.preferredChain,
+            description: `Claiming $${selectedAmount?.toFixed(2) || pendingRewards.totalAmount.toFixed(2)} to ${pendingRewards.preferredChain}`,
           });
         }}
       />

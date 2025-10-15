@@ -11,11 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { deviceIds, destinationChain, walletAddress } = await req.json();
-
-    if (!deviceIds || !Array.isArray(deviceIds) || deviceIds.length === 0) {
-      throw new Error('deviceIds array is required');
-    }
+    const { deviceIds, claimAmount, destinationChain, walletAddress } = await req.json();
 
     if (!destinationChain) {
       throw new Error('destinationChain is required');
@@ -24,8 +20,6 @@ Deno.serve(async (req) => {
     if (!walletAddress) {
       throw new Error('walletAddress is required');
     }
-
-    console.log(`🔄 Creating batch claim for ${deviceIds.length} devices to ${destinationChain}`);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -45,13 +39,73 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
+    let selectedDeviceIds = deviceIds;
+
+    // If claimAmount provided without deviceIds, auto-select devices
+    if (claimAmount && (!deviceIds || deviceIds.length === 0)) {
+      console.log(`🤖 Auto-selecting devices for $${claimAmount} claim`);
+      
+      // Fetch ALL pending rewards for this user, sorted by amount
+      const { data: allRewards, error: fetchError } = await supabase
+        .from('depin_rewards')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .is('claimed_via_tx', null)
+        .order('amount', { ascending: true }); // Start with smallest
+
+      if (fetchError) throw fetchError;
+      if (!allRewards || allRewards.length === 0) {
+        throw new Error('No pending rewards available');
+      }
+
+      // Greedy algorithm: Select smallest rewards that fit
+      let currentTotal = 0;
+      let selectedRewards = [];
+      
+      for (const reward of allRewards) {
+        if (currentTotal + reward.amount <= claimAmount) {
+          selectedRewards.push(reward);
+          currentTotal += reward.amount;
+        }
+        
+        // Stop when we're within 5% of target or exceeded
+        if (currentTotal >= claimAmount * 0.95) {
+          break;
+        }
+      }
+      
+      // If we couldn't reach target with small rewards, try one large reward
+      if (currentTotal < claimAmount * 0.95) {
+        const singleReward = allRewards.find(r => 
+          r.amount >= claimAmount * 0.95 && 
+          r.amount <= claimAmount * 1.1
+        );
+        
+        if (singleReward) {
+          selectedRewards = [singleReward];
+          currentTotal = singleReward.amount;
+        }
+      }
+      
+      selectedDeviceIds = [...new Set(selectedRewards.map(r => r.device_id))];
+      
+      console.log(`✅ Auto-selected ${selectedDeviceIds.length} devices totaling $${currentTotal.toFixed(2)}`);
+    }
+
+    if (!selectedDeviceIds || selectedDeviceIds.length === 0) {
+      throw new Error('No devices selected or available for the requested amount');
+    }
+
+    console.log(`🔄 Creating batch claim for ${selectedDeviceIds.length} devices to ${destinationChain}`);
+
     // Fetch pending rewards for the selected devices
     const { data: rewards, error: rewardsError } = await supabase
       .from('depin_rewards')
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'pending')
-      .in('device_id', deviceIds)
+      .in('device_id', selectedDeviceIds)
       .is('claimed_via_tx', null);
 
     if (rewardsError) {
@@ -126,7 +180,7 @@ Deno.serve(async (req) => {
       .from('depin_reward_claims')
       .insert({
         user_id: user.id,
-        device_ids: deviceIds,
+        device_ids: selectedDeviceIds,
         total_amount: totalAmount,
         destination_chain: destinationChain,
         status: 'pending_approval',
@@ -154,7 +208,9 @@ Deno.serve(async (req) => {
       claimId: claimRecord.id,
       wormholeTxId: wormholeTx.id,
       totalAmount,
-      deviceCount: deviceIds.length,
+      actualAmount: totalAmount,
+      deviceCount: selectedDeviceIds.length,
+      selectedDeviceIds: selectedDeviceIds,
       estimatedFees,
       destinationChain,
       fromChain: rewards[0].chain,
