@@ -11,11 +11,13 @@ const corsHeaders = {
 const SEPOLIA_RPC_URL = 'https://eth-sepolia.g.alchemy.com/v2/' + Deno.env.get('ALCHEMY_API_KEY');
 
 serve(async (req) => {
+  // Version: 2.1.0 - Auto-funding enabled
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('🚀 Edge Function Version 2.1.0 - Auto-funding enabled');
     const { claimId, evmWalletAddress } = await req.json();
     
     if (!claimId || !evmWalletAddress) {
