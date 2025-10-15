@@ -189,8 +189,12 @@ export type Database = {
         Row: {
           claimed_at: string | null
           contract_prepared_at: string | null
+          conversion_rate: number | null
           destination_chain: string
           device_ids: string[]
+          eth_price_at_transfer: number | null
+          eth_transfer_block_number: number | null
+          eth_transfer_tx: string | null
           id: string
           sepolia_eth_amount: number | null
           status: string | null
@@ -201,8 +205,12 @@ export type Database = {
         Insert: {
           claimed_at?: string | null
           contract_prepared_at?: string | null
+          conversion_rate?: number | null
           destination_chain: string
           device_ids: string[]
+          eth_price_at_transfer?: number | null
+          eth_transfer_block_number?: number | null
+          eth_transfer_tx?: string | null
           id?: string
           sepolia_eth_amount?: number | null
           status?: string | null
@@ -213,8 +221,12 @@ export type Database = {
         Update: {
           claimed_at?: string | null
           contract_prepared_at?: string | null
+          conversion_rate?: number | null
           destination_chain?: string
           device_ids?: string[]
+          eth_price_at_transfer?: number | null
+          eth_transfer_block_number?: number | null
+          eth_transfer_tx?: string | null
           id?: string
           sepolia_eth_amount?: number | null
           status?: string | null

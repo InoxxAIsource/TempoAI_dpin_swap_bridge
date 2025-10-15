@@ -87,7 +87,7 @@ const BatchClaimModal = ({
 
       toast({
         title: "✅ Claim Created Successfully!",
-        description: "Now prepare the smart contract to enable bridging.",
+        description: "Now we'll transfer your reward to Sepolia.",
       });
 
       setClaimId(data.claimId);
