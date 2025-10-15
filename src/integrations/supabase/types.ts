@@ -188,9 +188,11 @@ export type Database = {
       depin_reward_claims: {
         Row: {
           claimed_at: string | null
+          contract_prepared_at: string | null
           destination_chain: string
           device_ids: string[]
           id: string
+          sepolia_eth_amount: number | null
           status: string | null
           total_amount: number
           user_id: string
@@ -198,9 +200,11 @@ export type Database = {
         }
         Insert: {
           claimed_at?: string | null
+          contract_prepared_at?: string | null
           destination_chain: string
           device_ids: string[]
           id?: string
+          sepolia_eth_amount?: number | null
           status?: string | null
           total_amount: number
           user_id: string
@@ -208,9 +212,11 @@ export type Database = {
         }
         Update: {
           claimed_at?: string | null
+          contract_prepared_at?: string | null
           destination_chain?: string
           device_ids?: string[]
           id?: string
+          sepolia_eth_amount?: number | null
           status?: string | null
           total_amount?: number
           user_id?: string
@@ -535,6 +541,9 @@ export type Database = {
         Row: {
           amount: number
           completed_at: string | null
+          contract_address: string | null
+          contract_claim_status: string | null
+          contract_claim_tx: string | null
           created_at: string | null
           from_chain: string
           from_token: string
@@ -555,6 +564,9 @@ export type Database = {
         Insert: {
           amount: number
           completed_at?: string | null
+          contract_address?: string | null
+          contract_claim_status?: string | null
+          contract_claim_tx?: string | null
           created_at?: string | null
           from_chain: string
           from_token: string
@@ -575,6 +587,9 @@ export type Database = {
         Update: {
           amount?: number
           completed_at?: string | null
+          contract_address?: string | null
+          contract_claim_status?: string | null
+          contract_claim_tx?: string | null
           created_at?: string | null
           from_chain?: string
           from_token?: string
