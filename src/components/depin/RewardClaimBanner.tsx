@@ -55,6 +55,9 @@ const RewardClaimBanner = ({ userId, onRefresh }: RewardClaimBannerProps) => {
     return null;
   }
 
+  const TEST_MODE_MAX_CLAIM = 50;
+  const isOverLimit = pendingRewards.totalAmount > TEST_MODE_MAX_CLAIM;
+
   const handleClaim = () => {
     setShowClaimModal(true);
   };
@@ -65,11 +68,23 @@ const RewardClaimBanner = ({ userId, onRefresh }: RewardClaimBannerProps) => {
         <Coins className="h-5 w-5 text-primary" />
         <AlertDescription className="flex items-center justify-between">
           <div className="flex-1">
-            <p className="font-semibold text-lg">
-              💰 ${pendingRewards.totalAmount.toFixed(2)} Ready to Claim!
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-lg">
+                💰 ${pendingRewards.totalAmount.toFixed(2)} Ready to Claim!
+              </p>
+              {isOverLimit && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                  ⚠️ Exceeds $50 test limit
+                </span>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground mt-1">
               {pendingRewards.rewardCount} pending rewards from {pendingRewards.deviceBreakdown.length} device(s)
+              {isOverLimit && (
+                <span className="block text-amber-700 dark:text-amber-300 mt-1">
+                  Please select devices totaling under $50 to claim
+                </span>
+              )}
             </p>
           </div>
           <div className="flex gap-2">

@@ -66,6 +66,15 @@ Deno.serve(async (req) => {
     // Calculate total amount
     const totalAmount = rewards.reduce((sum, reward) => sum + Number(reward.amount), 0);
 
+    // ⚠️ TEST MODE: Maximum claim limit
+    const TEST_MODE_MAX_CLAIM = 50;
+    if (totalAmount > TEST_MODE_MAX_CLAIM) {
+      console.log(`❌ Claim rejected: $${totalAmount.toFixed(2)} exceeds $${TEST_MODE_MAX_CLAIM} test limit`);
+      throw new Error(`Test mode active: Maximum claim amount is $${TEST_MODE_MAX_CLAIM}. Your selection totals $${totalAmount.toFixed(2)}. Please select fewer devices.`);
+    }
+
+    console.log(`✅ Claim amount $${totalAmount.toFixed(2)} within test limit`);
+
     // Get fee estimate
     const estimateResponse = await fetch(`${supabaseUrl}/functions/v1/estimate-bridge-fees`, {
       method: 'POST',

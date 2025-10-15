@@ -46,6 +46,10 @@ const BatchClaimModal = ({
   const [contractPrepared, setContractPrepared] = useState(false);
   const [step, setStep] = useState<'create' | 'prepare' | 'bridge'>('create');
   const { toast } = useToast();
+  
+  // Test mode configuration
+  const TEST_MODE_MAX_CLAIM = 50;
+  const isOverLimit = totalAmount > TEST_MODE_MAX_CLAIM;
   const navigate = useNavigate();
   const { evmAddress, solanaAddress, walletAuthenticatedAddress } = useWalletContext();
 
@@ -158,6 +162,22 @@ const BatchClaimModal = ({
         <div className="space-y-4">
           {step === 'create' && (
             <>
+              {/* Test Mode Warning Banner */}
+              <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800 dark:text-amber-200">
+                  <p className="font-medium mb-1">🧪 Test Mode Active</p>
+                  <p className="text-sm">
+                    Maximum claim amount is <strong>${TEST_MODE_MAX_CLAIM}</strong> for testing. 
+                    {isOverLimit && (
+                      <span className="block mt-1 text-amber-900 dark:text-amber-100 font-medium">
+                        Current selection: ${totalAmount.toFixed(2)} - Please deselect some devices
+                      </span>
+                    )}
+                  </p>
+                </AlertDescription>
+              </Alert>
+
               <div className="rounded-lg border p-4 bg-muted/50">
                 <h3 className="font-semibold mb-3">Selected Devices ({deviceBreakdown.length})</h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -213,7 +233,12 @@ const BatchClaimModal = ({
                 <Button variant="outline" onClick={onClose} disabled={loading}>
                   Cancel
                 </Button>
-                <Button onClick={handleConfirmClaim} disabled={loading} className="gap-2">
+                <Button 
+                  onClick={handleConfirmClaim} 
+                  disabled={loading || isOverLimit} 
+                  className="gap-2"
+                  title={isOverLimit ? `Reduce amount below $${TEST_MODE_MAX_CLAIM}` : ''}
+                >
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
