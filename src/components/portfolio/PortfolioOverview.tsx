@@ -30,6 +30,12 @@ const PortfolioOverview = ({ userId }: PortfolioOverviewProps) => {
         table: 'wormhole_transactions',
         filter: `user_id=eq.${userId}`
       }, fetchPortfolioData)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'device_registry',
+        filter: `user_id=eq.${userId}`
+      }, fetchPortfolioData)
       .subscribe();
 
     return () => {
