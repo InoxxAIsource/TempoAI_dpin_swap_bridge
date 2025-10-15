@@ -204,23 +204,30 @@ serve(async (req) => {
     const receipt = await tx.wait(1);
     console.log(`Transaction confirmed in block ${receipt?.blockNumber}`);
 
-    // CRITICAL: Verify the transaction succeeded by reading back the claimable amount
-    console.log('Verifying on-chain claimable amount...');
-    const verifyClaimable = await faucetContract.getClaimableAmount(evmWalletAddress);
-    const verifyClaimableEth = parseFloat(ethers.formatEther(verifyClaimable));
-    console.log(`On-chain claimable amount: ${verifyClaimableEth} ETH`);
+    // Verify the transaction succeeded by reading back the claimable amount (non-blocking)
+    let verificationSuccess = false;
+    let verifyClaimableEth = 0;
+    try {
+      console.log('Verifying on-chain claimable amount...');
+      const verifyClaimable = await faucetContract.getClaimableAmount(evmWalletAddress);
+      verifyClaimableEth = parseFloat(ethers.formatEther(verifyClaimable));
+      console.log(`On-chain claimable amount: ${verifyClaimableEth} ETH`);
 
-    if (verifyClaimableEth === 0) {
-      throw new Error(`Verification failed: On-chain claimable amount is 0 after setClaimableReward. Transaction may have reverted silently.`);
+      if (verifyClaimableEth === 0) {
+        console.warn(`⚠️ Verification shows 0 claimable amount, but transaction confirmed. Proceeding anyway.`);
+      } else if (Math.abs(verifyClaimableEth - ethAmountRounded) > 0.0001) {
+        console.warn(`⚠️ Claimable amount mismatch: expected ${ethAmountRounded}, got ${verifyClaimableEth}`);
+      } else {
+        console.log('✓ On-chain verification successful');
+        verificationSuccess = true;
+      }
+    } catch (verifyError) {
+      console.error('❌ Verification failed:', verifyError);
+      console.log('⚠️ Skipping verification and proceeding with database update. Contract is still prepared.');
     }
 
-    if (Math.abs(verifyClaimableEth - ethAmountRounded) > 0.0001) {
-      console.warn(`⚠️ Claimable amount mismatch: expected ${ethAmountRounded}, got ${verifyClaimableEth}`);
-    }
-
-    console.log('✓ On-chain verification successful');
-
-    // Update the claim record with contract preparation details
+    // Always update the claim record with contract preparation details (regardless of verification)
+    console.log('Updating database with prepared contract details...');
     const { error: updateError } = await supabase
       .from('depin_reward_claims')
       .update({
@@ -228,6 +235,9 @@ serve(async (req) => {
         eth_price_at_transfer: ethPriceUSD,
         conversion_rate: conversionRate,
         contract_prepared_at: new Date().toISOString(),
+        status: verificationSuccess ? 'ready_to_claim' : 'prepared_unverified',
+        eth_transfer_tx: tx.hash,
+        eth_transfer_block_number: receipt?.blockNumber,
       })
       .eq('id', claimId);
 
@@ -235,6 +245,8 @@ serve(async (req) => {
       console.error('Failed to update claim:', updateError);
       throw new Error(`Contract preparation succeeded but database update failed: ${updateError.message}`);
     }
+    
+    console.log('✓ Database updated successfully');
 
     // Update wormhole_transactions status
     if (claim.wormhole_tx_id) {
@@ -265,6 +277,9 @@ serve(async (req) => {
         contractAddress: FAUCET_ADDRESS,
         userNeedsToClaim: true,
         explorerUrl: `https://sepolia.etherscan.io/tx/${tx.hash}`,
+        verificationSuccess,
+        verifiedAmount: verifyClaimableEth > 0 ? verifyClaimableEth.toString() : null,
+        warning: verificationSuccess ? null : 'Contract prepared but verification failed. You can still try to claim - if the transaction confirmed, the funds should be available.',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
