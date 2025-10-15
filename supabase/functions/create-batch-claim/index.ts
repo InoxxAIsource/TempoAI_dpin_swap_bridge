@@ -13,6 +13,13 @@ Deno.serve(async (req) => {
   try {
     const { deviceIds, claimAmount, destinationChain, walletAddress } = await req.json();
 
+    console.log(`🔍 Claim Request:`, {
+      claimAmount: claimAmount || 'ALL',
+      deviceIds: deviceIds?.length || 'auto-select',
+      destinationChain,
+      walletAddress: walletAddress?.substring(0, 10) + '...'
+    });
+
     if (!destinationChain) {
       throw new Error('destinationChain is required');
     }
@@ -38,6 +45,8 @@ Deno.serve(async (req) => {
     if (authError || !user) {
       throw new Error('Unauthorized');
     }
+
+    console.log(`👤 User: ${user.id.substring(0, 8)}...`);
 
     let selectedDeviceIds = deviceIds;
 
@@ -90,7 +99,7 @@ Deno.serve(async (req) => {
       
       selectedDeviceIds = [...new Set(selectedRewards.map(r => r.device_id))];
       
-      console.log(`✅ Auto-selected ${selectedDeviceIds.length} devices totaling $${currentTotal.toFixed(2)}`);
+      console.log(`✅ Auto-selected ${selectedDeviceIds.length} devices totaling $${currentTotal.toFixed(2)} (target: $${claimAmount})`);
     }
 
     if (!selectedDeviceIds || selectedDeviceIds.length === 0) {

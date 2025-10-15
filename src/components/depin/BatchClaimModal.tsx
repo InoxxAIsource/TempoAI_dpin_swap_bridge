@@ -53,7 +53,7 @@ const BatchClaimModal = ({
   
   // Test mode configuration
   const TEST_MODE_MAX_CLAIM = 50;
-  const isOverLimit = totalAmount > TEST_MODE_MAX_CLAIM;
+  const isOverLimit = (actualClaimAmount || totalAmount) > TEST_MODE_MAX_CLAIM;
   const navigate = useNavigate();
   const { evmAddress, solanaAddress, walletAuthenticatedAddress } = useWalletContext();
 
@@ -81,6 +81,13 @@ const BatchClaimModal = ({
         return;
       }
 
+      console.log(`[BatchClaimModal] Creating claim:`, {
+        requestedAmount: requestedAmount || 'ALL',
+        totalAmount,
+        preferredChain,
+        walletAddress: walletAddress.substring(0, 10) + '...'
+      });
+
       const { data, error } = await supabase.functions.invoke('create-batch-claim', {
         body: {
           claimAmount: requestedAmount || totalAmount,
@@ -94,15 +101,29 @@ const BatchClaimModal = ({
       setAutoSelectedDevices(data.selectedDeviceIds || []);
       setActualClaimAmount(data.actualAmount || requestedAmount || totalAmount);
 
+      console.log(`[BatchClaimModal] Claim created:`, {
+        claimId: data.claimId,
+        actualAmount: data.actualAmount,
+        deviceCount: data.deviceCount,
+        step: preferredChain === 'Solana' ? 'bridge (skip Sepolia)' : 'prepare'
+      });
+
       toast({
         title: "✅ Claim Created Successfully!",
         description: `Selected ${data.deviceCount} device(s) for $${data.actualAmount.toFixed(2)}`,
       });
 
       setClaimId(data.claimId);
-      setStep('prepare');
+      
+      // For Solana, skip the Sepolia contract preparation step
+      if (preferredChain === 'Solana') {
+        setStep('bridge');
+        setContractPrepared(true);
+      } else {
+        setStep('prepare');
+      }
     } catch (error: any) {
-      console.error('Error creating batch claim:', error);
+      console.error('[BatchClaimModal] Error creating batch claim:', error);
       toast({
         title: "Error",
         description: error?.message || "Failed to create claim. Please try again.",
@@ -121,11 +142,14 @@ const BatchClaimModal = ({
   const handleProceedToBridge = () => {
     if (!claimId) return;
     
+    const bridgeAmount = actualClaimAmount || totalAmount;
+    console.log(`[BatchClaimModal] Proceeding to bridge with amount: $${bridgeAmount.toFixed(2)}`);
+    
     onSuccess();
     onClose();
 
     // Redirect to bridge page with prefilled data
-    navigate(`/bridge?amount=${totalAmount}&toChain=${preferredChain}&fromChain=Polygon&token=USDC&claimId=${claimId}`);
+    navigate(`/bridge?amount=${bridgeAmount}&toChain=${preferredChain}&fromChain=Polygon&token=USDC&claimId=${claimId}`);
     
     setTimeout(() => {
       toast({
@@ -181,7 +205,7 @@ const BatchClaimModal = ({
                     Maximum claim amount is <strong>${TEST_MODE_MAX_CLAIM}</strong> for testing. 
                     {isOverLimit && (
                       <span className="block mt-1 text-amber-900 dark:text-amber-100 font-medium">
-                        Current selection: ${totalAmount.toFixed(2)} - Please deselect some devices
+                        Current selection: ${(actualClaimAmount || totalAmount).toFixed(2)} - Please reduce amount
                       </span>
                     )}
                   </p>
@@ -215,7 +239,7 @@ const BatchClaimModal = ({
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Total Claimable</span>
-                  <span className="text-2xl font-bold">${totalAmount.toFixed(2)}</span>
+                  <span className="text-2xl font-bold">${(actualClaimAmount || totalAmount).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Destination Chain</span>
@@ -224,7 +248,7 @@ const BatchClaimModal = ({
               </div>
 
               <BridgeFeeEstimator
-                amount={totalAmount}
+                amount={actualClaimAmount || totalAmount}
                 fromChain="Polygon"
                 toChain={preferredChain}
                 token="USDC"

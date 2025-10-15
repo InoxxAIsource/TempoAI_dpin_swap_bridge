@@ -31,13 +31,14 @@ Deno.serve(async (req) => {
 
     console.log(`📊 Checking pending rewards for user: ${user.id}`);
 
-    // Fetch pending rewards
+    // Fetch pending rewards (exclude already claimed)
     const { data: rewards, error: rewardsError } = await supabase
       .from('depin_rewards')
       .select('*, device_id')
       .eq('user_id', user.id)
       .eq('status', 'pending')
-      .is('claimed_via_tx', null);
+      .is('claimed_via_tx', null)
+      .is('batch_claim_id', null);
 
     if (rewardsError) {
       console.error('Error fetching rewards:', rewardsError);
