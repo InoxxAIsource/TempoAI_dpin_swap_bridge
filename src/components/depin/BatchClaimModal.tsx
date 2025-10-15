@@ -53,9 +53,24 @@ const BatchClaimModal = ({
   
   // Test mode configuration
   const TEST_MODE_MAX_CLAIM = 50;
-  const isOverLimit = (actualClaimAmount || totalAmount) > TEST_MODE_MAX_CLAIM;
+  const displayAmount = requestedAmount || actualClaimAmount || totalAmount;
+  const isOverLimit = displayAmount > TEST_MODE_MAX_CLAIM;
   const navigate = useNavigate();
   const { evmAddress, solanaAddress, walletAuthenticatedAddress } = useWalletContext();
+
+  // Log state on modal open for debugging
+  useEffect(() => {
+    if (open && step === 'create') {
+      console.log(`[BatchClaimModal] Opened with:`, {
+        requestedAmount,
+        totalAmount,
+        actualClaimAmount,
+        displayAmount,
+        deviceCount: deviceBreakdown.length,
+        preferredChain
+      });
+    }
+  }, [open, step, requestedAmount, totalAmount, actualClaimAmount, displayAmount, deviceBreakdown.length, preferredChain]);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -168,11 +183,11 @@ const BatchClaimModal = ({
           </DialogTitle>
           <DialogDescription>
             {step === 'create' && (requestedAmount 
-              ? `Claiming $${requestedAmount.toFixed(2)} from auto-selected devices`
-              : 'Review and confirm your cross-chain reward claim'
+              ? `Claiming $${requestedAmount.toFixed(2)} → Sepolia ETH → Bridge to ${preferredChain}`
+              : `Review claim: Sepolia ETH → Bridge to ${preferredChain}`
             )}
-            {step === 'prepare' && 'Prepare the smart contract on Sepolia testnet'}
-            {step === 'bridge' && 'Ready to bridge your funds'}
+            {step === 'prepare' && 'Receive ETH on Sepolia testnet for bridging'}
+            {step === 'bridge' && `Ready to bridge from Sepolia to ${preferredChain}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -205,7 +220,7 @@ const BatchClaimModal = ({
                     Maximum claim amount is <strong>${TEST_MODE_MAX_CLAIM}</strong> for testing. 
                     {isOverLimit && (
                       <span className="block mt-1 text-amber-900 dark:text-amber-100 font-medium">
-                        Current selection: ${(actualClaimAmount || totalAmount).toFixed(2)} - Please reduce amount
+                        Current selection: ${displayAmount.toFixed(2)} - Please reduce amount
                       </span>
                     )}
                   </p>
@@ -239,21 +254,38 @@ const BatchClaimModal = ({
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Total Claimable</span>
-                  <span className="text-2xl font-bold">${(actualClaimAmount || totalAmount).toFixed(2)}</span>
+                  <span className="text-2xl font-bold">${displayAmount.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Destination Chain</span>
-                  <span className="font-medium">{preferredChain}</span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Bridge Destination</span>
+                    <span className="font-medium">{preferredChain}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Via Sepolia Testnet</span>
+                    <span className="text-xs text-muted-foreground">ETH for gas</span>
+                  </div>
                 </div>
               </div>
 
               <BridgeFeeEstimator
-                amount={actualClaimAmount || totalAmount}
+                amount={displayAmount}
                 fromChain="Polygon"
-                toChain={preferredChain}
-                token="USDC"
+                toChain="Ethereum"
+                token="ETH"
                 onEstimateUpdate={setFeeEstimate}
               />
+
+              <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800 dark:text-blue-200">
+                  <p className="text-sm font-medium mb-2">Two-Step Process:</p>
+                  <ol className="text-xs space-y-1 ml-4 list-decimal">
+                    <li>Claim rewards as ETH on Sepolia testnet (fees shown above)</li>
+                    <li>Bridge ETH from Sepolia → {preferredChain} (additional fees apply)</li>
+                  </ol>
+                </AlertDescription>
+              </Alert>
 
               {/* EVM Wallet Warning if not connected */}
               {!evmAddress && (solanaAddress || walletAuthenticatedAddress) && (
