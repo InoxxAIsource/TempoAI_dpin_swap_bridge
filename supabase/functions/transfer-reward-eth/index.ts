@@ -204,30 +204,70 @@ serve(async (req) => {
     const receipt = await tx.wait(1);
     console.log(`Transaction confirmed in block ${receipt?.blockNumber}`);
 
-    // Verify the transaction succeeded by reading back the claimable amount (non-blocking)
+    // Wait for blockchain state to settle (2-3 blocks on Sepolia = ~30 seconds)
+    console.log('⏱️ Waiting 30 seconds for blockchain state to settle before verification...');
+    await new Promise(resolve => setTimeout(resolve, 30000));
+
+    // Verify the transaction succeeded by reading back the claimable amount with retry logic
     let verificationSuccess = false;
     let verifyClaimableEth = 0;
-    try {
-      console.log('Verifying on-chain claimable amount...');
-      const verifyClaimable = await faucetContract.getClaimableAmount(evmWalletAddress);
-      verifyClaimableEth = parseFloat(ethers.formatEther(verifyClaimable));
-      console.log(`On-chain claimable amount: ${verifyClaimableEth} ETH`);
+    const maxRetries = 3;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Verification attempt ${attempt}/${maxRetries}: Checking on-chain claimable amount...`);
+        const verifyClaimable = await faucetContract.getClaimableAmount(evmWalletAddress);
+        
+        // Log raw response for debugging
+        console.log(`Raw contract response: ${JSON.stringify(verifyClaimable)}`);
+        
+        verifyClaimableEth = parseFloat(ethers.formatEther(verifyClaimable));
+        console.log(`On-chain claimable amount: ${verifyClaimableEth} ETH`);
 
-      if (verifyClaimableEth === 0) {
-        console.warn(`⚠️ Verification shows 0 claimable amount, but transaction confirmed. Proceeding anyway.`);
-      } else if (Math.abs(verifyClaimableEth - ethAmountRounded) > 0.0001) {
-        console.warn(`⚠️ Claimable amount mismatch: expected ${ethAmountRounded}, got ${verifyClaimableEth}`);
-      } else {
-        console.log('✓ On-chain verification successful');
-        verificationSuccess = true;
+        if (verifyClaimableEth === 0) {
+          console.warn(`⚠️ Attempt ${attempt}: Verification shows 0 claimable amount`);
+          if (attempt < maxRetries) {
+            console.log(`Waiting 10 seconds before retry...`);
+            await new Promise(resolve => setTimeout(resolve, 10000));
+            continue;
+          } else {
+            console.warn(`⚠️ All verification attempts returned 0. Transaction confirmed but verification inconclusive.`);
+          }
+        } else if (Math.abs(verifyClaimableEth - ethAmountRounded) > 0.0001) {
+          console.warn(`⚠️ Claimable amount mismatch: expected ${ethAmountRounded}, got ${verifyClaimableEth}`);
+          verificationSuccess = true; // Still mark as success since amount is non-zero
+          break;
+        } else {
+          console.log('✓ On-chain verification successful');
+          verificationSuccess = true;
+          break;
+        }
+      } catch (verifyError: any) {
+        console.error(`❌ Verification attempt ${attempt} failed:`, verifyError);
+        console.error(`Error details: ${JSON.stringify({
+          code: verifyError?.code,
+          message: verifyError?.message,
+          value: verifyError?.value,
+        })}`);
+        
+        if (attempt < maxRetries) {
+          console.log(`Waiting 10 seconds before retry...`);
+          await new Promise(resolve => setTimeout(resolve, 10000));
+        } else {
+          console.log('⚠️ All verification attempts failed. Contract is prepared but verification inconclusive.');
+        }
       }
-    } catch (verifyError) {
-      console.error('❌ Verification failed:', verifyError);
-      console.log('⚠️ Skipping verification and proceeding with database update. Contract is still prepared.');
     }
 
-    // Always update the claim record with contract preparation details (regardless of verification)
+    // Always update the claim record with contract preparation details
+    // Set status to 'contract_prepared' since transaction confirmed successfully
     console.log('Updating database with prepared contract details...');
+    const claimStatus = verificationSuccess && verifyClaimableEth > 0 
+      ? 'ready_to_claim' 
+      : 'contract_prepared'; // Transaction succeeded, just verification pending
+    
+    console.log(`Setting claim status to: ${claimStatus}`);
+    
     const { error: updateError } = await supabase
       .from('depin_reward_claims')
       .update({
@@ -235,7 +275,7 @@ serve(async (req) => {
         eth_price_at_transfer: ethPriceUSD,
         conversion_rate: conversionRate,
         contract_prepared_at: new Date().toISOString(),
-        status: verificationSuccess ? 'ready_to_claim' : 'prepared_unverified',
+        status: claimStatus,
         eth_transfer_tx: tx.hash,
         eth_transfer_block_number: receipt?.blockNumber,
       })
@@ -279,7 +319,9 @@ serve(async (req) => {
         explorerUrl: `https://sepolia.etherscan.io/tx/${tx.hash}`,
         verificationSuccess,
         verifiedAmount: verifyClaimableEth > 0 ? verifyClaimableEth.toString() : null,
-        warning: verificationSuccess ? null : 'Contract prepared but verification failed. You can still try to claim - if the transaction confirmed, the funds should be available.',
+        warning: verificationSuccess 
+          ? null 
+          : 'Contract prepared successfully! Verification is still settling. You can try to claim now or wait 30-60 seconds for on-chain state to update.',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

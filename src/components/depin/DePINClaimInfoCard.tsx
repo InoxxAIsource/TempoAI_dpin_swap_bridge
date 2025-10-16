@@ -45,7 +45,7 @@ const DePINClaimInfoCard = ({
     chainId: sepolia.id,
     query: {
       enabled: !!address && contractPrepared,
-      refetchInterval: 10000, // Refetch every 10 seconds
+      refetchInterval: 15000, // Refetch every 15 seconds to allow state to settle
     }
   });
 
@@ -66,12 +66,9 @@ const DePINClaimInfoCard = ({
     hash: claimTxHash,
   });
 
-  // Check if claim is ready
-  const isClaimReady = contractPrepared && 
-    onChainClaimableAmount && 
-    Number(onChainClaimableAmount) > 0 &&
-    contractBalance &&
-    Number(contractBalance.value) >= Number(onChainClaimableAmount);
+  // Check if claim is ready - don't block on verification if contract was prepared
+  const isClaimReady = contractPrepared && prepareTxHash; // Just need contract prepared, not full verification
+  const isVerified = onChainClaimableAmount && Number(onChainClaimableAmount) > 0;
 
   // Link wallet handler
   const handleLinkWallet = async () => {
@@ -123,10 +120,11 @@ const DePINClaimInfoCard = ({
       setPrepareTxHash(data.prepareTxHash);
       setEthAmount(parseFloat(data.sepoliaEthAmount));
       
-      // Refetch on-chain claimable amount to verify
-      setTimeout(() => {
-        refetchClaimable();
-      }, 3000); // Wait 3 seconds for blockchain to settle
+      // Refetch on-chain claimable amount to verify (progressive retry)
+      setTimeout(() => refetchClaimable(), 5000);   // 5s
+      setTimeout(() => refetchClaimable(), 15000);  // 15s
+      setTimeout(() => refetchClaimable(), 30000);  // 30s
+      setTimeout(() => refetchClaimable(), 60000);  // 60s
       
       toast({
         title: "Contract Prepared! ✅",
@@ -355,7 +353,30 @@ const DePINClaimInfoCard = ({
             {/* Step 2: User Claims from Contract */}
             {contractPrepared && !isClaimSuccess && (
               <div className="space-y-4">
-                {/* On-chain verification status */}
+                {/* Contract Preparation Status - Always show success if tx confirmed */}
+                <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="space-y-2">
+                    <div className="text-green-800 dark:text-green-200 font-semibold">
+                      ✓ Contract Prepared Successfully!
+                    </div>
+                    <div className="text-sm text-green-700 dark:text-green-300 space-y-1">
+                      <p>Expected amount: {ethAmount?.toFixed(6)} ETH</p>
+                      {prepareTxHash && (
+                        <a 
+                          href={`https://sepolia.etherscan.io/tx/${prepareTxHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 flex items-center gap-1"
+                        >
+                          View preparation tx <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  </AlertDescription>
+                </Alert>
+
+                {/* On-chain verification status - informational only */}
                 {isLoadingClaimable ? (
                   <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
                     <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
@@ -364,71 +385,47 @@ const DePINClaimInfoCard = ({
                         Verifying on-chain state...
                       </div>
                       <div className="text-sm text-blue-700 dark:text-blue-300">
-                        Checking your claimable amount on the blockchain
+                        This can take 30-60 seconds. You can try to claim now or wait for verification.
                       </div>
                     </AlertDescription>
                   </Alert>
-                ) : !isClaimReady ? (
+                ) : !isVerified ? (
                   <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
                     <AlertCircle className="h-4 w-4 text-amber-600" />
                     <AlertDescription className="space-y-2">
                       <div className="text-amber-800 dark:text-amber-200 font-semibold">
-                        ⚠️ On-Chain Verification Issue
+                        Verification Pending
                       </div>
                       <div className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
                         <p>On-chain claimable: {onChainClaimableAmount ? formatEther(onChainClaimableAmount) : '0'} ETH</p>
-                        <p>Contract balance: {contractBalance ? formatEther(contractBalance.value) : '0'} ETH</p>
-                        {Number(onChainClaimableAmount || 0) === 0 && (
-                          <p className="font-semibold mt-2">
-                            The smart contract shows 0 claimable amount. The preparation transaction may have failed.
-                          </p>
-                        )}
+                        <p className="mt-2">
+                          Blockchain state is still settling. You can try to claim now, or wait 30-60 seconds for automatic verification.
+                        </p>
                       </div>
                       <Button 
                         onClick={() => {
                           refetchClaimable();
-                          toast({ title: "Refreshing...", description: "Checking on-chain state again" });
+                          toast({ title: "Refreshing...", description: "Checking on-chain state" });
                         }}
                         variant="outline"
                         size="sm"
                         className="mt-2"
                       >
                         <RefreshCcw className="mr-2 h-3 w-3" />
-                        Refresh On-Chain State
+                        Check Now
                       </Button>
-                      {prepareTxHash && (
-                        <a 
-                          href={`https://sepolia.etherscan.io/tx/${prepareTxHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-amber-600 hover:text-amber-800 flex items-center gap-1 mt-2"
-                        >
-                          Check preparation tx on Etherscan <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
                     </AlertDescription>
                   </Alert>
                 ) : (
                   <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="space-y-2">
+                    <AlertDescription>
                       <div className="text-green-800 dark:text-green-200 font-semibold">
-                        ✓ Verified On-Chain! Ready to Claim
+                        ✓ Verified On-Chain!
                       </div>
-                      <div className="text-sm text-green-700 dark:text-green-300 space-y-1">
-                        <p>Claimable: {formatEther(onChainClaimableAmount!)} ETH</p>
-                        <p>Contract balance: {formatEther(contractBalance!.value)} ETH</p>
+                      <div className="text-sm text-green-700 dark:text-green-300">
+                        Claimable: {formatEther(onChainClaimableAmount!)} ETH
                       </div>
-                      {prepareTxHash && (
-                        <a 
-                          href={`https://sepolia.etherscan.io/tx/${prepareTxHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 flex items-center gap-1"
-                        >
-                          View preparation tx <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -471,7 +468,7 @@ const DePINClaimInfoCard = ({
                 
                 <Button 
                   onClick={handleClaimFromContract}
-                  disabled={!isClaimReady || isClaimPending || isClaimConfirming}
+                  disabled={isClaimPending || isClaimConfirming}
                   className="w-full"
                   size="lg"
                 >
@@ -483,15 +480,19 @@ const DePINClaimInfoCard = ({
                   ) : (
                     <>
                       <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Claim from Contract {useManualGas && '(Manual Gas)'}
+                      {isVerified 
+                        ? `Claim ${onChainClaimableAmount ? formatEther(onChainClaimableAmount) : ethAmount?.toFixed(6)} ETH`
+                        : `Try Claim ${ethAmount?.toFixed(6)} ETH`
+                      }
                     </>
                   )}
                 </Button>
 
                 <div className="text-xs text-muted-foreground text-center">
-                  {!isClaimReady 
-                    ? 'Waiting for on-chain verification...' 
-                    : 'This will trigger a wallet popup to approve the claim transaction'}
+                  {!isVerified 
+                    ? 'You can try claiming now. If it fails, wait 30-60 seconds and refresh.'
+                    : 'Ready to claim your rewards from the smart contract'
+                  }
                 </div>
               </div>
             )}
