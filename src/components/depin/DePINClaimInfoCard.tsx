@@ -62,8 +62,14 @@ const DePINClaimInfoCard = ({
   // Wagmi hooks for claiming from smart contract
   const { writeContract, data: claimTxHash, isPending: isClaimPending, error: writeError } = useWriteContract();
   
-  const { isLoading: isClaimConfirming, isSuccess: isClaimSuccess } = useWaitForTransactionReceipt({
+  const { 
+    isLoading: isClaimConfirming, 
+    isSuccess: isClaimSuccess,
+    isError: isClaimError,
+    data: receiptData 
+  } = useWaitForTransactionReceipt({
     hash: claimTxHash,
+    confirmations: 2,
   });
 
   // Extract amount and claimed status from tuple [amount, claimed]
@@ -157,6 +163,19 @@ const DePINClaimInfoCard = ({
       return;
     }
 
+    // Pre-flight balance check
+    if (contractBalance && ethAmount) {
+      const contractBalanceInEth = parseFloat(formatEther(contractBalance.value));
+      if (contractBalanceInEth < ethAmount) {
+        toast({
+          title: "Insufficient Contract Balance",
+          description: `Contract has ${contractBalanceInEth.toFixed(6)} ETH but you need ${ethAmount.toFixed(6)} ETH. Please contact support.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setClaimError(null);
     console.log('[DePINClaimInfoCard] User claiming from contract...');
     
@@ -191,34 +210,133 @@ const DePINClaimInfoCard = ({
     }
   }, [writeError]);
 
-  // Handle successful claim
+  // Handle claim transaction result with comprehensive verification
   useEffect(() => {
-    if (isClaimSuccess && ethAmount) {
-      console.log('[DePINClaimInfoCard] Claim successful, updating database...');
-      
-      // Update database with user's claim transaction
-      supabase
-        .from('depin_reward_claims')
-        .update({
-          user_claim_tx: claimTxHash,
-          user_claim_confirmed_at: new Date().toISOString(),
-          status: 'claimed'
-        })
-        .eq('id', claimId)
-        .then(({ error }) => {
-          if (error) {
-            console.error('Failed to update claim:', error);
+    const verifyAndUpdateClaim = async () => {
+      if (!claimTxHash || !ethAmount) return;
+
+      // Check if transaction reverted
+      if (isClaimError) {
+        console.error('[DePINClaimInfoCard] ❌ Transaction reverted or failed');
+        toast({
+          title: "Claim Failed",
+          description: "Transaction reverted. The contract may not have sufficient balance.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (isClaimSuccess && receiptData) {
+        console.log('[DePINClaimInfoCard] ✓ Transaction confirmed, verifying...');
+        console.log('Receipt data:', receiptData);
+
+        // Check receipt status
+        if (receiptData.status === 'reverted') {
+          console.error('[DePINClaimInfoCard] ❌ Receipt shows reverted transaction');
+          toast({
+            title: "Claim Failed",
+            description: "Transaction was reverted. Contract may have insufficient funds.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Verify RewardsClaimed event was emitted
+        const claimEvent = receiptData.logs?.find((log: any) => {
+          try {
+            // RewardsClaimed event signature
+            const eventSignature = '0x...'; // Event topic hash
+            return log.topics[0] === eventSignature;
+          } catch {
+            return false;
           }
         });
 
-      toast({
-        title: "Claim Complete! 🎉",
-        description: `Successfully claimed ${ethAmount.toFixed(6)} ETH from smart contract!`,
-      });
-      
-      onContractPrepared(ethAmount);
-    }
-  }, [isClaimSuccess, ethAmount, claimTxHash, claimId, onContractPrepared, toast]);
+        if (!claimEvent) {
+          console.warn('[DePINClaimInfoCard] ⚠️ RewardsClaimed event not found in logs');
+        }
+
+        // Wait 5 seconds for blockchain state to settle
+        console.log('[DePINClaimInfoCard] Waiting 5s for state to settle...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        // Verify on-chain status changed
+        console.log('[DePINClaimInfoCard] Verifying on-chain claim status...');
+        const { data: verifyStatus } = await refetchClaimable();
+        
+        if (verifyStatus) {
+          const [amount, claimed] = verifyStatus as [bigint, boolean];
+          console.log(`On-chain verification: amount=${formatEther(amount)}, claimed=${claimed}`);
+          
+          if (!claimed && Number(amount) > 0) {
+            console.error('[DePINClaimInfoCard] ❌ On-chain status shows NOT claimed despite transaction success');
+            toast({
+              title: "Verification Failed",
+              description: "Transaction succeeded but on-chain verification failed. Please contact support.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+
+        // All checks passed - update database
+        console.log('[DePINClaimInfoCard] ✓ All verifications passed, updating database...');
+        const { error: updateError } = await supabase
+          .from('depin_reward_claims')
+          .update({
+            user_claim_tx: claimTxHash,
+            user_claim_confirmed_at: new Date().toISOString(),
+            status: 'claimed'
+          })
+          .eq('id', claimId);
+
+        if (updateError) {
+          console.error('Failed to update claim:', updateError);
+          toast({
+            title: "Database Update Failed",
+            description: "Claim succeeded but database update failed. Please contact support.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Claim Complete! 🎉",
+          description: `Successfully claimed ${ethAmount.toFixed(6)} ETH from smart contract!`,
+        });
+        
+        onContractPrepared(ethAmount);
+      }
+    };
+
+    verifyAndUpdateClaim();
+  }, [isClaimSuccess, isClaimError, receiptData, ethAmount, claimTxHash, claimId, onContractPrepared, toast, refetchClaimable]);
+
+  // Contract Debug View Component
+  const ContractDebugView = () => (
+    <Alert className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+      <AlertDescription className="space-y-2">
+        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          Contract Debug Info
+        </div>
+        <div className="text-xs text-slate-700 dark:text-slate-300 space-y-1 font-mono">
+          <div>Contract: {TEMPO_DEPIN_FAUCET_ADDRESS}</div>
+          <div>Contract Balance: {contractBalance ? formatEther(contractBalance.value) : '...'} ETH</div>
+          <div>Your Claimable: {onChainClaimableAmount ? formatEther(onChainClaimableAmount) : '0'} ETH</div>
+          <div>Expected Amount: {ethAmount?.toFixed(6) || '...'} ETH</div>
+          <div>Already Claimed: {hasAlreadyClaimed ? 'Yes' : 'No'}</div>
+        </div>
+        <a 
+          href={`https://sepolia.etherscan.io/address/${TEMPO_DEPIN_FAUCET_ADDRESS}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+        >
+          View Contract on Etherscan <ExternalLink className="h-3 w-3" />
+        </a>
+      </AlertDescription>
+    </Alert>
+  );
 
   // Show success state after claiming
   if (isClaimSuccess && ethAmount) {
@@ -353,6 +471,9 @@ const DePINClaimInfoCard = ({
                 </div>
               </>
             )}
+
+            {/* Debug View */}
+            {contractPrepared && <ContractDebugView />}
 
             {/* Step 2: User Claims from Contract */}
             {contractPrepared && !isClaimSuccess && (

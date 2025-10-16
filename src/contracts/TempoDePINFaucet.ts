@@ -2,6 +2,25 @@ export const TEMPO_DEPIN_FAUCET_ADDRESS = '0xb90bb7616bc138a177bec31a4571f4fd8fe
 
 export const TEMPO_DEPIN_FAUCET_ABI = [
   {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: 'address', name: 'user', type: 'address' },
+      { indexed: false, internalType: 'uint256', name: 'amount', type: 'uint256' },
+      { indexed: false, internalType: 'string', name: 'claimId', type: 'string' }
+    ],
+    name: 'RewardsAllocated',
+    type: 'event'
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: 'address', name: 'user', type: 'address' },
+      { indexed: false, internalType: 'uint256', name: 'amount', type: 'uint256' }
+    ],
+    name: 'RewardsClaimed',
+    type: 'event'
+  },
+  {
     inputs: [
       { internalType: 'address', name: 'user', type: 'address' },
       { internalType: 'uint256', name: 'amount', type: 'uint256' },

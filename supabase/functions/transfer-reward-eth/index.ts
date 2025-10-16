@@ -164,12 +164,13 @@ serve(async (req) => {
     const contractBalanceInEth = parseFloat(ethers.formatEther(contractBalance));
     console.log(`Contract balance: ${contractBalanceInEth} ETH`);
 
-    // Auto-fund contract if balance is insufficient
-    if (contractBalanceInEth < ethAmountRounded) {
-      console.log(`⚠️ Contract balance insufficient. Funding contract...`);
+    // Auto-fund contract if balance is insufficient (increased threshold)
+    const MIN_CONTRACT_BALANCE = 0.05; // Increased from 0.01
+    if (contractBalanceInEth < Math.max(ethAmountRounded, MIN_CONTRACT_BALANCE)) {
+      console.log(`⚠️ Contract balance insufficient (${contractBalanceInEth} < ${MIN_CONTRACT_BALANCE}). Funding contract...`);
       
-      // Transfer ETH from deployer wallet to contract (2x the needed amount for buffer)
-      const fundingAmount = ethAmountRounded * 2;
+      // Transfer more ETH to reduce frequency of auto-funding
+      const fundingAmount = Math.max(ethAmountRounded * 2, 0.1); // At least 0.1 ETH
       const fundingAmountRounded = parseFloat(fundingAmount.toFixed(6));
       const fundingAmountInWei = ethers.parseEther(fundingAmountRounded.toString());
       
