@@ -36,11 +36,11 @@ const DePINClaimInfoCard = ({
   const { toast } = useToast();
   const { isLinked, isLinking, linkError, linkEvmWallet } = useEvmWalletLink();
 
-  // Check on-chain claimable amount
-  const { data: onChainClaimableAmount, isLoading: isLoadingClaimable, refetch: refetchClaimable } = useReadContract({
+  // Check on-chain claimable amount - getClaimStatus returns [amount, claimed]
+  const { data: onChainClaimStatus, isLoading: isLoadingClaimable, refetch: refetchClaimable } = useReadContract({
     address: TEMPO_DEPIN_FAUCET_ADDRESS,
     abi: TEMPO_DEPIN_FAUCET_ABI,
-    functionName: 'getClaimableAmount',
+    functionName: 'getClaimStatus',
     args: address ? [address] : undefined,
     chainId: sepolia.id,
     query: {
@@ -66,6 +66,10 @@ const DePINClaimInfoCard = ({
     hash: claimTxHash,
   });
 
+  // Extract amount and claimed status from tuple [amount, claimed]
+  const onChainClaimableAmount = onChainClaimStatus ? onChainClaimStatus[0] : BigInt(0);
+  const hasAlreadyClaimed = onChainClaimStatus ? onChainClaimStatus[1] : false;
+  
   // Check if claim is ready - don't block on verification if contract was prepared
   const isClaimReady = contractPrepared && prepareTxHash; // Just need contract prepared, not full verification
   const isVerified = onChainClaimableAmount && Number(onChainClaimableAmount) > 0;
@@ -159,7 +163,7 @@ const DePINClaimInfoCard = ({
     const config: any = {
       address: TEMPO_DEPIN_FAUCET_ADDRESS,
       abi: TEMPO_DEPIN_FAUCET_ABI,
-      functionName: 'claimReward',
+      functionName: 'claimRewards',
       chain: sepolia,
       account: address,
     };

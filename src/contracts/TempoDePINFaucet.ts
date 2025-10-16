@@ -4,7 +4,8 @@ export const TEMPO_DEPIN_FAUCET_ABI = [
   {
     inputs: [
       { internalType: 'address', name: 'user', type: 'address' },
-      { internalType: 'uint256', name: 'amount', type: 'uint256' }
+      { internalType: 'uint256', name: 'amount', type: 'uint256' },
+      { internalType: 'string', name: 'claimId', type: 'string' }
     ],
     name: 'setClaimableReward',
     outputs: [],
@@ -13,14 +14,42 @@ export const TEMPO_DEPIN_FAUCET_ABI = [
   },
   {
     inputs: [{ internalType: 'address', name: 'user', type: 'address' }],
-    name: 'getClaimableAmount',
+    name: 'getClaimStatus',
+    outputs: [
+      { internalType: 'uint256', name: 'amount', type: 'uint256' },
+      { internalType: 'bool', name: 'claimed', type: 'bool' }
+    ],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'claimRewards',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'getContractBalance',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function'
   },
   {
     inputs: [],
-    name: 'claimReward',
+    name: 'deposit',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function'
+  },
+  {
+    inputs: [
+      { internalType: 'address[]', name: 'users', type: 'address[]' },
+      { internalType: 'uint256[]', name: 'amounts', type: 'uint256[]' },
+      { internalType: 'string[]', name: 'claimIds', type: 'string[]' }
+    ],
+    name: 'batchSetClaimableRewards',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function'

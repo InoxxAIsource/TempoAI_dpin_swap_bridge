@@ -143,9 +143,9 @@ serve(async (req) => {
     // Smart contract setup
     const FAUCET_ADDRESS = '0xb90bb7616bc138a177bec31a4571f4fd8fe113a1';
     const FAUCET_ABI = [
-      'function setClaimableReward(address user, uint256 amount) external',
-      'function getClaimableAmount(address user) view returns (uint256)',
-      'function claimReward() external',
+      'function setClaimableReward(address user, uint256 amount, string claimId) external',
+      'function getClaimStatus(address user) view returns (uint256 amount, bool claimed)',
+      'function claimRewards() external',
     ];
 
     const faucetContract = new ethers.Contract(FAUCET_ADDRESS, FAUCET_ABI, wallet);
@@ -196,7 +196,7 @@ serve(async (req) => {
     console.log(`Setting claimable reward for ${evmWalletAddress}: ${ethAmountRounded} ETH`);
 
     // Call smart contract to set claimable amount (deployer signs this)
-    const tx = await faucetContract.setClaimableReward(evmWalletAddress, ethAmountInWei);
+    const tx = await faucetContract.setClaimableReward(evmWalletAddress, ethAmountInWei, claimId);
     console.log(`Transaction sent: ${tx.hash}`);
 
     // Wait for confirmation
@@ -216,13 +216,14 @@ serve(async (req) => {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`Verification attempt ${attempt}/${maxRetries}: Checking on-chain claimable amount...`);
-        const verifyClaimable = await faucetContract.getClaimableAmount(evmWalletAddress);
+        const verifyClaimStatus = await faucetContract.getClaimStatus(evmWalletAddress);
         
-        // Log raw response for debugging
-        console.log(`Raw contract response: ${JSON.stringify(verifyClaimable)}`);
+        // Log raw response for debugging - getClaimStatus returns [amount, claimed]
+        console.log(`Raw contract response: ${JSON.stringify(verifyClaimStatus)}`);
         
-        verifyClaimableEth = parseFloat(ethers.formatEther(verifyClaimable));
-        console.log(`On-chain claimable amount: ${verifyClaimableEth} ETH`);
+        verifyClaimableEth = parseFloat(ethers.formatEther(verifyClaimStatus[0]));
+        const hasBeenClaimed = verifyClaimStatus[1];
+        console.log(`On-chain claimable amount: ${verifyClaimableEth} ETH, claimed: ${hasBeenClaimed}`);
 
         if (verifyClaimableEth === 0) {
           console.warn(`⚠️ Attempt ${attempt}: Verification shows 0 claimable amount`);

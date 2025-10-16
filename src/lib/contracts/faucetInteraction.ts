@@ -4,30 +4,39 @@ import { TEMPO_DEPIN_FAUCET_ADDRESS, TEMPO_DEPIN_FAUCET_ABI } from '@/contracts/
 export interface PrepareClaimParams {
   userAddress: `0x${string}`;
   amountInEth: string;
+  claimId: string;
 }
 
-export const getFaucetContractConfig = (userAddress: `0x${string}`, amountInEth: string) => {
+export const getFaucetContractConfig = (userAddress: `0x${string}`, amountInEth: string, claimId: string) => {
   return {
     address: TEMPO_DEPIN_FAUCET_ADDRESS,
     abi: TEMPO_DEPIN_FAUCET_ABI,
     functionName: 'setClaimableReward',
-    args: [userAddress, parseEther(amountInEth)],
+    args: [userAddress, parseEther(amountInEth), claimId],
   } as const;
 };
 
-export const getClaimableAmountConfig = (userAddress: `0x${string}`) => {
+export const getClaimStatusConfig = (userAddress: `0x${string}`) => {
   return {
     address: TEMPO_DEPIN_FAUCET_ADDRESS,
     abi: TEMPO_DEPIN_FAUCET_ABI,
-    functionName: 'getClaimableAmount',
+    functionName: 'getClaimStatus',
     args: [userAddress],
   } as const;
 };
 
-export const getClaimRewardConfig = () => {
+export const getClaimRewardsConfig = () => {
   return {
     address: TEMPO_DEPIN_FAUCET_ADDRESS,
     abi: TEMPO_DEPIN_FAUCET_ABI,
-    functionName: 'claimReward',
+    functionName: 'claimRewards',
+  } as const;
+};
+
+export const getContractBalanceConfig = () => {
+  return {
+    address: TEMPO_DEPIN_FAUCET_ADDRESS,
+    abi: TEMPO_DEPIN_FAUCET_ABI,
+    functionName: 'getContractBalance',
   } as const;
 };
