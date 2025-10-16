@@ -242,11 +242,13 @@ const DePINClaimInfoCard = ({
         }
 
         // Verify RewardsClaimed event was emitted
+        // Event signature: RewardsClaimed(address indexed user, uint256 amount)
+        // keccak256("RewardsClaimed(address,uint256)") = 0x0f5bb82176feb1b5e747e28471aa92156a04d9f3ab9f45f28e2d704232b93f75
+        const REWARDS_CLAIMED_EVENT = '0x0f5bb82176feb1b5e747e28471aa92156a04d9f3ab9f45f28e2d704232b93f75';
+        
         const claimEvent = receiptData.logs?.find((log: any) => {
           try {
-            // RewardsClaimed event signature
-            const eventSignature = '0x...'; // Event topic hash
-            return log.topics[0] === eventSignature;
+            return log.topics[0] === REWARDS_CLAIMED_EVENT;
           } catch {
             return false;
           }
