@@ -42,6 +42,19 @@ const DePINClaimInfoCard = ({
   // Ref for auto-scrolling to claim button
   const claimButtonRef = useRef<HTMLDivElement>(null);
 
+  // Initialize state from props (when user returns to page after contract is prepared)
+  useEffect(() => {
+    if (contractPreparedAt) {
+      console.log('[DePINClaimInfoCard] Contract already prepared at:', contractPreparedAt);
+      setContractPrepared(true);
+      
+      // Also set ETH amount if provided
+      if (sepoliaEthAmount) {
+        setEthAmount(sepoliaEthAmount);
+      }
+    }
+  }, [contractPreparedAt, sepoliaEthAmount]);
+
   // Check on-chain claimable amount - getClaimStatus returns [amount, claimed]
   const { data: onChainClaimStatus, isLoading: isLoadingClaimable, refetch: refetchClaimable } = useReadContract({
     address: TEMPO_DEPIN_FAUCET_ADDRESS,
@@ -374,7 +387,7 @@ const DePINClaimInfoCard = ({
     return (
       <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
         <CheckCircle2 className="h-4 w-4 text-green-600" />
-        <AlertDescription className="space-y-2">
+        <AlertDescription className="space-y-4">
           <div className="text-green-800 dark:text-green-200 font-semibold">
             ✓ Successfully Claimed from Smart Contract!
           </div>
@@ -391,9 +404,20 @@ const DePINClaimInfoCard = ({
               View claim transaction <ExternalLink className="h-3 w-3" />
             </a>
           )}
-          <div className="text-sm text-green-700 dark:text-green-300 mt-2">
-            ETH transfer complete! Click "Proceed to Bridge" to continue.
+          <div className="text-sm text-green-700 dark:text-green-300 mt-2 font-semibold">
+            🎉 ETH transfer complete! Ready to bridge to Solana.
           </div>
+          {/* Add Bridge Button */}
+          <Button
+            onClick={() => {
+              window.location.href = `/bridge?claimId=${claimId}`;
+            }}
+            className="w-full mt-2"
+            size="lg"
+          >
+            <ArrowRight className="mr-2 h-4 w-4" />
+            Proceed to Wormhole Bridge
+          </Button>
         </AlertDescription>
       </Alert>
     );

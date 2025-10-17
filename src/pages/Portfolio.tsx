@@ -222,18 +222,6 @@ const Portfolio = () => {
                       />
                     )}
 
-                    {/* Show "Proceed to Bridge" after contract is prepared */}
-                    {claim.contract_prepared_at && !claim.wormhole_tx && (
-                      <Button
-                        onClick={() => navigate(`/bridge?claimId=${claim.id}`)}
-                        className="w-full gap-2"
-                        size="lg"
-                      >
-                        <ArrowRight className="h-4 w-4" />
-                        Proceed to Wormhole Bridge
-                      </Button>
-                    )}
-
                     {/* Wormhole Transaction Status */}
                     {claim.wormhole_tx && (
                       <ClaimStatusTracker
