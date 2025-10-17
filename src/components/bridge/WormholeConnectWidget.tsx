@@ -225,10 +225,10 @@ const WormholeConnectWidget = () => {
       };
     }
     
-    // Mainnet with validated Alchemy or public fallbacks
+    // Mainnet - Use reliable public Solana RPC (PublicNode has better rate limits than mainnet-beta)
     return {
       Ethereum: useAlchemy ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://ethereum-rpc.publicnode.com',
-      Solana: useAlchemy ? `https://solana-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://api.mainnet.solana.com',
+      Solana: useAlchemy ? `https://solana-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://solana-rpc.publicnode.com',
       Arbitrum: useAlchemy ? `https://arb-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://arbitrum.llamarpc.com',
       Base: useAlchemy ? `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://base.llamarpc.com',
       Optimism: useAlchemy ? `https://opt-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://optimism.llamarpc.com',
@@ -260,12 +260,9 @@ const WormholeConnectWidget = () => {
       ...activeConfig,
       rpcs: getRPCConfig(networkMode, alchemyKey || ''),
       walletConnectProjectId: '7cb724bf60c8e3b1b67fdadd7bafcace',
-      balancePollInterval: 30000, // Poll balances every 30s instead of 5s to reduce RPC load
-      coinGeckoApiKey: undefined, // Use Wormhole's internal pricing instead of CoinGecko
       ui: {
         title: networkMode === 'Testnet' ? 'Tempo Bridge (Testnet)' : 'Tempo Bridge',
         showHamburgerMenu: true,
-        showBalances: false, // Disable balance display to prevent RPC spam
         defaultInputs: {
           fromChain: networkMode === 'Testnet' ? 'Sepolia' : 'Ethereum',
           toChain: 'Solana',
@@ -324,6 +321,12 @@ const WormholeConnectWidget = () => {
       } as config.WormholeConnectConfig;
     }
     
+    console.log('🌉 Wormhole Config:', {
+      network: networkMode,
+      rpcs: Object.keys(baseConfig.rpcs || {}),
+      chains: activeConfig.chains,
+    });
+    
     return baseConfig;
   }, [networkMode, defaultAmount, defaultFromChain, defaultToChain, defaultToken]);
 
@@ -352,7 +355,7 @@ const WormholeConnectWidget = () => {
         {/* Wormhole Connect Widget */}
         <div className="mb-4 border border-border rounded-2xl overflow-hidden bg-card shadow-lg">
           <WormholeConnect 
-            key={`${networkMode.toLowerCase()}-bridge-${widgetKey}`} 
+            key={`${networkMode.toLowerCase()}-bridge-${widgetKey}-${Date.now()}`}
             config={wormholeConfig}
             theme={customWormholeTheme}
           />
