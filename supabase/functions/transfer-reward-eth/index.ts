@@ -140,8 +140,8 @@ serve(async (req) => {
     const wallet = new ethers.Wallet(deployerPrivateKey, provider);
     console.log(`Deployer wallet address: ${wallet.address}`);
 
-    // Smart contract setup
-    const FAUCET_ADDRESS = '0xb90bb7616bc138a177bec31a4571f4fd8fe113a1';
+    // Smart contract setup - V2 Contract (Fixed: No hasClaimed blocking)
+    const FAUCET_ADDRESS = '0x7c5ab398a5fce2726534dee1617d7e629b96970a';
     const FAUCET_ABI = [
       'function setClaimableReward(address user, uint256 amount, string claimId) external',
       'function getClaimStatus(address user) view returns (uint256 amount, bool claimed)',
@@ -272,8 +272,8 @@ serve(async (req) => {
         conversion_rate: conversionRate,
         contract_prepared_at: new Date().toISOString(),
         status: 'ready_to_claim',
-        eth_transfer_tx: setClaimTx.hash,
-        eth_transfer_block_number: setClaimReceipt?.blockNumber,
+        eth_transfer_tx: tx.hash,
+        eth_transfer_block_number: receipt?.blockNumber,
       })
       .eq('id', claimId);
 
@@ -303,16 +303,16 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        prepareTxHash: setClaimTx.hash,
+        prepareTxHash: tx.hash,
         sepoliaEthAmount: verifyClaimableEth.toString(),
         ethAmountWithoutBuffer: ethAmount.toFixed(6),
         usdcAmount: claim.total_amount,
         ethPriceUSD: ethPriceUSD,
         conversionRate: conversionRate,
-        blockNumber: setClaimReceipt?.blockNumber,
+        blockNumber: receipt?.blockNumber,
         contractAddress: FAUCET_ADDRESS,
         userNeedsToClaim: true,
-        explorerUrl: `https://sepolia.etherscan.io/tx/${setClaimTx.hash}`,
+        explorerUrl: `https://sepolia.etherscan.io/tx/${tx.hash}`,
         verificationSuccess: true,
         verifiedAmount: verifyClaimableEth.toString(),
       }),

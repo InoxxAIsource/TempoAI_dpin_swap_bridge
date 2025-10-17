@@ -152,7 +152,7 @@ const DePINClaimInfoCard = ({
       });
       
       if (onContractPrepared) {
-        onContractPrepared(parseFloat(data.sepoliaEthAmount), data.prepareTxHash);
+        onContractPrepared(parseFloat(data.sepoliaEthAmount));
       }
     } catch (error: any) {
       console.error('[DePINClaimInfoCard] Error preparing contract:', error);

@@ -1,7 +1,7 @@
 // IMPORTANT: After deploying TempoDePINFaucet_V2.sol, update this address!
 // Old (V1 - has bug): 0xb90bb7616bc138a177bec31a4571f4fd8fe113a1
-// New (V2 - fixed): UPDATE THIS AFTER DEPLOYMENT
-export const TEMPO_DEPIN_FAUCET_ADDRESS = '0xb90bb7616bc138a177bec31a4571f4fd8fe113a1' as const;
+// New (V2 - fixed): 0x7c5ab398a5fce2726534dee1617d7e629b96970a ✅
+export const TEMPO_DEPIN_FAUCET_ADDRESS = '0x7c5ab398a5fce2726534dee1617d7e629b96970a' as const;
 
 // Updated ABI for V2 contract (no hasClaimed, added claimIdUsed)
 export const TEMPO_DEPIN_FAUCET_ABI = [
