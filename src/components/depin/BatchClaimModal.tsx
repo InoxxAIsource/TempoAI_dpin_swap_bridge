@@ -49,6 +49,7 @@ const BatchClaimModal = ({
   const [step, setStep] = useState<'create' | 'prepare' | 'bridge'>('create');
   const [autoSelectedDevices, setAutoSelectedDevices] = useState<string[]>([]);
   const [actualClaimAmount, setActualClaimAmount] = useState<number>(0);
+  const [claimData, setClaimData] = useState<any>(null);
   const { toast } = useToast();
   
   // Test mode configuration
@@ -79,8 +80,47 @@ const BatchClaimModal = ({
       setClaimId(null);
       setSepoliaEthAmount(null);
       setContractPrepared(false);
+      setClaimData(null);
     }
   }, [open]);
+
+  // Fetch claim data from database
+  const fetchClaimData = async (claimId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('depin_reward_claims')
+        .select('*')
+        .eq('id', claimId)
+        .single();
+      
+      if (error) throw error;
+      
+      console.log('[BatchClaimModal] Fetched claim data:', data);
+      setClaimData(data);
+      
+      // Update local state if contract was already prepared
+      if (data.contract_prepared_at && data.sepolia_eth_amount) {
+        setSepoliaEthAmount(data.sepolia_eth_amount);
+      }
+    } catch (error) {
+      console.error('[BatchClaimModal] Error fetching claim data:', error);
+    }
+  };
+
+  // Poll claim data every 3 seconds when on 'prepare' step
+  useEffect(() => {
+    if (!claimId || step !== 'prepare') return;
+    
+    // Initial fetch
+    fetchClaimData(claimId);
+    
+    // Poll every 3 seconds
+    const interval = setInterval(() => {
+      fetchClaimData(claimId);
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [claimId, step]);
 
   const handleConfirmClaim = async () => {
     setLoading(true);
@@ -328,10 +368,40 @@ const BatchClaimModal = ({
 
           {step === 'prepare' && claimId && (
             <>
+              {claimData && (
+                <div className="mb-4">
+                  <Alert className={claimData.contract_prepared_at ? "bg-green-50 dark:bg-green-950 border-green-200" : "bg-blue-50 dark:bg-blue-950 border-blue-200"}>
+                    <AlertDescription>
+                      {claimData.contract_prepared_at ? (
+                        <>
+                          <div className="flex items-center gap-2 text-green-700 dark:text-green-300 font-semibold mb-1">
+                            <CheckCircle2 className="h-4 w-4" />
+                            Contract Prepared Successfully!
+                          </div>
+                          <div className="text-sm text-green-600 dark:text-green-400">
+                            {claimData.sepolia_eth_amount?.toFixed(6)} ETH ready to claim from smart contract
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-semibold mb-1">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Waiting for Contract Preparation
+                          </div>
+                          <div className="text-sm text-blue-600 dark:text-blue-400">
+                            Click "Prepare Smart Contract" below to allocate your rewards
+                          </div>
+                        </>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+
               <DePINClaimInfoCard
                 claimId={claimId}
-                sepoliaEthAmount={sepoliaEthAmount}
-                contractPreparedAt={contractPrepared ? new Date().toISOString() : null}
+                sepoliaEthAmount={claimData?.sepolia_eth_amount || sepoliaEthAmount}
+                contractPreparedAt={claimData?.contract_prepared_at}
                 onEthClaimedToWallet={handleEthClaimed}
               />
               <div className="flex gap-2 justify-end mt-4">
