@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import WormholeConnect, { config } from '@wormhole-foundation/wormhole-connect';
+import WormholeConnect, { config, WormholeConnectTheme } from '@wormhole-foundation/wormhole-connect';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useWalletContext } from '@/contexts/WalletContext';
+import { useTokenBalances } from '@/hooks/useTokenBalances';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BalanceDisplay } from '@/components/bridge/BalanceDisplay';
+import { QuickFillButtons } from '@/components/bridge/QuickFillButtons';
+import { ConversionRate } from '@/components/bridge/ConversionRate';
 
 interface WormholeSwapWidgetProps {
   defaultSourceChain?: string;
@@ -23,9 +28,12 @@ export const WormholeSwapWidget = ({
 }: WormholeSwapWidgetProps) => {
   const [widgetKey, setWidgetKey] = useState(0);
   const [rpcError, setRpcError] = useState<string | null>(null);
+  const [networkMode, setNetworkMode] = useState<'Testnet' | 'Mainnet'>('Testnet');
   const { theme: appTheme } = useTheme();
   const { toast } = useToast();
   const { evmAddress, solanaAddress } = useWalletContext();
+  const { usdcBalance } = useTokenBalances(evmAddress || '', networkMode === 'Testnet' ? 11155111 : 1);
+  const [selectedAmount, setSelectedAmount] = useState<string>('');
 
   // Force remount on initial load
   useEffect(() => {
@@ -78,6 +86,50 @@ export const WormholeSwapWidget = ({
     return () => window.removeEventListener('wormhole-transfer', handleSwapEvent);
   }, [evmAddress, solanaAddress, toast]);
 
+  // Portal Bridge CSS overrides
+  const portalStyleOverrides = `
+    .wormhole-connect-button-token {
+      border-radius: 24px !important;
+      padding: 8px 16px !important;
+      background: hsl(var(--primary) / 0.1) !important;
+      border: 1px solid hsl(var(--primary) / 0.3) !important;
+      transition: all 0.2s ease;
+    }
+    .wormhole-connect-button-token:hover {
+      background: hsl(var(--primary) / 0.2) !important;
+      border-color: hsl(var(--primary) / 0.5) !important;
+    }
+    .wormhole-connect-input {
+      font-size: 2rem !important;
+      font-weight: 600 !important;
+      background: transparent !important;
+    }
+    .wormhole-connect-label {
+      font-size: 0.875rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      font-weight: 500 !important;
+    }
+    .wormhole-connect-button-primary {
+      background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent))) !important;
+      border-radius: 16px !important;
+      padding: 16px 24px !important;
+      font-size: 1rem !important;
+      font-weight: 600 !important;
+      border: none !important;
+      box-shadow: 0 4px 12px hsl(var(--primary) / 0.3) !important;
+      transition: all 0.2s ease !important;
+    }
+    .wormhole-connect-button-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px hsl(var(--primary) / 0.4) !important;
+    }
+    @media (max-width: 768px) {
+      .wormhole-connect-input { font-size: 1.5rem !important; }
+      .wormhole-connect-button-primary { padding: 14px 20px !important; font-size: 0.9rem !important; }
+    }
+  `;
+
   // Create MUI theme based on app theme
   const muiTheme = useMemo(
     () =>
@@ -89,32 +141,72 @@ export const WormholeSwapWidget = ({
     [appTheme]
   );
 
-  // Wormhole Connect configuration for TESTNET SWAPS
+  // Custom Wormhole Connect Theme matching Portal Bridge
+  const customWormholeTheme = useMemo((): WormholeConnectTheme => {
+    const isDark = appTheme === 'dark';
+    return {
+      mode: isDark ? 'dark' : 'light',
+      primary: '#9b87f5',
+      secondary: '#1a1d2e',
+      divider: '#2a2d3e',
+      background: isDark ? '#0f0f1a' : '#ffffff',
+      text: isDark ? '#ffffff' : '#000000',
+      textSecondary: isDark ? '#a0a0b0' : '#666666',
+      error: '#ef4444',
+      success: '#10b981',
+      warning: '#f59e0b',
+      info: '#3b82f6',
+      button: {
+        primary: '#9b87f5',
+        primaryText: '#000000',
+        action: '#10b981',
+        actionText: '#ffffff',
+        disabled: '#3a3a4a',
+        disabledText: '#6b6b7b',
+        hover: '#8cd4c6',
+      },
+      font: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    } as any;
+  }, [appTheme]);
+
+  // Wormhole Connect configuration for SWAPS
   const wormholeConfig: config.WormholeConnectConfig = useMemo(() => {
     const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
-    const sepoliaRpc = alchemyKey
-      ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
-      : 'https://ethereum-sepolia-rpc.publicnode.com';
+    
+    if (networkMode === 'Testnet') {
+      const sepoliaRpc = alchemyKey
+        ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
+        : 'https://ethereum-sepolia-rpc.publicnode.com';
 
+      return {
+        network: 'Testnet',
+        chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
+        tokens: ['ETH', 'WETH', 'USDC'],
+        rpcs: {
+          Sepolia: sepoliaRpc,
+          Solana: 'https://api.devnet.solana.com',
+          ArbitrumSepolia: 'https://sepolia-rollup.arbitrum.io/rpc',
+          BaseSepolia: 'https://sepolia.base.org',
+          OptimismSepolia: 'https://sepolia.optimism.io',
+          PolygonSepolia: 'https://rpc-amoy.polygon.technology',
+        },
+        walletConnectProjectId: '7cb724bf60c8e3b1b67fdadd7bafcace',
+      };
+    }
+
+    // Mainnet configuration
+    const ethRpc = alchemyKey ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://ethereum-rpc.publicnode.com';
+    
     return {
-      network: 'Testnet',
-      
-      chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
-      
-      tokens: ['ETH', 'WETH', 'USDC'],
-      
+      network: 'Mainnet',
+      chains: ['Ethereum', 'Solana', 'Arbitrum', 'Base', 'Optimism', 'Polygon', 'Avalanche', 'Bsc'],
+      tokens: ['ETH', 'WETH', 'USDC', 'USDT', 'WBTC', 'SOL'],
       rpcs: {
-        Sepolia: sepoliaRpc,
-        Solana: 'https://api.devnet.solana.com',
-        ArbitrumSepolia: 'https://sepolia-rollup.arbitrum.io/rpc',
-        BaseSepolia: 'https://sepolia.base.org',
-        OptimismSepolia: 'https://sepolia.optimism.io',
-        PolygonSepolia: 'https://rpc-amoy.polygon.technology',
+        Ethereum: ethRpc,
       },
-      
       walletConnectProjectId: '7cb724bf60c8e3b1b67fdadd7bafcace',
     };
-  }, []);
+  }, [networkMode]);
 
 
   // Listen for RPC errors from the widget
@@ -128,53 +220,102 @@ export const WormholeSwapWidget = ({
     return () => window.removeEventListener('wormhole-rpc-error', handleRpcError);
   }, []);
 
-  return (
-    <div className="space-y-4">
-      {/* Show only actual RPC errors from the widget */}
-      {rpcError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Connection Issue:</strong> {rpcError}
-          </AlertDescription>
-        </Alert>
-      )}
+  const isAnyWalletConnected = Boolean(evmAddress || solanaAddress);
 
-      {/* Info Messages */}
-      <div className="space-y-2 text-sm text-muted-foreground">
-        <p>
-          <strong>Note:</strong> This widget enables cross-chain token swaps on testnet networks.
-          Bridge and swap in a single transaction using Wormhole's advanced routing.
-        </p>
-        <p>
-          <strong>Supported Chains:</strong> Sepolia, Solana Devnet, Arbitrum Sepolia, Base Sepolia, 
-          Optimism Sepolia, Polygon Sepolia (Amoy)
-        </p>
-        <p>
-          <strong>How it works:</strong> Select different tokens on source and destination chains. 
-          Wormhole will automatically bridge and swap in one transaction.
+  return (
+    <ThemeProvider theme={muiTheme}>
+      <style dangerouslySetInnerHTML={{ __html: portalStyleOverrides }} />
+      <div className="space-y-4">
+        {/* Network Mode Toggle */}
+        <div className="flex items-center justify-center gap-2 p-1 bg-muted rounded-lg">
+          <Button
+            variant={networkMode === 'Testnet' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setNetworkMode('Testnet')}
+            className="flex-1"
+          >
+            Testnet
+          </Button>
+          <Button
+            variant={networkMode === 'Mainnet' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setNetworkMode('Mainnet')}
+            className="flex-1"
+          >
+            Mainnet
+          </Button>
+        </div>
+
+        {/* Mainnet Warning */}
+        {networkMode === 'Mainnet' && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Mainnet Mode:</strong> You're using real assets. Double-check all details before confirming transactions.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Show only actual RPC errors from the widget */}
+        {rpcError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Connection Issue:</strong> {rpcError}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Balance Display */}
+        {isAnyWalletConnected && evmAddress && (
+          <BalanceDisplay
+            token="USDC"
+            balance={usdcBalance}
+            address={evmAddress}
+          />
+        )}
+
+        {/* Quick Fill Buttons */}
+        {isAnyWalletConnected && (
+          <QuickFillButtons
+            balance={usdcBalance}
+            onAmountSelect={setSelectedAmount}
+            disabled={!evmAddress}
+          />
+        )}
+
+        {/* Wormhole Widget */}
+        <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-lg">
+          <WormholeConnect 
+            key={`${networkMode.toLowerCase()}-swap-${widgetKey}`}
+            config={wormholeConfig}
+            theme={customWormholeTheme}
+          />
+        </div>
+
+        {/* Conversion Rate */}
+        {networkMode === 'Mainnet' && (
+          <ConversionRate
+            fromToken="USDC"
+            toToken="USDC"
+            rate="1.00"
+            usdValue="1.00"
+          />
+        )}
+
+        {/* Footer */}
+        <p className="text-xs text-center text-muted-foreground">
+          Powered by{' '}
+          <a
+            href="https://wormhole.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            Wormhole Connect
+          </a>
         </p>
       </div>
-
-      {/* Wormhole Widget */}
-      <ThemeProvider theme={muiTheme}>
-        <div key={widgetKey} className="wormhole-swap-widget">
-          <WormholeConnect config={wormholeConfig} />
-        </div>
-      </ThemeProvider>
-
-      {/* Footer */}
-      <p className="text-xs text-center text-muted-foreground">
-        Powered by{' '}
-        <a
-          href="https://wormhole.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary hover:underline"
-        >
-          Wormhole Connect
-        </a>
-      </p>
-    </div>
+    </ThemeProvider>
   );
 };

@@ -4,6 +4,7 @@ import WormholeConnect, { type config, WormholeConnectTheme } from '@wormhole-fo
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useWalletContext } from '@/contexts/WalletContext';
+import { useTokenBalances } from '@/hooks/useTokenBalances';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { AlertCircle, HelpCircle, ChevronDown, ExternalLink, Loader2 } from 'lucide-react';
@@ -11,6 +12,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { BalanceDisplay } from './BalanceDisplay';
+import { QuickFillButtons } from './QuickFillButtons';
+import { ConversionRate } from './ConversionRate';
 
 const WormholeConnectWidget = () => {
   const { theme } = useTheme();
@@ -20,7 +24,7 @@ const WormholeConnectWidget = () => {
     solanaAddress,
     evmBalance,
     wethBalance,
-    usdcBalance 
+    usdcBalance: walletUsdcBalance 
   } = useWalletContext();
   const [searchParams] = useSearchParams();
   const [widgetKey, setWidgetKey] = useState(0);
@@ -28,6 +32,11 @@ const WormholeConnectWidget = () => {
   const [rpcHealthy, setRpcHealthy] = useState<boolean | null>(null);
   const [networkMode, setNetworkMode] = useState<'Testnet' | 'Mainnet'>('Testnet');
   const [bridgePhase, setBridgePhase] = useState<'idle' | 'approval' | 'transfer' | 'attestation' | 'complete'>('idle');
+  const [selectedAmount, setSelectedAmount] = useState<string>('');
+  
+  // Fetch token balances
+  const { usdcBalance: fetchedUsdcBalance } = useTokenBalances(evmAddress || '', networkMode === 'Testnet' ? 11155111 : 1);
+  const usdcBalance = fetchedUsdcBalance || walletUsdcBalance || '0.00';
   
   // Read URL parameters for DePIN claim flow
   const defaultAmount = searchParams.get('amount');
@@ -35,6 +44,59 @@ const WormholeConnectWidget = () => {
   const defaultToChain = searchParams.get('toChain');
   const defaultToken = searchParams.get('token');
   const claimId = searchParams.get('claimId');
+
+  // Portal Bridge CSS overrides
+  const portalStyleOverrides = `
+    .wormhole-connect-button-token {
+      border-radius: 24px !important;
+      padding: 8px 16px !important;
+      background: hsl(var(--primary) / 0.1) !important;
+      border: 1px solid hsl(var(--primary) / 0.3) !important;
+      transition: all 0.2s ease;
+    }
+    .wormhole-connect-button-token:hover {
+      background: hsl(var(--primary) / 0.2) !important;
+      border-color: hsl(var(--primary) / 0.5) !important;
+    }
+    .wormhole-connect-input {
+      font-size: 2rem !important;
+      font-weight: 600 !important;
+      background: transparent !important;
+    }
+    .wormhole-connect-label {
+      font-size: 0.875rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      font-weight: 500 !important;
+    }
+    .wormhole-connect-button-primary {
+      background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent))) !important;
+      border-radius: 16px !important;
+      padding: 16px 24px !important;
+      font-size: 1rem !important;
+      font-weight: 600 !important;
+      border: none !important;
+      box-shadow: 0 4px 12px hsl(var(--primary) / 0.3) !important;
+      transition: all 0.2s ease !important;
+    }
+    .wormhole-connect-button-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px hsl(var(--primary) / 0.4) !important;
+    }
+    .wormhole-connect-container {
+      border-radius: 24px !important;
+      overflow: hidden !important;
+    }
+    @media (max-width: 768px) {
+      .wormhole-connect-input {
+        font-size: 1.5rem !important;
+      }
+      .wormhole-connect-button-primary {
+        padding: 14px 20px !important;
+        font-size: 0.9rem !important;
+      }
+    }
+  `;
 
   // Force widget remount on initial load
   useEffect(() => {
@@ -131,21 +193,31 @@ const WormholeConnectWidget = () => {
     },
   }), [theme]);
 
-  // Custom Wormhole Connect Theme
+  // Custom Wormhole Connect Theme matching Portal Bridge
   const customWormholeTheme = useMemo((): WormholeConnectTheme => {
+    const isDark = theme === 'dark';
     return {
-      mode: theme === 'dark' ? 'dark' : 'light',
-      primary: '#78c4b6',
+      mode: isDark ? 'dark' : 'light',
+      primary: '#9b87f5',
       secondary: '#1a1d2e',
-      divider: theme === 'dark' ? '#2a2d3e' : '#e5e7eb',
-      background: theme === 'dark' ? '#0f0f1a' : '#ffffff',
-      text: theme === 'dark' ? '#ffffff' : '#000000',
-      textSecondary: theme === 'dark' ? '#a0a0b0' : '#666666',
+      divider: '#2a2d3e',
+      background: isDark ? '#0f0f1a' : '#ffffff',
+      text: isDark ? '#ffffff' : '#000000',
+      textSecondary: isDark ? '#a0a0b0' : '#666666',
       error: '#ef4444',
       success: '#10b981',
       warning: '#f59e0b',
       info: '#3b82f6',
-      font: 'inherit',
+      button: {
+        primary: '#9b87f5',
+        primaryText: '#000000',
+        action: '#10b981',
+        actionText: '#ffffff',
+        disabled: '#3a3a4a',
+        disabledText: '#6b6b7b',
+        hover: '#8cd4c6',
+      },
+      font: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     } as any;
   }, [theme]);
 
@@ -188,7 +260,6 @@ const WormholeConnectWidget = () => {
       network: 'Mainnet',
       chains: ['Ethereum', 'Solana', 'Arbitrum', 'Base', 'Optimism', 'Polygon', 'Avalanche', 'Bsc'],
       tokens: ['ETH', 'WETH', 'USDC', 'USDT', 'WBTC', 'SOL'],
-      routes: ['cctpManual', 'cctpRelay', 'TokenBridge', 'NTT'] as any[],
     };
     
     const activeConfig = networkMode === 'Mainnet' ? mainnetConfig : testnetConfig;
@@ -304,13 +375,13 @@ const WormholeConnectWidget = () => {
     testRPC();
     
     console.log('🌉 Wormhole Bridge Config Applied:', {
-      network: 'Testnet',
+      network: networkMode,
       chains: wormholeConfig.chains,
       tokens: wormholeConfig.tokens,
       rpc: import.meta.env.VITE_ALCHEMY_API_KEY ? 'Alchemy RPC' : 'Public RPC',
       timestamp: new Date().toISOString()
     });
-  }, [wormholeConfig]);
+  }, [wormholeConfig, networkMode]);
   
   // Error handling for RPC issues
   useEffect(() => {
@@ -354,6 +425,7 @@ const WormholeConnectWidget = () => {
 
   return (
     <ThemeProvider theme={muiTheme}>
+      <style dangerouslySetInnerHTML={{ __html: portalStyleOverrides }} />
       <div className="w-full max-w-2xl mx-auto">
         {/* Network Mode Toggle */}
         <div className="mb-6 flex items-center justify-between p-4 bg-muted/50 rounded-xl border border-border">
@@ -412,6 +484,28 @@ const WormholeConnectWidget = () => {
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Balance Display */}
+        {isAnyWalletConnected && evmAddress && (
+          <BalanceDisplay
+            token="USDC"
+            balance={usdcBalance}
+            address={evmAddress}
+            className="mb-3"
+          />
+        )}
+
+        {/* Quick Fill Buttons */}
+        {isAnyWalletConnected && evmAddress && (
+          <div className="mb-3">
+            <QuickFillButtons
+              balance={usdcBalance}
+              onAmountSelect={setSelectedAmount}
+              disabled={!evmAddress}
+            />
+          </div>
+        )}
+
         {/* Balance Status Alert (Testnet Only) */}
         {networkMode === 'Testnet' && isAnyWalletConnected && evmAddress && needsTokenConversion && (
           <Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
@@ -456,111 +550,106 @@ const WormholeConnectWidget = () => {
           </p>
         </div>
         
-        {/* Warning if Alchemy API key is missing */}
+        {/* Missing Alchemy Key Warning */}
         {!alchemyKey && (
-          <div className="mb-4 p-3 border border-yellow-500/50 rounded-xl bg-yellow-500/10 flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-yellow-400">
-              ⚠️ Alchemy API key not configured. Token balances may load slowly. Configure in Settings → Secrets.
-            </p>
-          </div>
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Alchemy API key not configured. Balances may load slowly using public RPC endpoints.
+            </AlertDescription>
+          </Alert>
         )}
-        
-        {/* Display RPC status and errors */}
-        {rpcHealthy === false && (
-          <div className="mb-4 p-3 border border-yellow-500/50 rounded-xl bg-yellow-500/10 flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-yellow-400">
-              RPC connection issue. Using fallback endpoints for better reliability.
-            </p>
-          </div>
+
+        {/* RPC Health Status */}
+        {rpcError && (
+          <Alert className="mb-4" variant={rpcHealthy === false ? 'destructive' : 'default'}>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {rpcError}
+            </AlertDescription>
+          </Alert>
         )}
-        
-        {rpcError && rpcHealthy !== false && (
-          <div className="mb-4 p-3 border border-yellow-500/50 rounded-xl bg-yellow-500/10 flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-yellow-400">{rpcError}</p>
-          </div>
-        )}
-        
-        {/* Network Info Badge */}
-        <div className="mb-4 p-3 border border-blue-500/50 rounded-xl bg-blue-500/10">
-          <p className="text-sm text-blue-400 font-medium">
-            {networkMode === 'Testnet' 
-              ? '🧪 Testnet Mode: Sepolia • Solana Devnet • Arbitrum Sepolia • Base Sepolia • More'
-              : '🌐 Mainnet Mode: Ethereum • Solana • Arbitrum • Base • Optimism • Polygon • More'}
-          </p>
-          <p className="text-xs text-blue-300/80 mt-1">
-            {networkMode === 'Testnet' 
-              ? 'Supported tokens: USDC (via CCTP)'
-              : 'Supported tokens: ETH, WETH, USDC, USDT, WBTC, SOL'}
-            {rpcHealthy && alchemyKey && ' • Alchemy RPC Connected ✓'}
-          </p>
+
+        {/* Wormhole Connect Widget with Portal styling */}
+        <div className="mb-4 border border-border rounded-2xl overflow-hidden bg-card shadow-lg">
+          <WormholeConnect 
+            key={`${networkMode.toLowerCase()}-bridge-${widgetKey}`} 
+            config={wormholeConfig}
+            theme={customWormholeTheme}
+          />
         </div>
 
-        {/* Wormhole Widget */}
-        <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-lg">
-          {widgetKey > 0 && (
-            <WormholeConnect 
-              key={`${networkMode.toLowerCase()}-bridge-${widgetKey}`} 
-              config={wormholeConfig}
-              theme={customWormholeTheme}
-            />
-          )}
-        </div>
-        {/* Help & FAQ Section */}
-        <Collapsible className="mt-4 border border-border rounded-xl p-4">
-          <CollapsibleTrigger className="flex items-center justify-between w-full hover:text-foreground transition-colors">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <HelpCircle className="w-4 h-4" />
-              Bridge Help & FAQ
+        {/* Conversion Rate */}
+        {networkMode === 'Mainnet' && (
+          <ConversionRate
+            fromToken="USDC"
+            toToken="USDC"
+            rate="1.00"
+            usdValue="1.00"
+          />
+        )}
+
+        {/* Bridge Help & FAQ */}
+        <Collapsible className="mt-4 border border-border rounded-xl p-4 bg-card/50">
+          <CollapsibleTrigger className="flex items-center justify-between w-full text-left">
+            <div className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              <span className="font-semibold">Bridge Help & FAQ</span>
             </div>
-            <ChevronDown className="w-4 h-4" />
+            <ChevronDown className="w-4 h-4 transition-transform duration-200" />
           </CollapsibleTrigger>
-          
-          <CollapsibleContent className="pt-4 space-y-3 text-xs text-muted-foreground">
+          <CollapsibleContent className="mt-4 space-y-4 text-sm">
             <div>
-              <strong className="text-foreground">What is CCTP?</strong>
-              <p>Circle's Cross-Chain Transfer Protocol - native USDC bridging (2-5 min)</p>
+              <h4 className="font-semibold mb-1">What is CCTP?</h4>
+              <p className="text-muted-foreground">
+                Circle's Cross-Chain Transfer Protocol (CCTP) enables native USDC transfers between blockchains. 
+                Unlike wrapped tokens, CCTP burns USDC on the source chain and mints native USDC on the destination.
+              </p>
             </div>
-            
             <div>
-              <strong className="text-foreground">Bridge Fees?</strong>
-              <p>Gas fees on source/destination chains + small protocol fee (~0.1%)</p>
+              <h4 className="font-semibold mb-1">Fees & Time</h4>
+              <p className="text-muted-foreground">
+                Testnet: Free (except gas). Mainnet: ~$0.10-$2 depending on congestion. 
+                Transfer time: 2-15 minutes. Automatic delivery (no manual redemption).
+              </p>
             </div>
-            
             <div>
-              <strong className="text-foreground">Testnet vs Mainnet?</strong>
-              <p>Testnet: Free tokens for testing • Mainnet: Real assets with real value</p>
+              <h4 className="font-semibold mb-1">Testnet vs Mainnet</h4>
+              <p className="text-muted-foreground">
+                Testnet uses fake tokens for testing. Mainnet uses real assets with real value. 
+                Always verify transaction details before confirming on Mainnet.
+              </p>
             </div>
-            
             <div>
-              <strong className="text-foreground">Track Progress?</strong>
-              <p>Visit the <a href="/claim" className="text-primary hover:underline">Claims page</a> to track all bridge transactions</p>
+              <h4 className="font-semibold mb-1">Track Your Transfer</h4>
+              <p className="text-muted-foreground">
+                Visit the <a href="/claim" className="text-primary hover:underline">Claims page</a> to monitor 
+                your bridge transactions. You can also view on{' '}
+                <a 
+                  href={`https://wormholescan.io/#/?network=${networkMode}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  WormholeScan <ExternalLink className="w-3 h-3" />
+                </a>
+              </p>
             </div>
-            
-            <a 
-              href="https://wormhole.com/docs/products/connect" 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline flex items-center gap-1 mt-2"
-            >
-              Full Documentation <ExternalLink className="w-3 h-3" />
-            </a>
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Footer */}
-        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <span>Powered by</span>
+        {/* Powered By Footer */}
+        <div className="mt-4 text-center text-xs text-muted-foreground">
+          Powered by{' '}
           <a 
             href="https://wormhole.com" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-primary hover:underline font-medium"
+            className="text-primary hover:underline"
           >
             Wormhole
           </a>
+          {' '}& Circle CCTP
         </div>
       </div>
     </ThemeProvider>
