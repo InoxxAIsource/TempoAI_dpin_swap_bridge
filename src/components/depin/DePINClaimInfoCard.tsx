@@ -19,14 +19,14 @@ interface DePINClaimInfoCardProps {
   claimId: string;
   sepoliaEthAmount: number | null;
   contractPreparedAt: string | null;
-  onContractPrepared: (ethAmount: number) => void;
+  onEthClaimedToWallet: (ethAmount: number) => void;
 }
 
 const DePINClaimInfoCard = ({ 
   claimId, 
   sepoliaEthAmount, 
   contractPreparedAt,
-  onContractPrepared 
+  onEthClaimedToWallet 
 }: DePINClaimInfoCardProps) => {
   const [preparing, setPreparing] = useState(false);
   const [contractPrepared, setContractPrepared] = useState(false);
@@ -174,10 +174,6 @@ const DePINClaimInfoCard = ({
         title: "Contract Prepared! ✅",
         description: `${parseFloat(data.sepoliaEthAmount).toFixed(6)} ETH is ready to claim!`,
       });
-      
-      if (onContractPrepared) {
-        onContractPrepared(parseFloat(data.sepoliaEthAmount));
-      }
     } catch (error: any) {
       console.error('[DePINClaimInfoCard] Error preparing contract:', error);
       setClaimError(error.message);
@@ -349,12 +345,15 @@ const DePINClaimInfoCard = ({
           description: `Successfully claimed ${ethAmount.toFixed(6)} ETH from smart contract!`,
         });
         
-        onContractPrepared(ethAmount);
+        // Notify parent that ETH has been claimed to wallet
+        if (onEthClaimedToWallet) {
+          onEthClaimedToWallet(ethAmount);
+        }
       }
     };
 
     verifyAndUpdateClaim();
-  }, [isClaimSuccess, isClaimError, receiptData, ethAmount, claimTxHash, claimId, onContractPrepared, toast, refetchClaimable]);
+  }, [isClaimSuccess, isClaimError, receiptData, ethAmount, claimTxHash, claimId, onEthClaimedToWallet, toast, refetchClaimable]);
 
   // Contract Debug View Component
   const ContractDebugView = () => (

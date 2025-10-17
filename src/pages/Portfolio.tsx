@@ -218,7 +218,7 @@ const Portfolio = () => {
                         claimId={claim.id}
                         sepoliaEthAmount={claim.sepolia_eth_amount}
                         contractPreparedAt={claim.contract_prepared_at}
-                        onContractPrepared={() => fetchPendingClaims(user.id)}
+                        onEthClaimedToWallet={() => fetchPendingClaims(user.id)}
                       />
                     )}
 

@@ -144,7 +144,7 @@ const BatchClaimModal = ({
     }
   };
 
-  const handleContractPrepared = (ethAmount: number) => {
+  const handleEthClaimed = (ethAmount: number) => {
     setSepoliaEthAmount(ethAmount);
     setContractPrepared(true);
     setStep('bridge');
@@ -332,7 +332,7 @@ const BatchClaimModal = ({
                 claimId={claimId}
                 sepoliaEthAmount={sepoliaEthAmount}
                 contractPreparedAt={contractPrepared ? new Date().toISOString() : null}
-                onContractPrepared={handleContractPrepared}
+                onEthClaimedToWallet={handleEthClaimed}
               />
               <div className="flex gap-2 justify-end mt-4">
                 <Button variant="outline" onClick={onClose}>

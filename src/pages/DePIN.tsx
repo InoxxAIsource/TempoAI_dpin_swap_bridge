@@ -563,12 +563,12 @@ const DePIN = () => {
 
                     {/* DePINClaimInfoCard - Keep visible until bridge is initiated */}
                     {!claim.wormhole_tx && (
-                      <DePINClaimInfoCard
-                        claimId={claim.id}
-                        sepoliaEthAmount={claim.sepolia_eth_amount}
-                        contractPreparedAt={claim.contract_prepared_at}
-                        onContractPrepared={() => fetchActiveClaims()}
-                      />
+              <DePINClaimInfoCard
+                claimId={claim.id}
+                sepoliaEthAmount={claim.sepolia_eth_amount}
+                contractPreparedAt={claim.contract_prepared_at}
+                onEthClaimedToWallet={() => fetchActiveClaims()}
+              />
                     )}
 
                     {/* Wormhole Transaction Status */}
