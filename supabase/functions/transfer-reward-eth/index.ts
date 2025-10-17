@@ -113,11 +113,12 @@ serve(async (req) => {
     // Calculate ETH amount based on real market price
     const ethAmount = claim.total_amount / ethPriceUSD;
     const ethAmountWithBuffer = ethAmount * 1.02; // Add 2% buffer
-    // Round to 6 decimals to avoid parseEther precision errors
-    const ethAmountRounded = parseFloat(ethAmountWithBuffer.toFixed(6));
+    // Use toFixed() directly for string precision, don't convert back to number
+    const ethAmountString = ethAmountWithBuffer.toFixed(6);
+    const ethAmountRounded = parseFloat(ethAmountString); // Only for display/logging
     const conversionRate = 1 / ethPriceUSD;
 
-    console.log(`Converting $${claim.total_amount} USDC to ${ethAmountRounded} ETH (with 2% buffer)`);
+    console.log(`Converting $${claim.total_amount} USDC to ${ethAmountString} ETH (with 2% buffer)`);
 
     // Sanity check: Reject if ETH price is outside reasonable range
     if (ethPriceUSD < 1000 || ethPriceUSD > 10000) {
@@ -192,9 +193,9 @@ serve(async (req) => {
     }
 
     // Convert ETH amount to Wei
-    const ethAmountInWei = ethers.parseEther(ethAmountRounded.toString());
+    const ethAmountInWei = ethers.parseEther(ethAmountString);
 
-    console.log(`Setting claimable reward for ${evmWalletAddress}: ${ethAmountRounded} ETH`);
+    console.log(`Setting claimable reward for ${evmWalletAddress}: ${ethAmountString} ETH`);
 
     // Call smart contract to set claimable amount (deployer signs this)
     const tx = await faucetContract.setClaimableReward(evmWalletAddress, ethAmountInWei, claimId);
