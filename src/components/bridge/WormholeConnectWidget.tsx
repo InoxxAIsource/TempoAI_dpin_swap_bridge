@@ -134,7 +134,7 @@ const WormholeConnectWidget = () => {
     const baseConfig = {
       network: 'Testnet',
       chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
-      tokens: ['USDC', 'WETH', 'ETH'],
+      tokens: ['USDC'],
       rpcs: {
         Sepolia: alchemyKey 
           ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
@@ -256,20 +256,12 @@ const WormholeConnectWidget = () => {
             <AlertDescription>
               <div className="space-y-2">
                 <div className="text-sm text-amber-400">
-                  <strong>⚠️ Token Conversion Needed</strong>
+                  <strong>⚠️ USDC Required</strong>
                 </div>
                 <div className="text-xs text-amber-300/90">
-                  You have <strong>{evmBalance} ETH</strong> but need WETH or USDC to bridge to Solana on testnet.
+                  You have <strong>{evmBalance} ETH</strong> but need <strong>USDC</strong> to bridge via CCTP.
                 </div>
                 <div className="flex gap-2 mt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7"
-                    onClick={() => window.open(`https://app.uniswap.org/swap?chain=sepolia&inputCurrency=ETH&outputCurrency=0xfff9976782d46cc05630d1f6ebab18b2324d6b14`, '_blank')}
-                  >
-                    Wrap ETH → WETH
-                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
@@ -284,12 +276,12 @@ const WormholeConnectWidget = () => {
           </Alert>
         )}
 
-        {/* USDC Recommendation */}
+        {/* USDC CCTP Recommendation */}
         <Alert className="mb-4 border-blue-500/50 bg-blue-500/10">
           <AlertCircle className="h-4 w-4 text-blue-400" />
           <AlertDescription className="text-sm text-blue-400">
-            <strong>💡 Testnet Bridge Tip:</strong> For Sepolia → Solana bridges, <strong>use USDC</strong> for instant quotes and faster transfers. 
-            ETH/WETH may have limited availability on testnet.
+            <strong>💡 CCTP Bridge:</strong> This bridge uses Circle's CCTP protocol for native USDC transfers. 
+            Fast, reliable, and automatic delivery to Solana. Bridge time: 2-5 minutes.
           </AlertDescription>
         </Alert>
 
@@ -331,7 +323,7 @@ const WormholeConnectWidget = () => {
             🧪 Testnet Mode: Sepolia • Solana Devnet • Arbitrum Sepolia • Base Sepolia • More
           </p>
           <p className="text-xs text-blue-300/80 mt-1">
-            Supported tokens: ETH, WETH, USDC {rpcHealthy && alchemyKey && '• Alchemy RPC Connected ✓'}
+            Supported tokens: USDC (via CCTP) {rpcHealthy && alchemyKey && '• Alchemy RPC Connected ✓'}
           </p>
         </div>
         <div className="border border-border rounded-2xl overflow-hidden bg-card">
