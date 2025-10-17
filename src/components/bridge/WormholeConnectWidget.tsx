@@ -221,12 +221,24 @@ const WormholeConnectWidget = () => {
     } as any;
   }, [theme]);
 
-  // RPC Config Helper
+  // Validate Alchemy API Key
+  const isValidAlchemyKey = (key: string | undefined): boolean => {
+    if (!key) return false;
+    // Alchemy keys are 32 characters alphanumeric
+    if (key.length !== 32) return false;
+    // Check for placeholder values
+    if (key.includes('your_alchemy') || key.includes('placeholder')) return false;
+    return /^[a-zA-Z0-9_-]{32}$/.test(key);
+  };
+
+  // RPC Config Helper with validation
   const getRPCConfig = (mode: 'Testnet' | 'Mainnet', alchemyKey: string) => {
+    const useAlchemy = isValidAlchemyKey(alchemyKey);
+    
     if (mode === 'Testnet') {
       return {
-        Sepolia: alchemyKey ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}` : 'https://ethereum-sepolia-rpc.publicnode.com',
-        Solana: alchemyKey ? `https://solana-devnet.g.alchemy.com/v2/${alchemyKey}` : 'https://api.devnet.solana.com',
+        Sepolia: useAlchemy ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}` : 'https://ethereum-sepolia-rpc.publicnode.com',
+        Solana: useAlchemy ? `https://solana-devnet.g.alchemy.com/v2/${alchemyKey}` : 'https://api.devnet.solana.com',
         ArbitrumSepolia: 'https://sepolia-rollup.arbitrum.io/rpc',
         BaseSepolia: 'https://sepolia.base.org',
         OptimismSepolia: 'https://sepolia.optimism.io',
@@ -234,15 +246,16 @@ const WormholeConnectWidget = () => {
       };
     }
     
+    // Mainnet with validated Alchemy or public fallbacks
     return {
-      Ethereum: alchemyKey ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://ethereum-rpc.publicnode.com',
-      Solana: alchemyKey ? `https://solana-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://api.mainnet-beta.solana.com',
-      Arbitrum: alchemyKey ? `https://arb-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://arb1.arbitrum.io/rpc',
-      Base: alchemyKey ? `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://mainnet.base.org',
-      Optimism: alchemyKey ? `https://opt-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://mainnet.optimism.io',
-      Polygon: alchemyKey ? `https://polygon-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://polygon-rpc.com',
-      Avalanche: 'https://api.avax.network/ext/bc/C/rpc',
-      Bsc: 'https://bsc-dataseed1.binance.org',
+      Ethereum: useAlchemy ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://ethereum-rpc.publicnode.com',
+      Solana: useAlchemy ? `https://solana-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://api.mainnet-beta.solana.com',
+      Arbitrum: useAlchemy ? `https://arb-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://arbitrum.llamarpc.com',
+      Base: useAlchemy ? `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://base.llamarpc.com',
+      Optimism: useAlchemy ? `https://opt-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://optimism.llamarpc.com',
+      Polygon: useAlchemy ? `https://polygon-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://polygon.llamarpc.com',
+      Avalanche: 'https://avalanche.public-rpc.com',
+      Bsc: 'https://bsc.publicnode.com',
     };
   };
 
@@ -416,6 +429,7 @@ const WormholeConnectWidget = () => {
   }, []);
 
   const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
+  const rpcProvider = isValidAlchemyKey(alchemyKey) ? 'Alchemy (Fast)' : 'Public RPCs';
 
   // Check if user needs to wrap/swap
   const hasNativeEth = parseFloat(evmBalance || '0') > 0;
@@ -434,7 +448,12 @@ const WormholeConnectWidget = () => {
               {networkMode === 'Testnet' ? '🧪' : '🌐'}
             </div>
             <div>
-              <div className="font-semibold text-sm">Network Mode</div>
+              <div className="font-semibold text-sm flex items-center gap-2">
+                Network Mode
+                <Badge variant="outline" className="text-xs">
+                  {rpcProvider}
+                </Badge>
+              </div>
               <div className="text-xs text-muted-foreground">
                 {networkMode === 'Testnet' 
                   ? 'Testnet tokens (no real value)' 
@@ -468,7 +487,7 @@ const WormholeConnectWidget = () => {
           <Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
             <AlertCircle className="h-4 w-4 text-amber-400" />
             <AlertDescription className="text-sm text-amber-400">
-              <strong>⚠️ Mainnet Mode:</strong> You are using real assets. Double-check all transaction details before confirming.
+              <strong>⚠️ Mainnet Mode:</strong> You are using real assets with {rpcProvider}. Double-check all transaction details before confirming.
             </AlertDescription>
           </Alert>
         )}

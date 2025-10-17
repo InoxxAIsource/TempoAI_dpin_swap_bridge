@@ -9,6 +9,7 @@ import { useTokenBalances } from '@/hooks/useTokenBalances';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { BalanceDisplay } from '@/components/bridge/BalanceDisplay';
 import { QuickFillButtons } from '@/components/bridge/QuickFillButtons';
 import { ConversionRate } from '@/components/bridge/ConversionRate';
@@ -169,12 +170,23 @@ export const WormholeSwapWidget = ({
     } as any;
   }, [appTheme]);
 
+  // Validate Alchemy API Key
+  const isValidAlchemyKey = (key: string | undefined): boolean => {
+    if (!key) return false;
+    // Alchemy keys are 32 characters alphanumeric
+    if (key.length !== 32) return false;
+    // Check for placeholder values
+    if (key.includes('your_alchemy') || key.includes('placeholder')) return false;
+    return /^[a-zA-Z0-9_-]{32}$/.test(key);
+  };
+
   // Wormhole Connect configuration for SWAPS
   const wormholeConfig: config.WormholeConnectConfig = useMemo(() => {
     const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
+    const useAlchemy = isValidAlchemyKey(alchemyKey);
     
     if (networkMode === 'Testnet') {
-      const sepoliaRpc = alchemyKey
+      const sepoliaRpc = useAlchemy
         ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
         : 'https://ethereum-sepolia-rpc.publicnode.com';
 
@@ -194,15 +206,20 @@ export const WormholeSwapWidget = ({
       };
     }
 
-    // Mainnet configuration
-    const ethRpc = alchemyKey ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://ethereum-rpc.publicnode.com';
-    
+    // Mainnet configuration with validated Alchemy or public fallbacks
     return {
       network: 'Mainnet',
       chains: ['Ethereum', 'Solana', 'Arbitrum', 'Base', 'Optimism', 'Polygon', 'Avalanche', 'Bsc'],
       tokens: ['ETH', 'WETH', 'USDC', 'USDT', 'WBTC', 'SOL'],
       rpcs: {
-        Ethereum: ethRpc,
+        Ethereum: useAlchemy ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://ethereum-rpc.publicnode.com',
+        Solana: useAlchemy ? `https://solana-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://api.mainnet-beta.solana.com',
+        Arbitrum: useAlchemy ? `https://arb-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://arbitrum.llamarpc.com',
+        Base: useAlchemy ? `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://base.llamarpc.com',
+        Optimism: useAlchemy ? `https://opt-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://optimism.llamarpc.com',
+        Polygon: useAlchemy ? `https://polygon-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://polygon.llamarpc.com',
+        Avalanche: 'https://avalanche.public-rpc.com',
+        Bsc: 'https://bsc.publicnode.com',
       },
       walletConnectProjectId: '7cb724bf60c8e3b1b67fdadd7bafcace',
     };
@@ -221,37 +238,49 @@ export const WormholeSwapWidget = ({
   }, []);
 
   const isAnyWalletConnected = Boolean(evmAddress || solanaAddress);
+  const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
+  const rpcProvider = isValidAlchemyKey(alchemyKey) ? 'Alchemy (Fast)' : 'Public RPCs';
 
   return (
     <ThemeProvider theme={muiTheme}>
       <style dangerouslySetInnerHTML={{ __html: portalStyleOverrides }} />
       <div className="space-y-4">
         {/* Network Mode Toggle */}
-        <div className="flex items-center justify-center gap-2 p-1 bg-muted rounded-lg">
-          <Button
-            variant={networkMode === 'Testnet' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setNetworkMode('Testnet')}
-            className="flex-1"
-          >
-            Testnet
-          </Button>
-          <Button
-            variant={networkMode === 'Mainnet' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setNetworkMode('Mainnet')}
-            className="flex-1"
-          >
-            Mainnet
-          </Button>
+        <div className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg border border-border">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium flex items-center gap-2">
+              Network Mode
+              <Badge variant="outline" className="text-xs">
+                {rpcProvider}
+              </Badge>
+            </div>
+          </div>
+          <div className="flex items-center justify-center gap-2 p-1 bg-background rounded-lg">
+            <Button
+              variant={networkMode === 'Testnet' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setNetworkMode('Testnet')}
+              className="flex-1 text-xs"
+            >
+              🧪 Testnet
+            </Button>
+            <Button
+              variant={networkMode === 'Mainnet' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setNetworkMode('Mainnet')}
+              className="flex-1 text-xs"
+            >
+              🌐 Mainnet
+            </Button>
+          </div>
         </div>
 
         {/* Mainnet Warning */}
         {networkMode === 'Mainnet' && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Mainnet Mode:</strong> You're using real assets. Double-check all details before confirming transactions.
+          <Alert className="border-amber-500/50 bg-amber-500/10">
+            <AlertCircle className="h-4 w-4 text-amber-400" />
+            <AlertDescription className="text-amber-400">
+              <strong>Mainnet Mode:</strong> Using {rpcProvider}. Double-check all details before confirming transactions.
             </AlertDescription>
           </Alert>
         )}
