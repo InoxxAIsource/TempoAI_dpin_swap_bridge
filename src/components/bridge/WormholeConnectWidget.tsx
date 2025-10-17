@@ -4,39 +4,18 @@ import WormholeConnect, { type config, WormholeConnectTheme } from '@wormhole-fo
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useWalletContext } from '@/contexts/WalletContext';
-import { useTokenBalances } from '@/hooks/useTokenBalances';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { AlertCircle, HelpCircle, ChevronDown, ExternalLink, Loader2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { HelpCircle, ChevronDown, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { BalanceDisplay } from './BalanceDisplay';
-import { QuickFillButtons } from './QuickFillButtons';
-import { ConversionRate } from './ConversionRate';
 
 const WormholeConnectWidget = () => {
   const { theme } = useTheme();
-  const { 
-    isAnyWalletConnected, 
-    evmAddress, 
-    solanaAddress,
-    evmBalance,
-    wethBalance,
-    usdcBalance: walletUsdcBalance 
-  } = useWalletContext();
+  const { evmAddress, solanaAddress } = useWalletContext(); // Only for transaction tracking
   const [searchParams] = useSearchParams();
   const [widgetKey, setWidgetKey] = useState(0);
-  const [rpcError, setRpcError] = useState<string | null>(null);
-  const [rpcHealthy, setRpcHealthy] = useState<boolean | null>(null);
   const [networkMode, setNetworkMode] = useState<'Testnet' | 'Mainnet'>('Testnet');
-  const [bridgePhase, setBridgePhase] = useState<'idle' | 'approval' | 'transfer' | 'attestation' | 'complete'>('idle');
-  const [selectedAmount, setSelectedAmount] = useState<string>('');
-  
-  // Fetch token balances
-  const { usdcBalance: fetchedUsdcBalance } = useTokenBalances(evmAddress || '', networkMode === 'Testnet' ? 11155111 : 1);
-  const usdcBalance = fetchedUsdcBalance || walletUsdcBalance || '0.00';
   
   // Read URL parameters for DePIN claim flow
   const defaultAmount = searchParams.get('amount');
@@ -345,224 +324,29 @@ const WormholeConnectWidget = () => {
     return baseConfig;
   }, [networkMode, defaultAmount, defaultFromChain, defaultToChain, defaultToken]);
 
-  // RPC Health Check using Alchemy
-  useEffect(() => {
-    const testRPC = async () => {
-      const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
-      
-      if (!alchemyKey) {
-        console.warn('⚠️ Alchemy API key not configured. Using fallback RPC.');
-        setRpcHealthy(null);
-        setRpcError('Alchemy API key not configured. Token balances may be slow to load.');
-        return;
-      }
-
-      try {
-        const response = await fetch(`https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            method: 'eth_blockNumber',
-            params: [],
-            id: 1,
-          }),
-        });
-        const data = await response.json();
-        if (data.result) {
-          console.log('✅ Alchemy Sepolia RPC: Block', parseInt(data.result, 16));
-          setRpcHealthy(true);
-          setRpcError(null);
-        } else {
-          console.error('❌ Alchemy RPC Failed: No result');
-          setRpcHealthy(false);
-          setRpcError('RPC connection issue. Trying alternative endpoints...');
-        }
-      } catch (error) {
-        console.error('❌ Alchemy RPC Failed:', error);
-        setRpcHealthy(false);
-        setRpcError('RPC connection issue detected. Using fallback endpoints.');
-      }
-    };
-    
-    testRPC();
-    
-    console.log('🌉 Wormhole Bridge Config Applied:', {
-      network: networkMode,
-      chains: wormholeConfig.chains,
-      tokens: wormholeConfig.tokens,
-      rpc: import.meta.env.VITE_ALCHEMY_API_KEY ? 'Alchemy RPC' : 'Public RPC',
-      timestamp: new Date().toISOString()
-    });
-  }, [wormholeConfig, networkMode]);
-  
-  // Error handling for RPC issues
-  useEffect(() => {
-    const handleRpcError = (event: any) => {
-      if (event.detail?.error?.includes('Failed to fetch')) {
-        setRpcError('Connection issue detected. Trying alternative endpoints...');
-        setTimeout(() => setRpcError(null), 5000);
-      }
-    };
-    
-    window.addEventListener('wormhole-rpc-error', handleRpcError);
-    return () => window.removeEventListener('wormhole-rpc-error', handleRpcError);
-  }, []);
-
-  // Bridge status tracking
-  useEffect(() => {
-    const handleBridgeStatus = (event: any) => {
-      const phase = event.detail?.phase || 'idle';
-      setBridgePhase(phase);
-      
-      if (phase === 'complete') {
-        toast({
-          title: "✅ Bridge Complete",
-          description: "Your tokens have arrived on the destination chain",
-        });
-        setBridgePhase('idle');
-      }
-    };
-    
-    window.addEventListener('wormhole-bridge-status', handleBridgeStatus);
-    return () => window.removeEventListener('wormhole-bridge-status', handleBridgeStatus);
-  }, []);
-
-  const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
-  const rpcProvider = isValidAlchemyKey(alchemyKey) ? 'Alchemy (Fast)' : 'Public RPCs';
-
-  // Check if user needs to wrap/swap
-  const hasNativeEth = parseFloat(evmBalance || '0') > 0;
-  const hasWeth = parseFloat(wethBalance || '0') > 0;
-  const hasUsdc = parseFloat(usdcBalance || '0') > 0;
-  const needsTokenConversion = hasNativeEth && !hasWeth && !hasUsdc;
-
   return (
     <ThemeProvider theme={muiTheme}>
       <style dangerouslySetInnerHTML={{ __html: portalStyleOverrides }} />
       <div className="w-full max-w-2xl mx-auto">
         {/* Network Mode Toggle */}
-        <div className="mb-6 flex items-center justify-between p-4 bg-muted/50 rounded-xl border border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xl">
-              {networkMode === 'Testnet' ? '🧪' : '🌐'}
-            </div>
-            <div>
-              <div className="font-semibold text-sm flex items-center gap-2">
-                Network Mode
-                <Badge variant="outline" className="text-xs">
-                  {rpcProvider}
-                </Badge>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {networkMode === 'Testnet' 
-                  ? 'Testnet tokens (no real value)' 
-                  : 'Mainnet (real assets)'}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant={networkMode === 'Testnet' ? 'default' : 'outline'}
-              onClick={() => setNetworkMode('Testnet')}
-              className="text-xs h-8"
-            >
-              Testnet
-            </Button>
-            <Button
-              size="sm"
-              variant={networkMode === 'Mainnet' ? 'default' : 'outline'}
-              onClick={() => setNetworkMode('Mainnet')}
-              className="text-xs h-8"
-            >
-              Mainnet
-            </Button>
-          </div>
+        <div className="mb-4 flex items-center justify-center gap-2">
+          <Button
+            size="sm"
+            variant={networkMode === 'Testnet' ? 'default' : 'outline'}
+            onClick={() => setNetworkMode('Testnet')}
+          >
+            🧪 Testnet
+          </Button>
+          <Button
+            size="sm"
+            variant={networkMode === 'Mainnet' ? 'default' : 'outline'}
+            onClick={() => setNetworkMode('Mainnet')}
+          >
+            🌐 Mainnet
+          </Button>
         </div>
 
-        {/* Bridge Status Banner */}
-        {bridgePhase !== 'idle' && (
-          <Alert className="mb-4 border-blue-500/50 bg-blue-500/10 animate-pulse">
-            <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
-            <AlertDescription className="text-sm text-blue-400">
-              {bridgePhase === 'approval' && '🔓 Approving token spend...'}
-              {bridgePhase === 'transfer' && '🌉 Initiating cross-chain transfer...'}
-              {bridgePhase === 'attestation' && '⏳ Waiting for guardian signatures...'}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Balance Display */}
-        {isAnyWalletConnected && evmAddress && (
-          <BalanceDisplay
-            token="USDC"
-            balance={usdcBalance}
-            address={evmAddress}
-            className="mb-3"
-          />
-        )}
-
-        {/* Quick Fill Buttons */}
-        {isAnyWalletConnected && evmAddress && (
-          <div className="mb-3">
-            <QuickFillButtons
-              balance={usdcBalance}
-              onAmountSelect={setSelectedAmount}
-              disabled={!evmAddress}
-            />
-          </div>
-        )}
-
-        {/* Balance Status Alert (Testnet Only) */}
-        {networkMode === 'Testnet' && isAnyWalletConnected && evmAddress && needsTokenConversion && (
-          <Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
-            <AlertCircle className="h-4 w-4 text-amber-400" />
-            <AlertDescription>
-              <div className="space-y-2">
-                <div className="text-sm text-amber-400">
-                  <strong>⚠️ USDC Required</strong>
-                </div>
-                <div className="text-xs text-amber-300/90">
-                  You have <strong>{evmBalance} ETH</strong> but need <strong>USDC</strong> to bridge via CCTP.
-                </div>
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7"
-                    onClick={() => window.open(`https://app.uniswap.org/swap?chain=sepolia&inputCurrency=ETH&outputCurrency=USDC`, '_blank')}
-                  >
-                    Swap ETH → USDC
-                  </Button>
-                </div>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Missing Alchemy Key Warning */}
-        {!alchemyKey && (
-          <Alert className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Alchemy API key not configured. Balances may load slowly using public RPC endpoints.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* RPC Health Status */}
-        {rpcError && (
-          <Alert className="mb-4" variant={rpcHealthy === false ? 'destructive' : 'default'}>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {rpcError}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Wormhole Connect Widget with Portal styling */}
+        {/* Wormhole Connect Widget */}
         <div className="mb-4 border border-border rounded-2xl overflow-hidden bg-card shadow-lg">
           <WormholeConnect 
             key={`${networkMode.toLowerCase()}-bridge-${widgetKey}`} 
@@ -570,16 +354,6 @@ const WormholeConnectWidget = () => {
             theme={customWormholeTheme}
           />
         </div>
-
-        {/* Conversion Rate */}
-        {networkMode === 'Mainnet' && (
-          <ConversionRate
-            fromToken="USDC"
-            toToken="USDC"
-            rate="1.00"
-            usdValue="1.00"
-          />
-        )}
 
         {/* Bridge Help & FAQ */}
         <Collapsible className="mt-4 border border-border rounded-xl p-4 bg-card/50">

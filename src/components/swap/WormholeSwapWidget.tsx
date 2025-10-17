@@ -5,14 +5,7 @@ import WormholeConnect, { config, WormholeConnectTheme } from '@wormhole-foundat
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useWalletContext } from '@/contexts/WalletContext';
-import { useTokenBalances } from '@/hooks/useTokenBalances';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { BalanceDisplay } from '@/components/bridge/BalanceDisplay';
-import { QuickFillButtons } from '@/components/bridge/QuickFillButtons';
-import { ConversionRate } from '@/components/bridge/ConversionRate';
 
 interface WormholeSwapWidgetProps {
   defaultSourceChain?: string;
@@ -28,13 +21,10 @@ export const WormholeSwapWidget = ({
   defaultAmount
 }: WormholeSwapWidgetProps) => {
   const [widgetKey, setWidgetKey] = useState(0);
-  const [rpcError, setRpcError] = useState<string | null>(null);
   const [networkMode, setNetworkMode] = useState<'Testnet' | 'Mainnet'>('Testnet');
   const { theme: appTheme } = useTheme();
   const { toast } = useToast();
-  const { evmAddress, solanaAddress } = useWalletContext();
-  const { usdcBalance } = useTokenBalances(evmAddress || '', networkMode === 'Testnet' ? 11155111 : 1);
-  const [selectedAmount, setSelectedAmount] = useState<string>('');
+  const { evmAddress, solanaAddress } = useWalletContext(); // Only for transaction tracking
 
   // Force remount on initial load
   useEffect(() => {
@@ -225,83 +215,27 @@ export const WormholeSwapWidget = ({
     };
   }, [networkMode]);
 
-
-  // Listen for RPC errors from the widget
-  useEffect(() => {
-    const handleRpcError = (event: any) => {
-      console.error('Wormhole RPC error:', event.detail);
-      setRpcError(event.detail?.message || 'RPC connection issue detected');
-    };
-
-    window.addEventListener('wormhole-rpc-error', handleRpcError);
-    return () => window.removeEventListener('wormhole-rpc-error', handleRpcError);
-  }, []);
-
-  const isAnyWalletConnected = Boolean(evmAddress || solanaAddress);
-  const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
-  const rpcProvider = isValidAlchemyKey(alchemyKey) ? 'Alchemy (Fast)' : 'Public RPCs';
-
   return (
     <ThemeProvider theme={muiTheme}>
       <style dangerouslySetInnerHTML={{ __html: portalStyleOverrides }} />
       <div className="space-y-4">
         {/* Network Mode Toggle */}
-        <div className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg border border-border">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium flex items-center gap-2">
-              Network Mode
-              <Badge variant="outline" className="text-xs">
-                {rpcProvider}
-              </Badge>
-            </div>
-          </div>
-          <div className="flex items-center justify-center gap-2 p-1 bg-background rounded-lg">
-            <Button
-              variant={networkMode === 'Testnet' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setNetworkMode('Testnet')}
-              className="flex-1 text-xs"
-            >
-              🧪 Testnet
-            </Button>
-            <Button
-              variant={networkMode === 'Mainnet' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setNetworkMode('Mainnet')}
-              className="flex-1 text-xs"
-            >
-              🌐 Mainnet
-            </Button>
-          </div>
+        <div className="mb-4 flex items-center justify-center gap-2">
+          <Button
+            size="sm"
+            variant={networkMode === 'Testnet' ? 'default' : 'outline'}
+            onClick={() => setNetworkMode('Testnet')}
+          >
+            🧪 Testnet
+          </Button>
+          <Button
+            size="sm"
+            variant={networkMode === 'Mainnet' ? 'default' : 'outline'}
+            onClick={() => setNetworkMode('Mainnet')}
+          >
+            🌐 Mainnet
+          </Button>
         </div>
-
-        {/* Show only actual RPC errors from the widget */}
-        {rpcError && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Connection Issue:</strong> {rpcError}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Balance Display */}
-        {isAnyWalletConnected && evmAddress && (
-          <BalanceDisplay
-            token="USDC"
-            balance={usdcBalance}
-            address={evmAddress}
-          />
-        )}
-
-        {/* Quick Fill Buttons */}
-        {isAnyWalletConnected && (
-          <QuickFillButtons
-            balance={usdcBalance}
-            onAmountSelect={setSelectedAmount}
-            disabled={!evmAddress}
-          />
-        )}
 
         {/* Wormhole Widget */}
         <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-lg">
@@ -312,18 +246,8 @@ export const WormholeSwapWidget = ({
           />
         </div>
 
-        {/* Conversion Rate */}
-        {networkMode === 'Mainnet' && (
-          <ConversionRate
-            fromToken="USDC"
-            toToken="USDC"
-            rate="1.00"
-            usdValue="1.00"
-          />
-        )}
-
         {/* Footer */}
-        <p className="text-xs text-center text-muted-foreground">
+        <p className="text-xs text-center text-muted-foreground mt-4">
           Powered by{' '}
           <a
             href="https://wormhole.com"
@@ -331,7 +255,7 @@ export const WormholeSwapWidget = ({
             rel="noopener noreferrer"
             className="text-primary hover:underline"
           >
-            Wormhole Connect
+            Wormhole
           </a>
         </p>
       </div>
