@@ -1,14 +1,16 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import WormholeConnect, { type config } from '@wormhole-foundation/wormhole-connect';
+import WormholeConnect, { type config, WormholeConnectTheme } from '@wormhole-foundation/wormhole-connect';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, HelpCircle, ChevronDown, ExternalLink, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const WormholeConnectWidget = () => {
   const { theme } = useTheme();
@@ -24,6 +26,8 @@ const WormholeConnectWidget = () => {
   const [widgetKey, setWidgetKey] = useState(0);
   const [rpcError, setRpcError] = useState<string | null>(null);
   const [rpcHealthy, setRpcHealthy] = useState<boolean | null>(null);
+  const [networkMode, setNetworkMode] = useState<'Testnet' | 'Mainnet'>('Testnet');
+  const [bridgePhase, setBridgePhase] = useState<'idle' | 'approval' | 'transfer' | 'attestation' | 'complete'>('idle');
   
   // Read URL parameters for DePIN claim flow
   const defaultAmount = searchParams.get('amount');
@@ -127,27 +131,110 @@ const WormholeConnectWidget = () => {
     },
   }), [theme]);
 
-  // Memoize config to prevent unnecessary recreations
-  const wormholeConfig = useMemo(() => {
-    const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
-    
-    const baseConfig = {
-      network: 'Testnet',
-      chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
-      tokens: ['USDC'],
-      rpcs: {
-        Sepolia: alchemyKey 
-          ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
-          : 'https://ethereum-sepolia-rpc.publicnode.com',
-        Solana: alchemyKey
-          ? `https://solana-devnet.g.alchemy.com/v2/${alchemyKey}`
-          : 'https://api.devnet.solana.com',
+  // Custom Wormhole Connect Theme
+  const customWormholeTheme = useMemo((): WormholeConnectTheme => {
+    return {
+      mode: theme === 'dark' ? 'dark' : 'light',
+      primary: '#78c4b6',
+      secondary: '#1a1d2e',
+      divider: theme === 'dark' ? '#2a2d3e' : '#e5e7eb',
+      background: theme === 'dark' ? '#0f0f1a' : '#ffffff',
+      text: theme === 'dark' ? '#ffffff' : '#000000',
+      textSecondary: theme === 'dark' ? '#a0a0b0' : '#666666',
+      error: '#ef4444',
+      success: '#10b981',
+      warning: '#f59e0b',
+      info: '#3b82f6',
+      font: 'inherit',
+    } as any;
+  }, [theme]);
+
+  // RPC Config Helper
+  const getRPCConfig = (mode: 'Testnet' | 'Mainnet', alchemyKey: string) => {
+    if (mode === 'Testnet') {
+      return {
+        Sepolia: alchemyKey ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}` : 'https://ethereum-sepolia-rpc.publicnode.com',
+        Solana: alchemyKey ? `https://solana-devnet.g.alchemy.com/v2/${alchemyKey}` : 'https://api.devnet.solana.com',
         ArbitrumSepolia: 'https://sepolia-rollup.arbitrum.io/rpc',
         BaseSepolia: 'https://sepolia.base.org',
         OptimismSepolia: 'https://sepolia.optimism.io',
         PolygonSepolia: 'https://rpc-amoy.polygon.technology',
-      },
+      };
+    }
+    
+    return {
+      Ethereum: alchemyKey ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://ethereum-rpc.publicnode.com',
+      Solana: alchemyKey ? `https://solana-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://api.mainnet-beta.solana.com',
+      Arbitrum: alchemyKey ? `https://arb-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://arb1.arbitrum.io/rpc',
+      Base: alchemyKey ? `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://mainnet.base.org',
+      Optimism: alchemyKey ? `https://opt-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://mainnet.optimism.io',
+      Polygon: alchemyKey ? `https://polygon-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://polygon-rpc.com',
+      Avalanche: 'https://api.avax.network/ext/bc/C/rpc',
+      Bsc: 'https://bsc-dataseed1.binance.org',
+    };
+  };
+
+  // Memoize config to prevent unnecessary recreations
+  const wormholeConfig = useMemo(() => {
+    const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
+    
+    const testnetConfig = {
+      network: 'Testnet',
+      chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
+      tokens: ['USDC'],
+    };
+    
+    const mainnetConfig = {
+      network: 'Mainnet',
+      chains: ['Ethereum', 'Solana', 'Arbitrum', 'Base', 'Optimism', 'Polygon', 'Avalanche', 'Bsc'],
+      tokens: ['ETH', 'WETH', 'USDC', 'USDT', 'WBTC', 'SOL'],
+      routes: ['cctpManual', 'cctpRelay', 'TokenBridge', 'NTT'] as any[],
+    };
+    
+    const activeConfig = networkMode === 'Mainnet' ? mainnetConfig : testnetConfig;
+    
+    const baseConfig = {
+      ...activeConfig,
+      rpcs: getRPCConfig(networkMode, alchemyKey || ''),
       walletConnectProjectId: '7cb724bf60c8e3b1b67fdadd7bafcace',
+      ui: {
+        title: networkMode === 'Testnet' ? 'Tempo Bridge (Testnet)' : 'Tempo Bridge',
+        showHamburgerMenu: true,
+        defaultInputs: {
+          fromChain: networkMode === 'Testnet' ? 'Sepolia' : 'Ethereum',
+          toChain: 'Solana',
+        },
+      },
+      menu: [
+        {
+          label: 'View on WormholeScan',
+          href: `https://wormholescan.io/#/?network=${networkMode}`,
+          target: '_blank',
+          order: 1,
+        },
+        {
+          label: 'Transaction History',
+          href: '/claim',
+          target: '_self',
+          order: 2,
+        },
+        {
+          label: 'DePIN Rewards',
+          href: '/depin',
+          target: '_self',
+          order: 3,
+        },
+      ],
+      transactionSettings: {
+        Solana: {
+          priorityFee: {
+            percentile: 0.9,
+            percentileMultiple: 1.2,
+            min: 100_000,
+            max: 5_000_000,
+          },
+        },
+      },
     } as config.WormholeConnectConfig;
     
     // Add bridge defaults if URL params exist (DePIN claim flow)
@@ -172,7 +259,7 @@ const WormholeConnectWidget = () => {
     }
     
     return baseConfig;
-  }, [defaultAmount, defaultFromChain, defaultToChain, defaultToken]);
+  }, [networkMode, defaultAmount, defaultFromChain, defaultToChain, defaultToken]);
 
   // RPC Health Check using Alchemy
   useEffect(() => {
@@ -225,7 +312,7 @@ const WormholeConnectWidget = () => {
     });
   }, [wormholeConfig]);
   
-  // FIX 5: Error handling for RPC issues
+  // Error handling for RPC issues
   useEffect(() => {
     const handleRpcError = (event: any) => {
       if (event.detail?.error?.includes('Failed to fetch')) {
@@ -238,6 +325,25 @@ const WormholeConnectWidget = () => {
     return () => window.removeEventListener('wormhole-rpc-error', handleRpcError);
   }, []);
 
+  // Bridge status tracking
+  useEffect(() => {
+    const handleBridgeStatus = (event: any) => {
+      const phase = event.detail?.phase || 'idle';
+      setBridgePhase(phase);
+      
+      if (phase === 'complete') {
+        toast({
+          title: "✅ Bridge Complete",
+          description: "Your tokens have arrived on the destination chain",
+        });
+        setBridgePhase('idle');
+      }
+    };
+    
+    window.addEventListener('wormhole-bridge-status', handleBridgeStatus);
+    return () => window.removeEventListener('wormhole-bridge-status', handleBridgeStatus);
+  }, []);
+
   const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
 
   // Check if user needs to wrap/swap
@@ -248,9 +354,66 @@ const WormholeConnectWidget = () => {
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <div className="w-full">
-        {/* Balance Status Alert */}
-        {isAnyWalletConnected && evmAddress && needsTokenConversion && (
+      <div className="w-full max-w-2xl mx-auto">
+        {/* Network Mode Toggle */}
+        <div className="mb-6 flex items-center justify-between p-4 bg-muted/50 rounded-xl border border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xl">
+              {networkMode === 'Testnet' ? '🧪' : '🌐'}
+            </div>
+            <div>
+              <div className="font-semibold text-sm">Network Mode</div>
+              <div className="text-xs text-muted-foreground">
+                {networkMode === 'Testnet' 
+                  ? 'Testnet tokens (no real value)' 
+                  : 'Mainnet (real assets)'}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={networkMode === 'Testnet' ? 'default' : 'outline'}
+              onClick={() => setNetworkMode('Testnet')}
+              className="text-xs h-8"
+            >
+              Testnet
+            </Button>
+            <Button
+              size="sm"
+              variant={networkMode === 'Mainnet' ? 'default' : 'outline'}
+              onClick={() => setNetworkMode('Mainnet')}
+              className="text-xs h-8"
+            >
+              Mainnet
+            </Button>
+          </div>
+        </div>
+
+        {/* Mainnet Warning */}
+        {networkMode === 'Mainnet' && (
+          <Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
+            <AlertCircle className="h-4 w-4 text-amber-400" />
+            <AlertDescription className="text-sm text-amber-400">
+              <strong>⚠️ Mainnet Mode:</strong> You are using real assets. Double-check all transaction details before confirming.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Bridge Status Banner */}
+        {bridgePhase !== 'idle' && (
+          <Alert className="mb-4 border-blue-500/50 bg-blue-500/10 animate-pulse">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+            <AlertDescription className="text-sm text-blue-400">
+              {bridgePhase === 'approval' && '🔓 Approving token spend...'}
+              {bridgePhase === 'transfer' && '🌉 Initiating cross-chain transfer...'}
+              {bridgePhase === 'attestation' && '⏳ Waiting for guardian signatures...'}
+            </AlertDescription>
+          </Alert>
+        )}
+        {/* Balance Status Alert (Testnet Only) */}
+        {networkMode === 'Testnet' && isAnyWalletConnected && evmAddress && needsTokenConversion && (
           <Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
             <AlertCircle className="h-4 w-4 text-amber-400" />
             <AlertDescription>
@@ -276,14 +439,16 @@ const WormholeConnectWidget = () => {
           </Alert>
         )}
 
-        {/* USDC CCTP Recommendation */}
-        <Alert className="mb-4 border-blue-500/50 bg-blue-500/10">
-          <AlertCircle className="h-4 w-4 text-blue-400" />
-          <AlertDescription className="text-sm text-blue-400">
-            <strong>💡 CCTP Bridge:</strong> This bridge uses Circle's CCTP protocol for native USDC transfers. 
-            Fast, reliable, and automatic delivery to Solana. Bridge time: 2-5 minutes.
-          </AlertDescription>
-        </Alert>
+        {/* USDC CCTP Recommendation (Testnet) */}
+        {networkMode === 'Testnet' && (
+          <Alert className="mb-4 border-blue-500/50 bg-blue-500/10">
+            <AlertCircle className="h-4 w-4 text-blue-400" />
+            <AlertDescription className="text-sm text-blue-400">
+              <strong>💡 CCTP Bridge:</strong> This bridge uses Circle's CCTP protocol for native USDC transfers. 
+              Fast, reliable, and automatic delivery to Solana. Bridge time: 2-5 minutes.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="mb-4 p-4 border border-blue-500/50 rounded-xl bg-blue-500/10">
           <p className="text-sm text-blue-400">
@@ -318,22 +483,74 @@ const WormholeConnectWidget = () => {
           </div>
         )}
         
+        {/* Network Info Badge */}
         <div className="mb-4 p-3 border border-blue-500/50 rounded-xl bg-blue-500/10">
           <p className="text-sm text-blue-400 font-medium">
-            🧪 Testnet Mode: Sepolia • Solana Devnet • Arbitrum Sepolia • Base Sepolia • More
+            {networkMode === 'Testnet' 
+              ? '🧪 Testnet Mode: Sepolia • Solana Devnet • Arbitrum Sepolia • Base Sepolia • More'
+              : '🌐 Mainnet Mode: Ethereum • Solana • Arbitrum • Base • Optimism • Polygon • More'}
           </p>
           <p className="text-xs text-blue-300/80 mt-1">
-            Supported tokens: USDC (via CCTP) {rpcHealthy && alchemyKey && '• Alchemy RPC Connected ✓'}
+            {networkMode === 'Testnet' 
+              ? 'Supported tokens: USDC (via CCTP)'
+              : 'Supported tokens: ETH, WETH, USDC, USDT, WBTC, SOL'}
+            {rpcHealthy && alchemyKey && ' • Alchemy RPC Connected ✓'}
           </p>
         </div>
-        <div className="border border-border rounded-2xl overflow-hidden bg-card">
+
+        {/* Wormhole Widget */}
+        <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-lg">
           {widgetKey > 0 && (
             <WormholeConnect 
-              key={`testnet-bridge-${widgetKey}`} 
+              key={`${networkMode.toLowerCase()}-bridge-${widgetKey}`} 
               config={wormholeConfig}
+              theme={customWormholeTheme}
             />
           )}
         </div>
+        {/* Help & FAQ Section */}
+        <Collapsible className="mt-4 border border-border rounded-xl p-4">
+          <CollapsibleTrigger className="flex items-center justify-between w-full hover:text-foreground transition-colors">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <HelpCircle className="w-4 h-4" />
+              Bridge Help & FAQ
+            </div>
+            <ChevronDown className="w-4 h-4" />
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent className="pt-4 space-y-3 text-xs text-muted-foreground">
+            <div>
+              <strong className="text-foreground">What is CCTP?</strong>
+              <p>Circle's Cross-Chain Transfer Protocol - native USDC bridging (2-5 min)</p>
+            </div>
+            
+            <div>
+              <strong className="text-foreground">Bridge Fees?</strong>
+              <p>Gas fees on source/destination chains + small protocol fee (~0.1%)</p>
+            </div>
+            
+            <div>
+              <strong className="text-foreground">Testnet vs Mainnet?</strong>
+              <p>Testnet: Free tokens for testing • Mainnet: Real assets with real value</p>
+            </div>
+            
+            <div>
+              <strong className="text-foreground">Track Progress?</strong>
+              <p>Visit the <a href="/claim" className="text-primary hover:underline">Claims page</a> to track all bridge transactions</p>
+            </div>
+            
+            <a 
+              href="https://wormhole.com/docs/products/connect" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline flex items-center gap-1 mt-2"
+            >
+              Full Documentation <ExternalLink className="w-3 h-3" />
+            </a>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Footer */}
         <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <span>Powered by</span>
           <a 
