@@ -220,7 +220,7 @@ serve(async (req) => {
         const verifyClaimStatus = await faucetContract.getClaimStatus(evmWalletAddress);
         
         // Log raw response for debugging - getClaimStatus returns [amount, claimed]
-        console.log(`Raw contract response: ${JSON.stringify(verifyClaimStatus)}`);
+        console.log(`Raw contract response: amount=${verifyClaimStatus[0].toString()}, claimed=${verifyClaimStatus[1]}`);
         
         verifyClaimableEth = parseFloat(ethers.formatEther(verifyClaimStatus[0]));
         const hasBeenClaimed = verifyClaimStatus[1];
