@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import ClaimStatusTracker from '@/components/claim/ClaimStatusTracker';
 import DePINClaimInfoCard from '@/components/depin/DePINClaimInfoCard';
 import { DebugPanel } from '@/components/portfolio/DebugPanel';
-import { ArrowLeft, ExternalLink, CheckCircle2, Activity } from 'lucide-react';
+import { ArrowLeft, ExternalLink, CheckCircle2, Activity, AlertCircle, Circle, ArrowRight } from 'lucide-react';
 
 interface PendingClaim {
   id: string;
@@ -190,40 +190,52 @@ const Portfolio = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Contract Preparation Status */}
-                    {!claim.contract_prepared_at ? (
+                    {/* Status Badge */}
+                    <div className="flex items-center gap-2">
+                      {!claim.contract_prepared_at && (
+                        <Badge variant="outline" className="gap-1">
+                          <Circle className="w-3 h-3 fill-current" />
+                          Step 1: Prepare Contract
+                        </Badge>
+                      )}
+                      {claim.contract_prepared_at && !claim.wormhole_tx && (
+                        <Badge variant="default" className="gap-1 animate-pulse">
+                          <AlertCircle className="w-3 h-3" />
+                          Step 2: Claim ETH (Action Required)
+                        </Badge>
+                      )}
+                      {claim.wormhole_tx && (
+                        <Badge variant="default" className="gap-1 animate-pulse">
+                          <ArrowRight className="w-3 h-3" />
+                          Step 3: Bridge to Solana
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* DePINClaimInfoCard - Keep visible until bridge is initiated */}
+                    {!claim.wormhole_tx && (
                       <DePINClaimInfoCard
                         claimId={claim.id}
                         sepoliaEthAmount={claim.sepolia_eth_amount}
                         contractPreparedAt={claim.contract_prepared_at}
                         onContractPrepared={() => fetchPendingClaims(user.id)}
                       />
-                    ) : (
-                      <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg flex items-center gap-2">
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        <div>
-                          <div className="font-semibold text-green-900 dark:text-green-100">Contract Prepared</div>
-                          <div className="text-sm text-green-700 dark:text-green-300">
-                            Ready to bridge {claim.sepolia_eth_amount?.toFixed(4)} ETH
-                          </div>
-                        </div>
-                        {claim.wormhole_tx?.contract_claim_tx && (
-                          <a
-                            href={`https://sepolia.etherscan.io/tx/${claim.wormhole_tx.contract_claim_tx}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-auto"
-                          >
-                            <Badge variant="outline" className="gap-1">
-                              View TX <ExternalLink className="w-3 h-3" />
-                            </Badge>
-                          </a>
-                        )}
-                      </div>
+                    )}
+
+                    {/* Show "Proceed to Bridge" after contract is prepared */}
+                    {claim.contract_prepared_at && !claim.wormhole_tx && (
+                      <Button
+                        onClick={() => navigate(`/bridge?claimId=${claim.id}`)}
+                        className="w-full gap-2"
+                        size="lg"
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                        Proceed to Wormhole Bridge
+                      </Button>
                     )}
 
                     {/* Wormhole Transaction Status */}
-                    {claim.wormhole_tx && claim.contract_prepared_at && (
+                    {claim.wormhole_tx && (
                       <ClaimStatusTracker
                         status={claim.wormhole_tx.status}
                         txHash={claim.wormhole_tx.tx_hash}
@@ -233,27 +245,16 @@ const Portfolio = () => {
                       />
                     )}
                     
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      {claim.status === 'pending_approval' && claim.contract_prepared_at && (
-                        <Button
-                          onClick={() => navigate(`/bridge?claimId=${claim.id}`)}
-                          className="gap-2"
-                        >
-                          Complete Bridge
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                      )}
-                      {claim.wormhole_tx?.needs_redemption && (
-                        <Button
-                          onClick={() => navigate('/claim')}
-                          className="gap-2"
-                        >
-                          Claim on Destination
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
+                    {/* Redemption Button */}
+                    {claim.wormhole_tx?.needs_redemption && (
+                      <Button
+                        onClick={() => navigate('/claim')}
+                        className="w-full gap-2"
+                      >
+                        Claim on Destination Chain
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))}
