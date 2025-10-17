@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle2, AlertCircle, ExternalLink, Link as LinkIcon, DollarSign, RefreshCcw } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2, CheckCircle2, AlertCircle, ExternalLink, Link as LinkIcon, DollarSign, RefreshCcw, Wallet, HelpCircle, Download, ArrowRight, Info } from 'lucide-react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useBalance } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +11,9 @@ import { useEvmWalletLink } from '@/hooks/useEvmWalletLink';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { TEMPO_DEPIN_FAUCET_ADDRESS, TEMPO_DEPIN_FAUCET_ABI } from '@/contracts/TempoDePINFaucet';
 import { formatEther } from 'viem';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { formatDistanceToNow } from 'date-fns';
 
 interface DePINClaimInfoCardProps {
   claimId: string;
@@ -35,6 +38,9 @@ const DePINClaimInfoCard = ({
   const { address } = useAccount();
   const { toast } = useToast();
   const { isLinked, isLinking, linkError, linkEvmWallet } = useEvmWalletLink();
+  
+  // Ref for auto-scrolling to claim button
+  const claimButtonRef = useRef<HTMLDivElement>(null);
 
   // Check on-chain claimable amount - getClaimStatus returns [amount, claimed]
   const { data: onChainClaimStatus, isLoading: isLoadingClaimable, refetch: refetchClaimable } = useReadContract({
@@ -146,6 +152,11 @@ const DePINClaimInfoCard = ({
       // Refetch on-chain claimable amount to verify
       setTimeout(() => refetchClaimable(), 2000);
       
+      // Auto-scroll to claim button after 1 second
+      setTimeout(() => {
+        claimButtonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 1000);
+      
       toast({
         title: "Contract Prepared! ✅",
         description: `${parseFloat(data.sepoliaEthAmount).toFixed(6)} ETH is ready to claim!`,
@@ -211,14 +222,20 @@ const DePINClaimInfoCard = ({
     writeContract(config);
   };
 
-  // Handle write errors
+  // Handle write errors with improved messages
   useEffect(() => {
     if (writeError) {
       console.error('Claim error:', writeError);
       const errorMsg = writeError.message || 'Unknown error';
       
-      if (errorMsg.includes('gas')) {
-        setClaimError('Gas estimation failed. This usually means the transaction would revert. Try using manual gas limit or wait 30 seconds and retry.');
+      if (errorMsg.includes('User rejected') || errorMsg.includes('User denied')) {
+        setClaimError('Transaction rejected. Please approve the transaction in MetaMask to claim your ETH.');
+      } else if (errorMsg.includes('gas')) {
+        setClaimError('Gas estimation failed. You may need more Sepolia ETH for gas (~$0.50). Try using manual gas limit or get test ETH from a faucet.');
+      } else if (errorMsg.includes('network')) {
+        setClaimError('Please make sure you are connected to Sepolia testnet in MetaMask.');
+      } else if (errorMsg.includes('insufficient funds')) {
+        setClaimError('Insufficient funds for gas. You need ~$0.50 in Sepolia ETH. Get free test ETH from a Sepolia faucet.');
       } else {
         setClaimError(errorMsg);
       }
@@ -461,27 +478,36 @@ const DePINClaimInfoCard = ({
             {/* Step 1: Prepare Contract (backend sets claimable amount) */}
             {!contractPrepared && !prepareTxHash && (
               <>
-                <Button 
-                  onClick={handlePrepareContract}
-                  disabled={preparing}
-                  className="w-full"
-                  size="lg"
-                >
-                  {preparing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Preparing Smart Contract...
-                    </>
-                  ) : (
-                    <>
-                      <DollarSign className="mr-2 h-4 w-4" />
-                      Prepare Smart Contract
-                    </>
-                  )}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        onClick={handlePrepareContract}
+                        disabled={preparing}
+                        className="w-full"
+                        size="lg"
+                      >
+                        {preparing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Preparing Smart Contract...
+                          </>
+                        ) : (
+                          <>
+                            <DollarSign className="mr-2 h-4 w-4" />
+                            Prepare Smart Contract
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>This allocates your ETH on the smart contract (no wallet interaction needed)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <div className="text-xs text-muted-foreground text-center space-y-1">
-                  <p>Your USDC rewards will be converted to ETH at current market price</p>
-                  <p>The smart contract will be prepared for you to claim</p>
+                  <p>💡 Your USDC rewards will be converted to ETH at current market price</p>
+                  <p>📝 After preparation, you'll need to claim the ETH to your wallet</p>
                 </div>
               </>
             )}
@@ -491,54 +517,120 @@ const DePINClaimInfoCard = ({
 
             {/* Step 2: User Claims from Contract */}
             {contractPrepared && !isClaimSuccess && (
-              <div className="space-y-4">
-                {/* Contract Preparation Status - Always show success if tx confirmed */}
-                <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="space-y-2">
-                    <div className="text-green-800 dark:text-green-200 font-semibold">
-                      ✓ Contract Prepared Successfully!
-                    </div>
-                    <div className="text-sm text-green-700 dark:text-green-300 space-y-1">
-                      <p>Expected amount: {ethAmount?.toFixed(6)} ETH</p>
-                      {prepareTxHash && (
-                        <a 
-                          href={`https://sepolia.etherscan.io/tx/${prepareTxHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 flex items-center gap-1"
-                        >
-                          View preparation tx <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
-                    </div>
+              <div className="space-y-4" ref={claimButtonRef}>
+                {/* Progress Indicator */}
+                <div className="flex items-center justify-center gap-2 text-sm py-3 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950 dark:to-blue-950 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span className="text-green-700 dark:text-green-300 font-medium">Contract Prepared</span>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded-full bg-blue-600 animate-pulse" />
+                    <span className="text-blue-700 dark:text-blue-300 font-medium">Claim ETH</span>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded-full bg-muted-foreground/30" />
+                    <span className="text-muted-foreground">Bridge to Solana</span>
+                  </div>
+                </div>
+
+                {/* Prominent Action Required Alert */}
+                <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950 border-2 animate-pulse">
+                  <AlertCircle className="h-5 w-5 text-blue-600" />
+                  <AlertTitle className="text-blue-900 dark:text-blue-100 font-bold">
+                    🎯 Action Required: Claim Your ETH
+                  </AlertTitle>
+                  <AlertDescription className="text-blue-800 dark:text-blue-200">
+                    <p className="font-semibold">
+                      Your {ethAmount?.toFixed(6)} ETH is ready on the Sepolia testnet!
+                    </p>
+                    <p className="mt-2">
+                      Click the "Claim to Wallet" button below. This will open MetaMask for you to confirm the transaction.
+                    </p>
                   </AlertDescription>
                 </Alert>
 
-                {/* On-chain verification status - informational only */}
+                {/* Prominent Claimable Amount Display */}
+                {isVerified && (
+                  <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-2 border-green-300 dark:border-green-700 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-muted-foreground mb-1">✅ Verified Claimable Amount</div>
+                        <div className="text-4xl font-bold text-green-600 dark:text-green-400">
+                          {formatEther(onChainClaimableAmount)} ETH
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          ≈ ${ethAmount && (ethAmount * 3000).toFixed(2)} USD
+                        </div>
+                      </div>
+                      <Wallet className="h-16 w-16 text-green-600 dark:text-green-400 opacity-20" />
+                    </div>
+                  </div>
+                )}
+
+                {/* What's Next Section */}
+                <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/50">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      Contract Prepared Successfully!
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold">What's Next?</p>
+                      <ol className="list-decimal list-inside space-y-2 text-sm">
+                        <li className="text-green-700 dark:text-green-300">
+                          ✅ <strong>Step 1 Complete:</strong> Reward allocated on Sepolia testnet
+                        </li>
+                        <li className="text-blue-700 dark:text-blue-300 font-bold">
+                          📍 <strong>Step 2 (You are here):</strong> Click "Claim to Wallet" below
+                        </li>
+                        <li className="text-muted-foreground">
+                          <strong>Step 3:</strong> Confirm the transaction in MetaMask
+                        </li>
+                        <li className="text-muted-foreground">
+                          <strong>Step 4:</strong> Once claimed, proceed to bridge to Solana
+                        </li>
+                      </ol>
+                      {prepareTxHash && (
+                        <div className="pt-2 mt-2 border-t">
+                          <div className="text-xs text-muted-foreground">
+                            Contract prepared: {contractPreparedAt && formatDistanceToNow(new Date(contractPreparedAt))} ago
+                          </div>
+                          <a 
+                            href={`https://sepolia.etherscan.io/tx/${prepareTxHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 mt-1"
+                          >
+                            View preparation transaction on Etherscan <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* On-chain verification status */}
                 {isLoadingClaimable ? (
-                  <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-                    <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
-                    <AlertDescription>
-                      <div className="text-blue-800 dark:text-blue-200 font-semibold">
-                        Verifying on-chain state...
-                      </div>
-                      <div className="text-sm text-blue-700 dark:text-blue-300">
-                        This can take 30-60 seconds. You can try to claim now or wait for verification.
-                      </div>
-                    </AlertDescription>
-                  </Alert>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 bg-muted/30 rounded-lg">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Verifying on-chain allocation... (This can take 30-60 seconds)</span>
+                  </div>
                 ) : !isVerified ? (
                   <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
-                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <Info className="h-4 w-4 text-amber-600" />
                     <AlertDescription className="space-y-2">
                       <div className="text-amber-800 dark:text-amber-200 font-semibold">
-                        Verification Pending
+                        Verification in Progress
                       </div>
                       <div className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
                         <p>On-chain claimable: {onChainClaimableAmount ? formatEther(onChainClaimableAmount) : '0'} ETH</p>
                         <p className="mt-2">
-                          Blockchain state is still settling. You can try to claim now, or wait 30-60 seconds for automatic verification.
+                          Blockchain state is settling. You can claim now, or wait 30-60 seconds for full verification.
                         </p>
                       </div>
                       <Button 
@@ -551,44 +643,46 @@ const DePINClaimInfoCard = ({
                         className="mt-2"
                       >
                         <RefreshCcw className="mr-2 h-3 w-3" />
-                        Check Now
+                        Refresh Status
                       </Button>
                     </AlertDescription>
                   </Alert>
-                ) : (
-                  <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertDescription>
-                      <div className="text-green-800 dark:text-green-200 font-semibold">
-                        ✓ Verified On-Chain!
-                      </div>
-                      <div className="text-sm text-green-700 dark:text-green-300">
-                        Claimable: {formatEther(onChainClaimableAmount!)} ETH
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
+                ) : null}
 
-                {/* Error display */}
+                {/* Error display with helpful messages */}
                 {claimError && (
                   <Alert className="bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
                     <AlertCircle className="h-4 w-4 text-red-600" />
                     <AlertDescription className="space-y-2">
                       <div className="text-red-800 dark:text-red-200 font-semibold">
-                        Transaction Error
+                        ⚠️ Transaction Error
                       </div>
                       <div className="text-sm text-red-700 dark:text-red-300">
                         {claimError}
                       </div>
-                      {!useManualGas && claimError.includes('gas') && (
-                        <Button 
-                          onClick={() => setUseManualGas(true)}
-                          variant="outline"
-                          size="sm"
-                          className="mt-2"
-                        >
-                          Enable Manual Gas Limit
-                        </Button>
+                      {claimError.includes('gas') && (
+                        <div className="space-y-2 mt-2">
+                          {!useManualGas && (
+                            <Button 
+                              onClick={() => setUseManualGas(true)}
+                              variant="outline"
+                              size="sm"
+                            >
+                              Enable Manual Gas Limit
+                            </Button>
+                          )}
+                          <div className="text-xs text-red-600 dark:text-red-400">
+                            💡 Need Sepolia ETH for gas? Get free test ETH from a{' '}
+                            <a 
+                              href="https://sepoliafaucet.com" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="underline hover:text-red-800"
+                            >
+                              Sepolia faucet
+                            </a>
+                          </div>
+                        </div>
                       )}
                     </AlertDescription>
                   </Alert>
@@ -599,40 +693,110 @@ const DePINClaimInfoCard = ({
                   <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
                     <AlertDescription>
                       <div className="text-sm text-blue-800 dark:text-blue-200">
-                        Manual gas limit enabled (100,000 gas). This bypasses automatic estimation.
+                        ⚙️ Manual gas limit enabled (100,000 gas). This bypasses automatic estimation.
                       </div>
                     </AlertDescription>
                   </Alert>
                 )}
                 
-                <Button 
-                  onClick={handleClaimFromContract}
-                  disabled={isClaimPending || isClaimConfirming}
-                  className="w-full"
-                  size="lg"
-                >
-                  {isClaimPending || isClaimConfirming ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {isClaimPending ? 'Approve in Wallet...' : 'Confirming Claim...'}
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      {isVerified 
-                        ? `Claim ${onChainClaimableAmount ? formatEther(onChainClaimableAmount) : ethAmount?.toFixed(6)} ETH`
-                        : `Try Claim ${ethAmount?.toFixed(6)} ETH`
-                      }
-                    </>
-                  )}
-                </Button>
+                {/* Prominent Claim Button with Tooltip */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative">
+                        <Button 
+                          onClick={handleClaimFromContract}
+                          disabled={isClaimPending || isClaimConfirming}
+                          className="w-full text-lg h-14 relative overflow-hidden group"
+                          size="lg"
+                          variant={isVerified ? "default" : "secondary"}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 group-hover:via-primary/30 transition-all" />
+                          {isClaimPending || isClaimConfirming ? (
+                            <>
+                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                              {isClaimPending ? 'Approve in MetaMask...' : 'Confirming Transaction...'}
+                            </>
+                          ) : (
+                            <>
+                              <Download className="mr-2 h-5 w-5 animate-bounce" />
+                              {isVerified 
+                                ? `Claim ${onChainClaimableAmount ? formatEther(onChainClaimableAmount) : ethAmount?.toFixed(6)} ETH to Wallet`
+                                : `Try Claim ${ethAmount?.toFixed(6)} ETH Now`
+                              }
+                            </>
+                          )}
+                        </Button>
+                        {!isClaimPending && !isClaimConfirming && (
+                          <div className="absolute -top-1 -right-1 h-3 w-3 bg-blue-600 rounded-full animate-ping" />
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>This will open MetaMask for you to approve the transaction</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
 
-                <div className="text-xs text-muted-foreground text-center">
-                  {!isVerified 
-                    ? 'You can try claiming now. If it fails, wait 30-60 seconds and refresh.'
-                    : 'Ready to claim your rewards from the smart contract'
-                  }
+                <div className="text-center space-y-2">
+                  <p className="text-sm font-medium text-primary">
+                    {isVerified 
+                      ? '✅ Verified! Click above to transfer ETH to your wallet'
+                      : '⏳ Verifying on-chain... You can claim now or wait'
+                    }
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    This transaction requires a small amount of Sepolia ETH for gas (~$0.50)
+                  </p>
                 </div>
+
+                {/* Need Help Section */}
+                <Collapsible className="border rounded-lg">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="w-full justify-between">
+                      <span className="flex items-center gap-2">
+                        <HelpCircle className="h-4 w-4" />
+                        Need help claiming?
+                      </span>
+                      <AlertCircle className="h-4 w-4" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="p-4 space-y-2 text-sm">
+                    <p className="font-semibold">Troubleshooting Tips:</p>
+                    <ul className="space-y-1.5 text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                        <span>Make sure MetaMask is installed and unlocked</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                        <span>Confirm you're on Sepolia testnet (not Ethereum mainnet)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                        <span>You need ~$0.50 in Sepolia ETH for gas fees</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                        <span>Click "Claim" and approve the transaction in MetaMask popup</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                        <span>If gas estimation fails, wait 30 seconds and try again</span>
+                      </li>
+                    </ul>
+                    <div className="pt-2 border-t">
+                      <a 
+                        href="https://sepoliafaucet.com" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1"
+                      >
+                        Get free Sepolia ETH from faucet <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
             )}
           </>
