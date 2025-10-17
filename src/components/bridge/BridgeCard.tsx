@@ -9,7 +9,16 @@ import { useWalletContext } from '@/contexts/WalletContext';
 import { toast } from 'sonner';
 
 const BridgeCard = () => {
-  const { evmAddress, evmBalance, solanaAddress, solanaBalance, isAnyWalletConnected } = useWalletContext();
+  const { 
+    evmAddress, 
+    evmBalance, 
+    wethBalance, 
+    usdcBalance, 
+    solanaAddress, 
+    solanaBalance, 
+    isAnyWalletConnected,
+    tokenBalancesLoading 
+  } = useWalletContext();
   const [searchParams] = useSearchParams();
   const [fromChain, setFromChain] = useState('Ethereum');
   const [toChain, setToChain] = useState('Polygon');
@@ -32,16 +41,23 @@ const BridgeCard = () => {
     if (urlToken) setToken(urlToken);
   }, [urlAmount, urlFromChain, urlToChain, urlToken]);
 
-  // Update real balance based on selected chain
+  // Update real balance based on selected chain AND token
   useEffect(() => {
     if (fromChain === 'Solana' && solanaBalance) {
       setRealBalance(solanaBalance);
-    } else if (evmBalance) {
-      setRealBalance(evmBalance);
     } else {
-      setRealBalance('0.00');
+      // For EVM chains, show token-specific balance
+      if (token === 'WETH') {
+        setRealBalance(wethBalance || '0.0000');
+      } else if (token === 'USDC') {
+        setRealBalance(usdcBalance || '0.0000');
+      } else if (token === 'ETH') {
+        setRealBalance(evmBalance || '0.0000');
+      } else {
+        setRealBalance(evmBalance || '0.0000');
+      }
     }
-  }, [fromChain, evmBalance, solanaBalance]);
+  }, [fromChain, token, evmBalance, wethBalance, usdcBalance, solanaBalance]);
 
   const handleSwapChains = () => {
     const temp = fromChain;
@@ -97,7 +113,7 @@ const BridgeCard = () => {
           <div className="flex items-center gap-2">
             {isAnyWalletConnected ? (
               <span className="text-sm text-muted-foreground">
-                Balance: <span className="font-medium text-foreground">{realBalance}</span> {fromChain === 'Solana' ? 'SOL' : 'ETH'}
+                Balance: <span className="font-medium text-foreground">{tokenBalancesLoading ? '...' : realBalance}</span> {token}
               </span>
             ) : (
               <span className="text-sm text-muted-foreground flex items-center gap-1">

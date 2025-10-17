@@ -4,6 +4,7 @@ import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
 import { Connection, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
+import { useTokenBalances } from '@/hooks/useTokenBalances';
 
 interface WalletContextType {
   // EVM
@@ -12,6 +13,11 @@ interface WalletContextType {
   evmChainId: number | undefined;
   isEvmConnected: boolean;
   disconnectEvm: () => void;
+  
+  // EVM Token Balances
+  wethBalance: string;
+  usdcBalance: string;
+  tokenBalancesLoading: boolean;
   
   // Solana
   solanaAddress: string | undefined;
@@ -40,6 +46,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     address: evmAddress,
   });
   const { disconnect: disconnectEvm } = useDisconnect();
+  
+  // Fetch token balances using Alchemy
+  const { 
+    nativeBalance, 
+    wethBalance, 
+    usdcBalance, 
+    isLoading: tokenBalancesLoading 
+  } = useTokenBalances(evmAddress, evmChainId);
 
   // Solana Wallet State
   const { publicKey: solanaPublicKey, connected: isSolanaConnected, disconnect: disconnectSolana } = useSolanaWallet();
@@ -160,10 +174,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const value: WalletContextType = {
     evmAddress,
-    evmBalance: evmBalanceData ? parseFloat(evmBalanceData.formatted).toFixed(4) : undefined,
+    evmBalance: nativeBalance || (evmBalanceData ? parseFloat(evmBalanceData.formatted).toFixed(4) : undefined),
     evmChainId,
     isEvmConnected,
     disconnectEvm,
+    
+    wethBalance,
+    usdcBalance,
+    tokenBalancesLoading,
     
     solanaAddress: solanaPublicKey?.toString(),
     solanaBalance,

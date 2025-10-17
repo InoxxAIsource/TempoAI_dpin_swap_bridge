@@ -7,10 +7,19 @@ import { useWalletContext } from '@/contexts/WalletContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 
 const WormholeConnectWidget = () => {
   const { theme } = useTheme();
-  const { isAnyWalletConnected, evmAddress, solanaAddress } = useWalletContext();
+  const { 
+    isAnyWalletConnected, 
+    evmAddress, 
+    solanaAddress,
+    evmBalance,
+    wethBalance,
+    usdcBalance 
+  } = useWalletContext();
   const [searchParams] = useSearchParams();
   const [widgetKey, setWidgetKey] = useState(0);
   const [rpcError, setRpcError] = useState<string | null>(null);
@@ -125,7 +134,7 @@ const WormholeConnectWidget = () => {
     const baseConfig = {
       network: 'Testnet',
       chains: ['Sepolia', 'Solana', 'ArbitrumSepolia', 'BaseSepolia', 'OptimismSepolia', 'PolygonSepolia'],
-      tokens: ['ETH', 'WETH', 'USDC', 'SOL'],
+      tokens: ['USDC', 'WETH', 'ETH'],
       rpcs: {
         Sepolia: alchemyKey 
           ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
@@ -231,9 +240,59 @@ const WormholeConnectWidget = () => {
 
   const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
 
+  // Check if user needs to wrap/swap
+  const hasNativeEth = parseFloat(evmBalance || '0') > 0;
+  const hasWeth = parseFloat(wethBalance || '0') > 0;
+  const hasUsdc = parseFloat(usdcBalance || '0') > 0;
+  const needsTokenConversion = hasNativeEth && !hasWeth && !hasUsdc;
+
   return (
     <ThemeProvider theme={muiTheme}>
       <div className="w-full">
+        {/* Balance Status Alert */}
+        {isAnyWalletConnected && evmAddress && needsTokenConversion && (
+          <Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
+            <AlertCircle className="h-4 w-4 text-amber-400" />
+            <AlertDescription>
+              <div className="space-y-2">
+                <div className="text-sm text-amber-400">
+                  <strong>⚠️ Token Conversion Needed</strong>
+                </div>
+                <div className="text-xs text-amber-300/90">
+                  You have <strong>{evmBalance} ETH</strong> but need WETH or USDC to bridge to Solana on testnet.
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-7"
+                    onClick={() => window.open(`https://app.uniswap.org/swap?chain=sepolia&inputCurrency=ETH&outputCurrency=0xfff9976782d46cc05630d1f6ebab18b2324d6b14`, '_blank')}
+                  >
+                    Wrap ETH → WETH
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-7"
+                    onClick={() => window.open(`https://app.uniswap.org/swap?chain=sepolia&inputCurrency=ETH&outputCurrency=USDC`, '_blank')}
+                  >
+                    Swap ETH → USDC
+                  </Button>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* USDC Recommendation */}
+        <Alert className="mb-4 border-blue-500/50 bg-blue-500/10">
+          <AlertCircle className="h-4 w-4 text-blue-400" />
+          <AlertDescription className="text-sm text-blue-400">
+            <strong>💡 Testnet Bridge Tip:</strong> For Sepolia → Solana bridges, <strong>use USDC</strong> for instant quotes and faster transfers. 
+            ETH/WETH may have limited availability on testnet.
+          </AlertDescription>
+        </Alert>
+
         <div className="mb-4 p-4 border border-blue-500/50 rounded-xl bg-blue-500/10">
           <p className="text-sm text-blue-400">
             💡 <strong>Note:</strong> The Advanced Bridge has its own wallet connection. Click "Connect Wallet" inside the widget below.
