@@ -275,16 +275,6 @@ export const WormholeSwapWidget = ({
           </div>
         </div>
 
-        {/* Mainnet Warning */}
-        {networkMode === 'Mainnet' && (
-          <Alert className="border-amber-500/50 bg-amber-500/10">
-            <AlertCircle className="h-4 w-4 text-amber-400" />
-            <AlertDescription className="text-amber-400">
-              <strong>Mainnet Mode:</strong> Using {rpcProvider}. Double-check all details before confirming transactions.
-            </AlertDescription>
-          </Alert>
-        )}
-
         {/* Show only actual RPC errors from the widget */}
         {rpcError && (
           <Alert variant="destructive">

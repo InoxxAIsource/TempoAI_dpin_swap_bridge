@@ -482,16 +482,6 @@ const WormholeConnectWidget = () => {
           </div>
         </div>
 
-        {/* Mainnet Warning */}
-        {networkMode === 'Mainnet' && (
-          <Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
-            <AlertCircle className="h-4 w-4 text-amber-400" />
-            <AlertDescription className="text-sm text-amber-400">
-              <strong>⚠️ Mainnet Mode:</strong> You are using real assets with {rpcProvider}. Double-check all transaction details before confirming.
-            </AlertDescription>
-          </Alert>
-        )}
-
         {/* Bridge Status Banner */}
         {bridgePhase !== 'idle' && (
           <Alert className="mb-4 border-blue-500/50 bg-blue-500/10 animate-pulse">
@@ -552,23 +542,6 @@ const WormholeConnectWidget = () => {
           </Alert>
         )}
 
-        {/* USDC CCTP Recommendation (Testnet) */}
-        {networkMode === 'Testnet' && (
-          <Alert className="mb-4 border-blue-500/50 bg-blue-500/10">
-            <AlertCircle className="h-4 w-4 text-blue-400" />
-            <AlertDescription className="text-sm text-blue-400">
-              <strong>💡 CCTP Bridge:</strong> This bridge uses Circle's CCTP protocol for native USDC transfers. 
-              Fast, reliable, and automatic delivery to Solana. Bridge time: 2-5 minutes.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="mb-4 p-4 border border-blue-500/50 rounded-xl bg-blue-500/10">
-          <p className="text-sm text-blue-400">
-            💡 <strong>Note:</strong> The Advanced Bridge has its own wallet connection. Click "Connect Wallet" inside the widget below.
-          </p>
-        </div>
-        
         {/* Missing Alchemy Key Warning */}
         {!alchemyKey && (
           <Alert className="mb-4">
