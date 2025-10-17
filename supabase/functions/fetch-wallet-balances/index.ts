@@ -23,7 +23,12 @@ serve(async (req) => {
     // SOLANA SUPPORT: Check if this is a Solana address/chain
     if (chainId === 'solana' || chainId === 'Solana' || chainId === 1399811149) {
       console.log('🔵 Detected Solana chain, using Solana RPC methods');
-      const solanaUrl = `https://solana-devnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
+      
+      // Determine if mainnet or devnet based on chainId
+      const isMainnet = chainId === 'Solana' || chainId === 1399811149;
+      const solanaUrl = isMainnet
+        ? 'https://api.mainnet.solana.com' // Official public mainnet RPC
+        : `https://solana-devnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`; // Testnet via Alchemy
 
       // Get SOL native balance
       const balanceResponse = await fetch(solanaUrl, {
