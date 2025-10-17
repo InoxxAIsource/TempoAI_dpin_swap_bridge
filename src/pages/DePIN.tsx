@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Activity, Zap, Clock, TrendingUp, Plus } from 'lucide-react';
+import { Activity, Zap, Clock, TrendingUp, Plus, AlertCircle, Circle, ExternalLink, ArrowRight } from 'lucide-react';
 import PageLayout from '../components/layout/PageLayout';
 import PageHero from '../components/layout/PageHero';
 import StatCard from '../components/ui/StatCard';
@@ -13,7 +13,11 @@ import RewardsCalculator from '../components/depin/RewardsCalculator';
 import ProcessFlowSection from '../components/depin/ProcessFlowSection';
 import FloatingHelpButton from '../components/depin/FloatingHelpButton';
 import RewardClaimBanner from '../components/depin/RewardClaimBanner';
+import DePINClaimInfoCard from '../components/depin/DePINClaimInfoCard';
+import ClaimStatusTracker from '../components/claim/ClaimStatusTracker';
 import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useWalletContext } from '@/contexts/WalletContext';
@@ -43,6 +47,7 @@ const DePIN = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [userId, setUserId] = useState<string>('');
+  const [activeClaims, setActiveClaims] = useState<any[]>([]);
   const { toast } = useToast();
   const { isAuthenticated, authMethod, walletAuthenticatedAddress, isSolanaConnected, isAnyWalletConnected } = useWalletContext();
   const navigate = useNavigate();
@@ -52,6 +57,7 @@ const DePIN = () => {
     checkFirstVisit();
     fetchDevices();
     fetchEarnings();
+    fetchActiveClaims();
     startSimulation();
     
     // Fetch current user ID
@@ -78,6 +84,13 @@ const DePIN = () => {
         table: 'depin_rewards'
       }, () => {
         fetchEarnings();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'depin_reward_claims'
+      }, () => {
+        fetchActiveClaims();
       })
       .subscribe();
 
@@ -348,6 +361,30 @@ const DePIN = () => {
     }
   };
 
+  const fetchActiveClaims = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('depin_reward_claims')
+        .select(`
+          *,
+          wormhole_tx:wormhole_transactions(*)
+        `)
+        .eq('user_id', user.id)
+        .in('status', ['pending_approval', 'claiming'])
+        .order('claimed_at', { ascending: false });
+
+      if (error) throw error;
+      
+      console.log('[DePIN] Active claims:', data?.length || 0);
+      setActiveClaims(data || []);
+    } catch (error) {
+      console.error('Error fetching active claims:', error);
+    }
+  };
+
   const handleDeleteDevice = async (deviceId: string) => {
     try {
       const { error } = await supabase
@@ -475,8 +512,90 @@ const DePIN = () => {
               onRefresh={() => {
                 fetchDevices();
                 fetchEarnings();
+                fetchActiveClaims();
               }}
             />
+          </div>
+        </section>
+      )}
+
+      {/* Active Claims Section */}
+      {isAuthenticated && activeClaims.length > 0 && (
+        <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-2xl font-bold mb-4">Active Claim Process</h2>
+            <div className="space-y-4">
+              {activeClaims.map((claim) => (
+                <Card key={claim.id}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>${claim.total_amount.toFixed(2)} USDC</span>
+                      <Badge variant={claim.status === 'claiming' ? 'default' : 'secondary'}>
+                        {claim.status === 'claiming' ? 'In Progress' : 'Pending'}
+                      </Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      Claiming to {claim.destination_chain}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Status Badge */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {!claim.contract_prepared_at && (
+                        <Badge variant="outline" className="gap-1">
+                          <Circle className="w-3 h-3 fill-current" />
+                          Step 1: Prepare Contract
+                        </Badge>
+                      )}
+                      {claim.contract_prepared_at && !claim.wormhole_tx && (
+                        <Badge variant="default" className="gap-1 animate-pulse">
+                          <AlertCircle className="w-3 h-3" />
+                          Step 2: Claim ETH (Action Required)
+                        </Badge>
+                      )}
+                      {claim.wormhole_tx && (
+                        <Badge variant="default" className="gap-1 animate-pulse">
+                          <ArrowRight className="w-3 h-3" />
+                          Step 3: Bridge to Solana
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* DePINClaimInfoCard - Keep visible until bridge is initiated */}
+                    {!claim.wormhole_tx && (
+                      <DePINClaimInfoCard
+                        claimId={claim.id}
+                        sepoliaEthAmount={claim.sepolia_eth_amount}
+                        contractPreparedAt={claim.contract_prepared_at}
+                        onContractPrepared={() => fetchActiveClaims()}
+                      />
+                    )}
+
+                    {/* Wormhole Transaction Status */}
+                    {claim.wormhole_tx && (
+                      <ClaimStatusTracker
+                        status={claim.wormhole_tx.status}
+                        txHash={claim.wormhole_tx.tx_hash}
+                        vaa={claim.wormhole_tx.wormhole_vaa}
+                        fromChain={claim.wormhole_tx.from_chain}
+                        toChain={claim.wormhole_tx.to_chain}
+                      />
+                    )}
+                    
+                    {/* Redemption Button */}
+                    {claim.wormhole_tx?.needs_redemption && (
+                      <Button
+                        onClick={() => navigate('/claim')}
+                        className="w-full gap-2"
+                      >
+                        Claim on Destination Chain
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </section>
       )}
