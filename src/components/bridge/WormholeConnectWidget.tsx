@@ -10,6 +10,9 @@ import { HelpCircle, ChevronDown, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
+// Import Helius API key from environment (securely stored via Lovable Cloud)
+const HELIUS_API_KEY = import.meta.env.VITE_HELIUS_API_KEY || '';
+
 const WormholeConnectWidget = () => {
   const { theme } = useTheme();
   const { evmAddress, solanaAddress } = useWalletContext(); // Only for transaction tracking
@@ -225,10 +228,12 @@ const WormholeConnectWidget = () => {
       };
     }
     
-    // Mainnet - Use reliable public Solana RPC (PublicNode has better rate limits than mainnet-beta)
+    // Mainnet - Use Helius for Solana (recommended by Wormhole for reliable mainnet access)
     return {
       Ethereum: useAlchemy ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://ethereum-rpc.publicnode.com',
-      Solana: useAlchemy ? `https://solana-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://solana-rpc.publicnode.com',
+      Solana: HELIUS_API_KEY 
+        ? `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}` 
+        : (useAlchemy ? `https://solana-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://solana-rpc.publicnode.com'),
       Arbitrum: useAlchemy ? `https://arb-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://arbitrum.llamarpc.com',
       Base: useAlchemy ? `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://base.llamarpc.com',
       Optimism: useAlchemy ? `https://opt-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://optimism.llamarpc.com',
@@ -324,6 +329,8 @@ const WormholeConnectWidget = () => {
     console.log('🌉 Wormhole Config:', {
       network: networkMode,
       rpcs: Object.keys(baseConfig.rpcs || {}),
+      solanaRPC: baseConfig.rpcs?.Solana,
+      heliusEnabled: !!HELIUS_API_KEY,
       chains: activeConfig.chains,
     });
     
