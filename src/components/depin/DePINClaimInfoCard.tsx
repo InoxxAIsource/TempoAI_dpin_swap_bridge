@@ -112,8 +112,20 @@ const DePINClaimInfoCard = ({
     }
 
     setPreparing(true);
+    setClaimError(null);
+    
     try {
       console.log('[DePINClaimInfoCard] Preparing smart contract...');
+      
+      // Check if user already has claimable amount on-chain (shouldn't happen in V2 but good to check)
+      if (onChainClaimableAmount && onChainClaimableAmount > 0n) {
+        console.log(`[DePINClaimInfoCard] ⚠️ User already has ${formatEther(onChainClaimableAmount)} ETH claimable on-chain`);
+        toast({
+          title: 'Existing Claimable Amount',
+          description: 'You already have ETH claimable from a previous preparation. Proceeding will overwrite it.',
+          variant: 'default',
+        });
+      }
       
       const { data, error } = await supabase.functions.invoke('transfer-reward-eth', {
         body: {
@@ -123,6 +135,7 @@ const DePINClaimInfoCard = ({
       });
 
       if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to prepare contract');
 
       console.log('[DePINClaimInfoCard] Contract prepared:', data);
       
@@ -130,18 +143,20 @@ const DePINClaimInfoCard = ({
       setPrepareTxHash(data.prepareTxHash);
       setEthAmount(parseFloat(data.sepoliaEthAmount));
       
-      // Refetch on-chain claimable amount to verify (progressive retry)
-      setTimeout(() => refetchClaimable(), 5000);   // 5s
-      setTimeout(() => refetchClaimable(), 15000);  // 15s
-      setTimeout(() => refetchClaimable(), 30000);  // 30s
-      setTimeout(() => refetchClaimable(), 60000);  // 60s
+      // Refetch on-chain claimable amount to verify
+      setTimeout(() => refetchClaimable(), 2000);
       
       toast({
         title: "Contract Prepared! ✅",
-        description: `${parseFloat(data.sepoliaEthAmount).toFixed(6)} ETH is ready to claim. Verifying on-chain...`,
+        description: `${parseFloat(data.sepoliaEthAmount).toFixed(6)} ETH is ready to claim!`,
       });
+      
+      if (onContractPrepared) {
+        onContractPrepared(parseFloat(data.sepoliaEthAmount), data.prepareTxHash);
+      }
     } catch (error: any) {
-      console.error('Error preparing contract:', error);
+      console.error('[DePINClaimInfoCard] Error preparing contract:', error);
+      setClaimError(error.message);
       toast({
         title: "Error",
         description: error?.message || "Failed to prepare contract",
@@ -268,16 +283,13 @@ const DePINClaimInfoCard = ({
         
         if (verifyStatus) {
           const [amount, claimed] = verifyStatus as [bigint, boolean];
-          console.log(`On-chain verification: amount=${formatEther(amount)}, claimed=${claimed}`);
+          console.log(`[DePINClaimInfoCard] On-chain verification: amount=${formatEther(amount)}, claimed=${claimed}`);
           
-          if (!claimed && Number(amount) > 0) {
-            console.error('[DePINClaimInfoCard] ❌ On-chain status shows NOT claimed despite transaction success');
-            toast({
-              title: "Verification Failed",
-              description: "Transaction succeeded but on-chain verification failed. Please contact support.",
-              variant: "destructive",
-            });
-            return;
+          // In V2 contract, amount should be reset to 0 after successful claim
+          if (amount > 0n) {
+            console.warn('[DePINClaimInfoCard] ⚠️ Amount still claimable after claim - possible issue!');
+          } else {
+            console.log('[DePINClaimInfoCard] ✅ Amount properly reset to 0 after claim');
           }
         }
 

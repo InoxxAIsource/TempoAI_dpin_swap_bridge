@@ -261,25 +261,19 @@ serve(async (req) => {
       }
     }
 
-    // Always update the claim record with contract preparation details
-    // Set status to 'contract_prepared' since transaction confirmed successfully
-    console.log('Updating database with prepared contract details...');
-    const claimStatus = verificationSuccess && verifyClaimableEth > 0 
-      ? 'ready_to_claim' 
-      : 'contract_prepared'; // Transaction succeeded, just verification pending
-    
-    console.log(`Setting claim status to: ${claimStatus}`);
+    // Update database with verified contract preparation
+    console.log('✅ Updating database with verified contract details...');
     
     const { error: updateError } = await supabase
       .from('depin_reward_claims')
       .update({
-        sepolia_eth_amount: ethAmountRounded,
+        sepolia_eth_amount: verifyClaimableEth,
         eth_price_at_transfer: ethPriceUSD,
         conversion_rate: conversionRate,
         contract_prepared_at: new Date().toISOString(),
-        status: claimStatus,
-        eth_transfer_tx: tx.hash,
-        eth_transfer_block_number: receipt?.blockNumber,
+        status: 'ready_to_claim',
+        eth_transfer_tx: setClaimTx.hash,
+        eth_transfer_block_number: setClaimReceipt?.blockNumber,
       })
       .eq('id', claimId);
 
@@ -304,26 +298,23 @@ serve(async (req) => {
       }
     }
 
-    console.log('✓ Smart contract prepared for user claim');
+    console.log('✅ Smart contract fully prepared and verified for user claim');
 
     return new Response(
       JSON.stringify({
         success: true,
-        prepareTxHash: tx.hash,
-        sepoliaEthAmount: ethAmountRounded.toString(),
+        prepareTxHash: setClaimTx.hash,
+        sepoliaEthAmount: verifyClaimableEth.toString(),
         ethAmountWithoutBuffer: ethAmount.toFixed(6),
         usdcAmount: claim.total_amount,
         ethPriceUSD: ethPriceUSD,
         conversionRate: conversionRate,
-        blockNumber: receipt?.blockNumber,
+        blockNumber: setClaimReceipt?.blockNumber,
         contractAddress: FAUCET_ADDRESS,
         userNeedsToClaim: true,
-        explorerUrl: `https://sepolia.etherscan.io/tx/${tx.hash}`,
-        verificationSuccess,
-        verifiedAmount: verifyClaimableEth > 0 ? verifyClaimableEth.toString() : null,
-        warning: verificationSuccess 
-          ? null 
-          : 'Contract prepared successfully! Verification is still settling. You can try to claim now or wait 30-60 seconds for on-chain state to update.',
+        explorerUrl: `https://sepolia.etherscan.io/tx/${setClaimTx.hash}`,
+        verificationSuccess: true,
+        verifiedAmount: verifyClaimableEth.toString(),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
