@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { monitorWalletTransactions } from '@/utils/web3TransactionMonitor';
+import { checkWormholeTxStatus } from '@/utils/wormholeScanAPI';
 import { ExternalLink } from 'lucide-react';
 
 interface MonitoringPanelProps {
@@ -55,9 +56,12 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
           
           onTransactionDetected?.(txDetails);
           
+          // Check WormholeScan for transaction status
+          const wormholeStatus = await checkWormholeTxStatus(tx.hash, networkMode);
+          console.log('🌉 WormholeScan status:', wormholeStatus);
+          
           const { data: { user } } = await supabase.auth.getUser();
           await supabase.from('wormhole_transactions').insert({
-            user_id: user?.id || null,
             wallet_address: evmAddress.toLowerCase(),
             tx_hash: tx.hash,
             from_chain: networkMode === 'Testnet' ? 'Sepolia' : 'Ethereum',
@@ -65,19 +69,33 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
             from_token: 'USDC',
             to_token: 'USDC',
             amount: 0,
-            status: 'pending',
-          });
+            status: wormholeStatus.status || 'pending',
+            wormhole_vaa: wormholeStatus.vaa || null,
+            needs_redemption: wormholeStatus.needsRedemption || false,
+          } as any);
+          
+          // Show appropriate message based on status
+          let toastTitle = "✅ Transaction Detected!";
+          let toastDescription = "Tracking cross-chain transfer...";
+          
+          if (wormholeStatus.status === 'completed') {
+            toastTitle = "🎉 Transfer Complete!";
+            toastDescription = "Your cross-chain transfer has arrived!";
+          } else if (wormholeStatus.status === 'redemption_needed') {
+            toastTitle = "⚠️ Redemption Required";
+            toastDescription = "Click to redeem on destination chain";
+          }
           
           toast({
-            title: "✅ Transaction Detected!",
+            title: toastTitle,
             description: (
               <a 
-                href={`https://wormholescan.io/#/tx/${tx.hash}?network=${networkMode}`}
+                href={wormholeStatus.redeemUrl || `https://wormholescan.io/#/tx/${tx.hash}?network=${networkMode}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                Track on WormholeScan →
+                {wormholeStatus.needsRedemption ? 'Redeem on WormholeScan →' : 'Track on WormholeScan →'}
               </a>
             ) as any,
           });

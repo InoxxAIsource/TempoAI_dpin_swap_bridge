@@ -40,30 +40,29 @@ export async function monitorWalletTransactions(
       ? WORMHOLE_CONTRACTS.sepolia 
       : WORMHOLE_CONTRACTS.mainnet;
 
-    // Create public client with Alchemy RPC if available
-    const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
-    const rpcUrl = alchemyKey
-      ? `https://${networkMode === 'Testnet' ? 'eth-sepolia' : 'eth-mainnet'}.g.alchemy.com/v2/${alchemyKey}`
-      : chain.rpcUrls.default.http[0];
-
+    // Create public client with free public RPC
     const client = createPublicClient({
       chain,
-      transport: http(rpcUrl)
+      transport: http(chain.rpcUrls.default.http[0])
     });
 
     // Get current block
     const currentBlock = await client.getBlockNumber();
     
-    // Calculate from block (approximately 30 minutes ago, ~150 blocks)
-    const fromBlock = currentBlock - 150n;
+    // Calculate from block (approximately 2 hours ago, ~500 blocks)
+    const fromBlock = currentBlock - 500n;
 
     console.log(`🔍 Scanning blocks ${fromBlock} to ${currentBlock} for wallet ${walletAddress}`);
 
     // Get logs from Wormhole contract for LogMessagePublished events
+    // Filter by sender on-chain for better performance
     const logs = await client.getContractEvents({
       address: wormholeContract as `0x${string}`,
       abi: WORMHOLE_EVENT_ABI,
       eventName: 'LogMessagePublished',
+      args: {
+        sender: walletAddress as `0x${string}`
+      },
       fromBlock,
       toBlock: currentBlock,
     });
@@ -110,14 +109,11 @@ export async function monitorWalletTransactions(
 export async function getLatestBlockTimestamp(networkMode: 'Testnet' | 'Mainnet'): Promise<number> {
   try {
     const chain = networkMode === 'Testnet' ? sepolia : mainnet;
-    const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
-    const rpcUrl = alchemyKey
-      ? `https://${networkMode === 'Testnet' ? 'eth-sepolia' : 'eth-mainnet'}.g.alchemy.com/v2/${alchemyKey}`
-      : chain.rpcUrls.default.http[0];
-
+    
+    // Use free public RPC
     const client = createPublicClient({
       chain,
-      transport: http(rpcUrl)
+      transport: http(chain.rpcUrls.default.http[0])
     });
 
     const block = await client.getBlock();
