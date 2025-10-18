@@ -30,6 +30,8 @@ const WormholeConnectWidget = () => {
     amount: number;
     network: 'Mainnet' | 'Testnet';
   } | null>(null);
+  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [lastCheckedTimestamp, setLastCheckedTimestamp] = useState(0);
   
   // 🎣 Install CoinGecko proxy to bypass CORS
   useCoinGeckoProxy();
@@ -109,97 +111,96 @@ const WormholeConnectWidget = () => {
     console.log('🔑 Helius Key Present:', !!HELIUS_API_KEY);
   }, [networkMode]);
 
+  // Check localStorage for pending transactions on mount
   useEffect(() => {
-    // Listen for Wormhole transaction events
+    const checkPendingTransactions = async () => {
+      const pending = JSON.parse(localStorage.getItem('pending_wormhole_txs') || '[]');
+      console.log('🔍 Checking pending transactions:', pending);
+      
+      if (pending.length > 0) {
+        toast({
+          title: "📋 Pending Transactions Found",
+          description: `${pending.length} transaction(s) detected. Check Claims page for status.`,
+        });
+        
+        // Clear after showing notification
+        localStorage.removeItem('pending_wormhole_txs');
+      }
+    };
+    
+    checkPendingTransactions();
+  }, []);
+
+  // Monitor widget interactions to detect bridge initiation
+  useEffect(() => {
+    const widgetContainer = document.querySelector('#wormhole-widget');
+    if (!widgetContainer) return;
+    
+    const handleClick = (e: Event) => {
+      const target = e.target as HTMLElement;
+      const buttonText = target.textContent?.toLowerCase() || '';
+      
+      if (buttonText.includes('transfer') || buttonText.includes('bridge') || buttonText.includes('review')) {
+        console.log('🚀 Bridge initiated - starting monitoring');
+        setIsMonitoring(true);
+        setLastCheckedTimestamp(Date.now());
+      }
+    };
+    
+    widgetContainer.addEventListener('click', handleClick, true);
+    return () => widgetContainer.removeEventListener('click', handleClick, true);
+  }, [widgetKey]);
+
+  useEffect(() => {
+    // Listen for ALL possible Wormhole transaction events
     const handleWormholeEvent = async (event: any) => {
-      if (event.detail?.type === 'transfer' && event.detail?.txHash) {
-        const txData = event.detail;
-        const walletAddress = (evmAddress || solanaAddress || '').toLowerCase();
-        
-        // Store transaction details for modal immediately
-        const transactionDetails = {
-          hash: txData.txHash,
-          fromChain: txData.fromChain || 'Unknown',
-          toChain: txData.toChain || 'Unknown',
-          token: txData.token || 'Unknown',
-          amount: txData.amount || 0,
-          network: networkMode,
-        };
-        
-        setTxDetails(transactionDetails);
-        setShowSuccessModal(true);
-        
-        // Generate WormholeScan URL for clickable toast
-        const wormholeScanUrl = `https://wormholescan.io/#/tx/${txData.txHash}?network=${networkMode}`;
-        
-        try {
-          if (!walletAddress) {
-            console.error('No wallet connected');
-            toast({
-              title: "⚠️ Transaction Sent",
-              description: (
-                <div className="space-y-2">
-                  <p>Transaction submitted but wallet not detected.</p>
-                  <a 
-                    href={wormholeScanUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1"
-                  >
-                    Track on WormholeScan <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              ) as any,
-            });
-            return;
-          }
-          
-          const { data: { user } } = await supabase.auth.getUser();
-          
-          // CHECK: Is this a DePIN claim flow?
-          if (claimId) {
-            // UPDATE existing transaction instead of creating new one
-            const { error: updateError } = await supabase
-              .from('wormhole_transactions')
-              .update({
-                tx_hash: txData.txHash,
-                status: 'pending' as any,
-                wormhole_vaa: txData.vaa || null,
-              })
-              .eq('user_id', user?.id)
-              .eq('source_type', 'depin_rewards')
-              .is('tx_hash', null)
-              .order('created_at', { ascending: false })
-              .limit(1);
-              
-            if (updateError) throw updateError;
-          } else {
-            // CREATE new transaction (existing behavior)
-            await supabase.from('wormhole_transactions').insert({
-              user_id: user?.id || null,
-              from_chain: transactionDetails.fromChain,
-              to_chain: transactionDetails.toChain,
-              from_token: transactionDetails.token,
-              to_token: transactionDetails.token,
-              amount: transactionDetails.amount,
-              tx_hash: txData.txHash,
-              status: 'pending',
-              wormhole_vaa: txData.vaa || null,
-              wallet_address: walletAddress,
-            });
-          }
-          
-          // Emit completion event for yield deposit flow
-          window.dispatchEvent(new CustomEvent('wormhole-transfer-complete', {
-            detail: { ...txData, claimId }
-          }));
-        } catch (error) {
-          console.error('Error saving transaction:', error);
+      console.log('🔔 Wormhole Event Received:', event.type);
+      console.log('📦 Event detail:', event.detail);
+      console.log('🔑 Event detail keys:', Object.keys(event.detail || {}));
+      
+      // Try to extract transaction data from various event formats
+      const txData = event.detail;
+      let txHash = txData?.txHash || txData?.hash || txData?.transactionHash || txData?.id;
+      
+      // Additional logging for debugging
+      if (txData) {
+        console.log('📋 Transaction data structure:', JSON.stringify(txData, null, 2));
+      }
+      
+      if (!txHash) {
+        console.warn('⚠️ No transaction hash found in event:', event.type);
+        return;
+      }
+      
+      console.log('✅ Transaction hash detected:', txHash);
+      
+      const walletAddress = (evmAddress || solanaAddress || '').toLowerCase();
+      
+      // Store transaction details for modal immediately
+      const transactionDetails = {
+        hash: txHash,
+        fromChain: txData.fromChain || txData.sourceChain || 'Unknown',
+        toChain: txData.toChain || txData.targetChain || txData.destinationChain || 'Unknown',
+        token: txData.token || txData.asset || 'Unknown',
+        amount: txData.amount || 0,
+        network: networkMode,
+      };
+      
+      setTxDetails(transactionDetails);
+      setShowSuccessModal(true);
+      setIsMonitoring(false); // Stop monitoring once we detect the transaction
+      
+      // Generate WormholeScan URL for clickable toast
+      const wormholeScanUrl = `https://wormholescan.io/#/tx/${txHash}?network=${networkMode}`;
+      
+      try {
+        if (!walletAddress) {
+          console.error('No wallet connected');
           toast({
-            title: "⚠️ Transaction Tracking Failed",
+            title: "⚠️ Transaction Sent",
             description: (
               <div className="space-y-2">
-                <p>Transaction sent but couldn't save to history.</p>
+                <p>Transaction submitted but wallet not detected.</p>
                 <a 
                   href={wormholeScanUrl}
                   target="_blank"
@@ -210,16 +211,104 @@ const WormholeConnectWidget = () => {
                 </a>
               </div>
             ) as any,
-            variant: "destructive"
+          });
+          return;
+        }
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // CHECK: Is this a DePIN claim flow?
+        if (claimId) {
+          // UPDATE existing transaction instead of creating new one
+          const { error: updateError } = await supabase
+            .from('wormhole_transactions')
+            .update({
+              tx_hash: txHash,
+              status: 'pending' as any,
+              wormhole_vaa: txData.vaa || null,
+            })
+            .eq('user_id', user?.id)
+            .eq('source_type', 'depin_rewards')
+            .is('tx_hash', null)
+            .order('created_at', { ascending: false })
+            .limit(1);
+            
+          if (updateError) throw updateError;
+        } else {
+          // CREATE new transaction (existing behavior)
+          await supabase.from('wormhole_transactions').insert({
+            user_id: user?.id || null,
+            from_chain: transactionDetails.fromChain,
+            to_chain: transactionDetails.toChain,
+            from_token: transactionDetails.token,
+            to_token: transactionDetails.token,
+            amount: transactionDetails.amount,
+            tx_hash: txHash,
+            status: 'pending',
+            wormhole_vaa: txData.vaa || null,
+            wallet_address: walletAddress,
           });
         }
+        
+        console.log('✅ Transaction saved to database');
+        
+        // Emit completion event for yield deposit flow
+        window.dispatchEvent(new CustomEvent('wormhole-transfer-complete', {
+          detail: { ...txData, claimId }
+        }));
+      } catch (error) {
+        console.error('❌ Error saving transaction:', error);
+        
+        // Save to localStorage as fallback
+        const pending = JSON.parse(localStorage.getItem('pending_wormhole_txs') || '[]');
+        pending.push({
+          hash: txHash,
+          network: networkMode,
+          timestamp: Date.now(),
+          walletAddress: walletAddress || 'unknown'
+        });
+        localStorage.setItem('pending_wormhole_txs', JSON.stringify(pending));
+        console.log('💾 Saved to localStorage as fallback');
+        
+        toast({
+          title: "⚠️ Transaction Tracking Failed",
+          description: (
+            <div className="space-y-2">
+              <p>Transaction sent but couldn't save to history.</p>
+              <a 
+                href={wormholeScanUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline inline-flex items-center gap-1"
+              >
+                Track on WormholeScan <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          ) as any,
+          variant: "destructive"
+        });
       }
     };
 
-    window.addEventListener('wormhole-transfer', handleWormholeEvent as EventListener);
+    // Listen to MULTIPLE event types for better compatibility
+    const events = [
+      'wormhole-transfer',
+      'wormhole-transfer-complete', 
+      'wormhole-transfer-success',
+      'wormhole-transaction',
+      'transaction-success'
+    ];
+
+    console.log('👂 Listening for Wormhole events:', events);
+
+    events.forEach(eventName => {
+      window.addEventListener(eventName, handleWormholeEvent as EventListener);
+    });
 
     return () => {
-      window.removeEventListener('wormhole-transfer', handleWormholeEvent as EventListener);
+      events.forEach(eventName => {
+        window.removeEventListener(eventName, handleWormholeEvent as EventListener);
+      });
     };
   }, [evmAddress, solanaAddress, claimId, networkMode]);
 
