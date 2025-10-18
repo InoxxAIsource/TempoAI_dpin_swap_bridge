@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCoinGeckoProxy } from '@/hooks/useCoinGeckoProxy';
 import { TransactionSuccessModal } from './TransactionSuccessModal';
+import { pollRecentTransactions } from '@/utils/etherscanPoller';
 
 // Import Helius API key from environment (securely stored via Lovable Cloud)
 const HELIUS_API_KEY = import.meta.env.VITE_HELIUS_API_KEY || '';
@@ -32,6 +33,8 @@ const WormholeConnectWidget = () => {
   } | null>(null);
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [lastCheckedTimestamp, setLastCheckedTimestamp] = useState(0);
+  const [capturedEvents, setCapturedEvents] = useState<any[]>([]);
+  const [debugMode, setDebugMode] = useState(true);
   
   // 🎣 Install CoinGecko proxy to bypass CORS
   useCoinGeckoProxy();
@@ -151,21 +154,138 @@ const WormholeConnectWidget = () => {
     return () => widgetContainer.removeEventListener('click', handleClick, true);
   }, [widgetKey]);
 
+  // Active polling when monitoring is enabled
+  useEffect(() => {
+    if (!isMonitoring || !evmAddress) return;
+    
+    console.log('🔄 Starting active polling for wallet:', evmAddress);
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const recentTxs = await pollRecentTransactions(
+          evmAddress,
+          networkMode,
+          lastCheckedTimestamp
+        );
+        
+        console.log(`📡 Poll result: ${recentTxs.length} new Wormhole transactions`);
+        
+        for (const tx of recentTxs) {
+          console.log('✅ Found transaction via polling:', tx.hash);
+          
+          setTxDetails({
+            hash: tx.hash,
+            fromChain: networkMode === 'Testnet' ? 'Sepolia' : 'Ethereum',
+            toChain: 'Solana',
+            token: 'USDC',
+            amount: 0,
+            network: networkMode,
+          });
+          setShowSuccessModal(true);
+          
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase.from('wormhole_transactions').insert({
+            user_id: user?.id || null,
+            wallet_address: evmAddress.toLowerCase(),
+            tx_hash: tx.hash,
+            from_chain: networkMode === 'Testnet' ? 'Sepolia' : 'Ethereum',
+            to_chain: 'Solana',
+            from_token: 'USDC',
+            to_token: 'USDC',
+            amount: 0,
+            status: 'pending',
+          });
+          
+          toast({
+            title: "✅ Transaction Detected!",
+            description: (
+              <a 
+                href={`https://wormholescan.io/#/tx/${tx.hash}?network=${networkMode}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                Track on WormholeScan →
+              </a>
+            ) as any,
+          });
+        }
+        
+        setLastCheckedTimestamp(Date.now());
+        
+        if (recentTxs.length > 0) {
+          setIsMonitoring(false);
+        }
+      } catch (error) {
+        console.error('❌ Polling error:', error);
+      }
+    }, 15000);
+    
+    const stopTimeout = setTimeout(() => {
+      console.log('⏰ Stopping polling - 20 minute timeout');
+      setIsMonitoring(false);
+    }, 20 * 60 * 1000);
+    
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(stopTimeout);
+    };
+  }, [isMonitoring, evmAddress, lastCheckedTimestamp, networkMode]);
+
   useEffect(() => {
     // Listen for ALL possible Wormhole transaction events
     const handleWormholeEvent = async (event: any) => {
-      console.log('🔔 Wormhole Event Received:', event.type);
-      console.log('📦 Event detail:', event.detail);
-      console.log('🔑 Event detail keys:', Object.keys(event.detail || {}));
+      console.log('=== FULL WORMHOLE EVENT DEBUG ===');
+      console.log('Event type:', event.type);
+      console.log('Event detail:', event.detail);
+      console.log('Event detail keys:', Object.keys(event.detail || {}));
       
-      // Try to extract transaction data from various event formats
-      const txData = event.detail;
-      let txHash = txData?.txHash || txData?.hash || txData?.transactionHash || txData?.id;
-      
-      // Additional logging for debugging
-      if (txData) {
-        console.log('📋 Transaction data structure:', JSON.stringify(txData, null, 2));
+      // Deep inspection of nested objects
+      const detail = event.detail;
+      if (detail) {
+        console.log('Checking nested structures:');
+        console.log('  detail.txHash:', detail.txHash);
+        console.log('  detail.tx_hash:', detail.tx_hash);
+        console.log('  detail.hash:', detail.hash);
+        console.log('  detail.transactionHash:', detail.transactionHash);
+        console.log('  detail.sendTx:', detail.sendTx);
+        console.log('  detail.transaction?.hash:', detail.transaction?.hash);
+        console.log('  detail.sourceTransaction:', detail.sourceTransaction);
+        console.log('  detail.txData?.hash:', detail.txData?.hash);
+        console.log('  detail.txData?.sendTx:', detail.txData?.sendTx);
+        
+        if (detail.txData) {
+          console.log('  detail.txData structure:', JSON.stringify(detail.txData, null, 2));
+        }
+        if (detail.redeem) {
+          console.log('  detail.redeem structure:', JSON.stringify(detail.redeem, null, 2));
+        }
       }
+      
+      console.log('Full event stringified:', JSON.stringify(event.detail, null, 2));
+      console.log('=================================');
+      
+      // Store event for debug panel
+      if (debugMode) {
+        setCapturedEvents(prev => [...prev, {
+          type: event.type,
+          detail: event.detail,
+          timestamp: new Date().toISOString()
+        }]);
+      }
+      
+      // Try multiple extraction strategies
+      const txData = event.detail;
+      let txHash = 
+        txData?.txHash || 
+        txData?.tx_hash || 
+        txData?.hash || 
+        txData?.transactionHash ||
+        txData?.sendTx ||
+        txData?.transaction?.hash ||
+        txData?.sourceTransaction ||
+        txData?.txData?.sendTx ||
+        txData?.redeem?.sendTx;
       
       if (!txHash) {
         console.warn('⚠️ No transaction hash found in event:', event.type);
@@ -176,7 +296,6 @@ const WormholeConnectWidget = () => {
       
       const walletAddress = (evmAddress || solanaAddress || '').toLowerCase();
       
-      // Store transaction details for modal immediately
       const transactionDetails = {
         hash: txHash,
         fromChain: txData.fromChain || txData.sourceChain || 'Unknown',
@@ -188,9 +307,8 @@ const WormholeConnectWidget = () => {
       
       setTxDetails(transactionDetails);
       setShowSuccessModal(true);
-      setIsMonitoring(false); // Stop monitoring once we detect the transaction
+      setIsMonitoring(false);
       
-      // Generate WormholeScan URL for clickable toast
       const wormholeScanUrl = `https://wormholescan.io/#/tx/${txHash}?network=${networkMode}`;
       
       try {
@@ -217,9 +335,7 @@ const WormholeConnectWidget = () => {
         
         const { data: { user } } = await supabase.auth.getUser();
         
-        // CHECK: Is this a DePIN claim flow?
         if (claimId) {
-          // UPDATE existing transaction instead of creating new one
           const { error: updateError } = await supabase
             .from('wormhole_transactions')
             .update({
@@ -235,7 +351,6 @@ const WormholeConnectWidget = () => {
             
           if (updateError) throw updateError;
         } else {
-          // CREATE new transaction (existing behavior)
           await supabase.from('wormhole_transactions').insert({
             user_id: user?.id || null,
             from_chain: transactionDetails.fromChain,
@@ -252,14 +367,12 @@ const WormholeConnectWidget = () => {
         
         console.log('✅ Transaction saved to database');
         
-        // Emit completion event for yield deposit flow
         window.dispatchEvent(new CustomEvent('wormhole-transfer-complete', {
           detail: { ...txData, claimId }
         }));
       } catch (error) {
         console.error('❌ Error saving transaction:', error);
         
-        // Save to localStorage as fallback
         const pending = JSON.parse(localStorage.getItem('pending_wormhole_txs') || '[]');
         pending.push({
           hash: txHash,
@@ -588,6 +701,27 @@ const WormholeConnectWidget = () => {
             </div>
           </CollapsibleContent>
         </Collapsible>
+
+        {/* Debug Panel */}
+        {debugMode && capturedEvents.length > 0 && (
+          <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+              🐛 Debug: Captured Events ({capturedEvents.length})
+            </h3>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {capturedEvents.map((evt, idx) => (
+                <details key={idx} className="text-xs bg-white dark:bg-gray-800 p-2 rounded">
+                  <summary className="cursor-pointer font-mono">
+                    {evt.type} - {new Date(evt.timestamp).toLocaleTimeString()}
+                  </summary>
+                  <pre className="mt-2 overflow-x-auto text-[10px]">
+                    {JSON.stringify(evt.detail, null, 2)}
+                  </pre>
+                </details>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Powered By Footer */}
         <div className="mt-4 text-center text-xs text-muted-foreground">

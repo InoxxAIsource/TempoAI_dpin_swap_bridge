@@ -7,12 +7,14 @@ import ClaimableTransferCard from '@/components/claim/ClaimableTransferCard';
 import EmptyClaimState from '@/components/claim/EmptyClaimState';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWalletContext } from '@/contexts/WalletContext';
 import WalletModal from '@/components/WalletModal';
-import { Wallet, Sprout } from 'lucide-react';
+import ManualTransactionImport from '@/components/claim/ManualTransactionImport';
+import { Wallet, Sprout, Plus } from 'lucide-react';
 
 interface ClaimableTransfer {
   id: string;
@@ -35,6 +37,7 @@ const Claim = () => {
   const [transfers, setTransfers] = useState<ClaimableTransfer[]>([]);
   const [loading, setLoading] = useState(true);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const { toast } = useToast();
   const { evmAddress, solanaAddress, isAnyWalletConnected } = useWalletContext();
   const currentWallet = evmAddress || solanaAddress;
@@ -113,6 +116,25 @@ const Claim = () => {
       <ClaimFlowDiagram />
       
       <ClaimGuideSection />
+      
+      {isAnyWalletConnected && (
+        <section className="px-4 md:px-6 lg:px-12 py-6">
+          <div className="max-w-6xl mx-auto">
+            <Button
+              variant="outline"
+              onClick={() => setShowImportDialog(!showImportDialog)}
+              className="mb-4"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {showImportDialog ? 'Hide Import' : 'Import Missing Transaction'}
+            </Button>
+            
+            {showImportDialog && (
+              <ManualTransactionImport onImportSuccess={fetchClaimableTransfers} />
+            )}
+          </div>
+        </section>
+      )}
       
       <section className="px-4 md:px-6 lg:px-12 py-12 md:py-16 bg-secondary/30">
         <div className="max-w-6xl mx-auto">
