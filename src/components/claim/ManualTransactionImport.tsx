@@ -28,21 +28,27 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
     return ethRegex.test(hash);
   };
 
-  const fetchEtherscanData = async (hash: string, isTestnet: boolean) => {
-    const apiUrl = isTestnet 
-      ? 'https://api-sepolia.etherscan.io/api'
-      : 'https://api.etherscan.io/api';
+  const fetchAlchemyTransactionData = async (hash: string, isTestnet: boolean) => {
+    const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
+    const alchemyUrl = isTestnet
+      ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
+      : `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}`;
     
-    const apiKey = 'YourApiKeyToken';
-    
-    const response = await fetch(
-      `${apiUrl}?module=proxy&action=eth_getTransactionByHash&txhash=${hash}&apikey=${apiKey}`
-    );
+    const response = await fetch(alchemyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_getTransactionByHash',
+        params: [hash]
+      })
+    });
     
     const data = await response.json();
     
     if (!data.result) {
-      throw new Error('Transaction not found on Etherscan');
+      throw new Error('Transaction not found via Alchemy');
     }
     
     return data.result;
@@ -104,7 +110,7 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
         return;
       }
 
-      const ethData = await fetchEtherscanData(cleanHash, isTestnet);
+      const ethData = await fetchAlchemyTransactionData(cleanHash, isTestnet);
       
       // Verify this is a Wormhole/CCTP transaction
       if (!checkIsWormholeTransaction(ethData, isTestnet)) {
@@ -241,7 +247,7 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
 
         <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
           <p className="text-xs text-blue-900 dark:text-blue-100">
-            <strong>💡 Tip:</strong> You can find your transaction hash on Etherscan. 
+            <strong>💡 Tip:</strong> You can find your transaction hash on block explorers like Etherscan. 
             The system automatically detects Wormhole Core Bridge, TokenBridge, and CCTP (Circle) transactions.
           </p>
         </div>

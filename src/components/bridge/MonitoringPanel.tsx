@@ -34,17 +34,17 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
       try {
         setLastPollTime(new Date());
         
-        // Use Etherscan API to get recent Wormhole/CCTP transactions
+        // Use Alchemy API to get recent Wormhole/CCTP transactions
         const recentTxs = await pollRecentTransactions(
           evmAddress,
           networkMode,
           lastCheckedTimestamp
         );
         
-        console.log(`📡 Etherscan Poll result: ${recentTxs.length} new Wormhole/CCTP transactions`);
+        console.log(`📡 Alchemy Poll result: ${recentTxs.length} new Wormhole/CCTP transactions`);
         
         for (const tx of recentTxs) {
-          console.log('✅ Found transaction via Etherscan:', tx.hash);
+          console.log('✅ Found transaction via Alchemy:', tx.hash);
           
           // Check if already in database
           const { data: existing } = await supabase
