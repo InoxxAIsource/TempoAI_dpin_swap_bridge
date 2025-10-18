@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { pollRecentTransactions } from '@/utils/etherscanPoller';
+import { monitorWalletTransactions } from '@/utils/web3TransactionMonitor';
 import { ExternalLink } from 'lucide-react';
 
 interface MonitoringPanelProps {
@@ -33,13 +33,13 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
       try {
         setLastPollTime(new Date());
         
-        const recentTxs = await pollRecentTransactions(
+        const recentTxs = await monitorWalletTransactions(
           evmAddress,
           networkMode,
           lastCheckedTimestamp
         );
         
-        console.log(`📡 Poll result: ${recentTxs.length} new Wormhole transactions`);
+        console.log(`📡 Web3 Poll result: ${recentTxs.length} new Wormhole transactions`);
         
         for (const tx of recentTxs) {
           console.log('✅ Found transaction via polling:', tx.hash);
