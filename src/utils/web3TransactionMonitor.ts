@@ -3,8 +3,8 @@ import { mainnet, sepolia } from 'viem/chains';
 
 // Wormhole Token Bridge contract addresses
 const WORMHOLE_CONTRACTS = {
-  mainnet: '0x3ee18B2214AFF97000D974cf647E7C347E8fa585',
-  sepolia: '0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78'
+  mainnet: '0x3ee18B2214AFF97000D974cf647E7C347E8fa585' as `0x${string}`,
+  sepolia: '0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78' as `0x${string}`
 };
 
 // Wormhole LogMessagePublished event ABI
@@ -35,73 +35,69 @@ export async function monitorWalletTransactions(
   fromTimestamp: number
 ): Promise<WormholeTransaction[]> {
   try {
-    const chain = networkMode === 'Testnet' ? sepolia : mainnet;
-    const wormholeContract = networkMode === 'Testnet' 
+    console.log(`🔍 Scanning blocks for wallet ${walletAddress}`);
+    
+    const client = createPublicClient({
+      chain: networkMode === 'Testnet' ? sepolia : mainnet,
+      transport: http(networkMode === 'Testnet' ? sepolia.rpcUrls.default.http[0] : mainnet.rpcUrls.default.http[0]),
+    });
+    
+    const contractAddress = networkMode === 'Testnet' 
       ? WORMHOLE_CONTRACTS.sepolia 
       : WORMHOLE_CONTRACTS.mainnet;
 
-    // Create public client with free public RPC
-    const client = createPublicClient({
-      chain,
-      transport: http(chain.rpcUrls.default.http[0])
-    });
-
-    // Get current block
-    const currentBlock = await client.getBlockNumber();
+    const latestBlock = await client.getBlockNumber();
+    const fromBlock = latestBlock - BigInt(500);
     
-    // Calculate from block (approximately 2 hours ago, ~500 blocks)
-    const fromBlock = currentBlock - 500n;
-
-    console.log(`🔍 Scanning blocks ${fromBlock} to ${currentBlock} for wallet ${walletAddress}`);
-
-    // Get logs from Wormhole contract for LogMessagePublished events
-    // Filter by sender on-chain for better performance
+    console.log(`🔍 Scanning blocks ${fromBlock} to ${latestBlock} for wallet ${walletAddress}`);
+    
+    // Get ALL LogMessagePublished events (no sender filter)
     const logs = await client.getContractEvents({
-      address: wormholeContract as `0x${string}`,
+      address: contractAddress,
       abi: WORMHOLE_EVENT_ABI,
       eventName: 'LogMessagePublished',
-      args: {
-        sender: walletAddress as `0x${string}`
-      },
       fromBlock,
-      toBlock: currentBlock,
+      toBlock: latestBlock,
     });
-
+    
     console.log(`📋 Found ${logs.length} total Wormhole logs`);
-
-    // Filter and process logs to find transactions from our wallet
-    const transactions: WormholeTransaction[] = [];
+    
+    // Now filter by checking if transaction sender is our wallet
+    const wormholeTxs: WormholeTransaction[] = [];
     
     for (const log of logs) {
       try {
-        // Check if sender matches our wallet
-        const sender = log.args.sender as string;
-        if (sender.toLowerCase() === walletAddress.toLowerCase()) {
-          const tx = await client.getTransaction({ hash: log.transactionHash });
-          const block = await client.getBlock({ blockNumber: log.blockNumber });
-
-          // Only include transactions after the fromTimestamp
-          if (Number(block.timestamp) * 1000 >= fromTimestamp) {
-            transactions.push({
-              hash: log.transactionHash,
-              blockNumber: Number(log.blockNumber),
-              timestamp: Number(block.timestamp),
-              from: tx.from,
-              to: tx.to || '',
-              value: tx.value.toString(),
-            });
-          }
+        // Get the full transaction details
+        const tx = await client.getTransaction({
+          hash: log.transactionHash!,
+        });
+        
+        // Check if the transaction is FROM our wallet
+        if (tx.from.toLowerCase() === walletAddress.toLowerCase()) {
+          const block = await client.getBlock({ blockNumber: log.blockNumber! });
+          
+          wormholeTxs.push({
+            hash: log.transactionHash!,
+            blockNumber: Number(log.blockNumber),
+            timestamp: Number(block.timestamp) * 1000,
+            from: tx.from,
+            to: tx.to || '0x0',
+            value: tx.value.toString(),
+          });
         }
       } catch (error) {
-        console.error(`Failed to get transaction details:`, error);
-        continue;
+        console.error(`Error processing log:`, error);
       }
     }
-
-    console.log(`✅ Found ${transactions.length} Wormhole transactions from wallet`);
-    return transactions;
+    
+    console.log(`✅ Found ${wormholeTxs.length} Wormhole transactions from wallet`);
+    
+    // Filter by timestamp
+    const filteredTxs = wormholeTxs.filter(tx => tx.timestamp > fromTimestamp);
+    
+    return filteredTxs;
   } catch (error) {
-    console.error('Web3 monitoring error:', error);
+    console.error('❌ Error monitoring wallet transactions:', error);
     return [];
   }
 }

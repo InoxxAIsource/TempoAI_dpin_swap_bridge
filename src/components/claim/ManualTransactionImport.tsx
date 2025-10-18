@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useWalletContext } from '@/contexts/WalletContext';
+import { checkWormholeTxStatus } from '@/utils/wormholeScanAPI';
 
 interface ManualTransactionImportProps {
   onImportSuccess?: () => void;
@@ -47,21 +48,22 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
     return data.result;
   };
 
-  const fetchWormholeScanData = async (hash: string) => {
-    try {
-      const response = await fetch(`https://api.wormholescan.io/api/v1/transactions/${hash}`);
-      
-      if (!response.ok) {
-        console.log('Transaction not found on WormholeScan, using Etherscan data only');
-        return null;
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('WormholeScan fetch error:', error);
-      return null;
-    }
+  const checkIsWormholeTransaction = (ethData: any, isTestnet: boolean): boolean => {
+    // Check if transaction interacts with any known Wormhole/CCTP contract
+    const wormholeContracts = isTestnet
+      ? [
+          '0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78'.toLowerCase(), // Wormhole Core
+          '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'.toLowerCase(), // CCTP TokenMessenger
+          '0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275'.toLowerCase(), // CCTP MessageTransmitter
+        ]
+      : [
+          '0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B'.toLowerCase(), // Wormhole Core
+          '0x3ee18B2214AFF97000D974cf647E7C347E8fa585'.toLowerCase(), // TokenBridge
+          '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'.toLowerCase(), // CCTP TokenMessenger
+          '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64'.toLowerCase(), // CCTP MessageTransmitter
+        ];
+    
+    return wormholeContracts.includes(ethData.to?.toLowerCase());
   };
 
   const handleImport = async () => {
@@ -103,19 +105,28 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
       }
 
       const ethData = await fetchEtherscanData(cleanHash, isTestnet);
-      const wormholeData = await fetchWormholeScanData(cleanHash);
-
+      
+      // Verify this is a Wormhole/CCTP transaction
+      if (!checkIsWormholeTransaction(ethData, isTestnet)) {
+        setResult({
+          success: false,
+          message: 'This transaction does not interact with Wormhole or CCTP contracts',
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Query WormholeScan API for cross-chain transfer status
+      const wormholeStatus = await checkWormholeTxStatus(cleanHash, network);
+      
       const fromChain = isTestnet ? 'Sepolia' : 'Ethereum';
-      const toChain = wormholeData?.data?.payload?.targetChain || 'Solana';
+      const toChain = 'Solana'; // Default, WormholeScan will update if different
       const token = 'USDC';
       const amount = 0;
-
-      const { data: { user } } = await supabase.auth.getUser();
 
       const { error: insertError } = await supabase
         .from('wormhole_transactions')
         .insert({
-          user_id: user?.id || null,
           wallet_address: walletAddress.toLowerCase(),
           tx_hash: cleanHash,
           from_chain: fromChain,
@@ -123,10 +134,10 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
           from_token: token,
           to_token: token,
           amount: amount,
-          status: 'pending',
-          wormhole_vaa: wormholeData?.data?.vaa?.raw || null,
-          needs_redemption: wormholeData?.data?.payload?.payloadType === 3 || false,
-        });
+          status: wormholeStatus.status || 'pending',
+          wormhole_vaa: wormholeStatus.vaa || null,
+          needs_redemption: wormholeStatus.needsRedemption || false,
+        } as any);
 
       if (insertError) throw insertError;
 
@@ -168,7 +179,7 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
       <CardHeader>
         <CardTitle>Import Missing Transaction</CardTitle>
         <CardDescription>
-          Paste your Ethereum transaction hash to manually import a bridge transaction
+          Paste your Ethereum transaction hash to manually import a Wormhole or CCTP bridge transaction
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -231,7 +242,7 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
         <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
           <p className="text-xs text-blue-900 dark:text-blue-100">
             <strong>💡 Tip:</strong> You can find your transaction hash on Etherscan. 
-            Look for transactions sent to the Wormhole contract address.
+            The system automatically detects Wormhole Core Bridge, TokenBridge, and CCTP (Circle) transactions.
           </p>
         </div>
       </CardContent>

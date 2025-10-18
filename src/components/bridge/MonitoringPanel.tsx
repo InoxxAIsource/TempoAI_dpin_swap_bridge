@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { monitorWalletTransactions } from '@/utils/web3TransactionMonitor';
+import { pollRecentTransactions } from '@/utils/etherscanPoller';
 import { checkWormholeTxStatus } from '@/utils/wormholeScanAPI';
 import { ExternalLink } from 'lucide-react';
 
@@ -34,16 +34,29 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
       try {
         setLastPollTime(new Date());
         
-        const recentTxs = await monitorWalletTransactions(
+        // Use Etherscan API to get recent Wormhole/CCTP transactions
+        const recentTxs = await pollRecentTransactions(
           evmAddress,
           networkMode,
           lastCheckedTimestamp
         );
         
-        console.log(`📡 Web3 Poll result: ${recentTxs.length} new Wormhole transactions`);
+        console.log(`📡 Etherscan Poll result: ${recentTxs.length} new Wormhole/CCTP transactions`);
         
         for (const tx of recentTxs) {
-          console.log('✅ Found transaction via polling:', tx.hash);
+          console.log('✅ Found transaction via Etherscan:', tx.hash);
+          
+          // Check if already in database
+          const { data: existing } = await supabase
+            .from('wormhole_transactions')
+            .select('id')
+            .eq('tx_hash', tx.hash)
+            .single();
+          
+          if (existing) {
+            console.log('⏭️ Transaction already tracked, skipping');
+            continue;
+          }
           
           const txDetails = {
             hash: tx.hash,
@@ -109,7 +122,7 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
       } catch (error) {
         console.error('❌ Polling error:', error);
       }
-    }, 5000);
+    }, 10000); // Poll every 10 seconds instead of 5
     
     const countdownInterval = setInterval(() => {
       const elapsed = Date.now() - monitoringStartTime;
