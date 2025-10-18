@@ -28,6 +28,8 @@ export const useCoinGeckoProxy = () => {
         try {
           // Extract token IDs from different CoinGecko endpoints
           let tokenIds: string[] = [];
+          let isTokenPriceEndpoint = false;
+          const addressToTokenMap = new Map<string, string>();
           
           // Handle /simple/price endpoint
           if (url.includes('/simple/price')) {
@@ -40,6 +42,7 @@ export const useCoinGeckoProxy = () => {
           
           // Handle /simple/token_price endpoint  
           if (url.includes('/simple/token_price')) {
+            isTokenPriceEndpoint = true;
             const urlObj = new URL(url);
             const addresses = urlObj.searchParams.get('contract_addresses');
             if (addresses) {
@@ -51,9 +54,12 @@ export const useCoinGeckoProxy = () => {
                 '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599': 'wrapped-bitcoin',
               };
               
-              tokenIds = addresses.split(',').map(addr => 
-                addressMap[addr.toLowerCase()] || 'ethereum'
-              );
+              addresses.split(',').forEach(addr => {
+                const normalized = addr.toLowerCase();
+                const tokenId = addressMap[normalized] || 'ethereum';
+                tokenIds.push(tokenId);
+                addressToTokenMap.set(tokenId, normalized);
+              });
             }
           }
 
@@ -83,8 +89,23 @@ export const useCoinGeckoProxy = () => {
 
           console.log('✅ Proxied CoinGecko response:', data);
 
+          // Transform response for /simple/token_price endpoint
+          // CoinGecko returns: { "weth": { "usd": 3500 } }
+          // Wormhole expects: { "0xc02...": { "usd": 3500 } }
+          let responseData = data;
+          if (isTokenPriceEndpoint && addressToTokenMap.size > 0) {
+            responseData = {};
+            for (const [tokenId, priceData] of Object.entries(data)) {
+              const originalAddress = addressToTokenMap.get(tokenId);
+              if (originalAddress) {
+                responseData[originalAddress] = priceData;
+              }
+            }
+            console.log('🔄 Transformed response to address-keyed format:', responseData);
+          }
+
           // Return a Response object that mimics CoinGecko's response
-          return new Response(JSON.stringify(data), {
+          return new Response(JSON.stringify(responseData), {
             status: 200,
             statusText: 'OK',
             headers: {
