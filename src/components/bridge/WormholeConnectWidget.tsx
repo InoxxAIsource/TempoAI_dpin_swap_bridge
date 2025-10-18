@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, memo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import WormholeConnect, { type config, WormholeConnectTheme } from '@wormhole-foundation/wormhole-connect';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCoinGeckoProxy } from '@/hooks/useCoinGeckoProxy';
 import { TransactionSuccessModal } from './TransactionSuccessModal';
-import { pollRecentTransactions } from '@/utils/etherscanPoller';
 
 // Import Helius API key from environment (securely stored via Lovable Cloud)
 const HELIUS_API_KEY = import.meta.env.VITE_HELIUS_API_KEY || '';
@@ -31,12 +30,8 @@ const WormholeConnectWidget = () => {
     amount: number;
     network: 'Mainnet' | 'Testnet';
   } | null>(null);
-  const [isMonitoring, setIsMonitoring] = useState(false);
-  const [lastCheckedTimestamp, setLastCheckedTimestamp] = useState(0);
   const [capturedEvents, setCapturedEvents] = useState<any[]>([]);
-  const [debugMode, setDebugMode] = useState(true); // Force enabled for debugging
-  const [lastPollTime, setLastPollTime] = useState<Date | null>(null);
-  const [monitoringTimeRemaining, setMonitoringTimeRemaining] = useState(0);
+  const [debugMode, setDebugMode] = useState(false);
   
   // 🎣 Install CoinGecko proxy to bypass CORS
   useCoinGeckoProxy();
@@ -136,117 +131,6 @@ const WormholeConnectWidget = () => {
     checkPendingTransactions();
   }, []);
 
-  // Monitor widget interactions to detect bridge initiation
-  useEffect(() => {
-    const widgetContainer = document.querySelector('#wormhole-widget');
-    if (!widgetContainer) return;
-    
-    const handleClick = (e: Event) => {
-      const target = e.target as HTMLElement;
-      const buttonText = target.textContent?.toLowerCase() || '';
-      
-      if (buttonText.includes('transfer') || buttonText.includes('bridge') || buttonText.includes('review')) {
-        console.log('🚀 Bridge initiated - starting monitoring');
-        setIsMonitoring(true);
-        setLastCheckedTimestamp(Date.now());
-      }
-    };
-    
-    widgetContainer.addEventListener('click', handleClick, true);
-    return () => widgetContainer.removeEventListener('click', handleClick, true);
-  }, [widgetKey]);
-
-  // Active polling when monitoring is enabled
-  useEffect(() => {
-    if (!isMonitoring || !evmAddress) return;
-    
-    console.log('🔄 Starting active polling for wallet:', evmAddress);
-    const monitoringStartTime = Date.now();
-    const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-    
-    // Update last poll time immediately
-    setLastPollTime(new Date());
-    
-    const pollInterval = setInterval(async () => {
-      try {
-        setLastPollTime(new Date());
-        
-        const recentTxs = await pollRecentTransactions(
-          evmAddress,
-          networkMode,
-          lastCheckedTimestamp
-        );
-        
-        console.log(`📡 Poll result: ${recentTxs.length} new Wormhole transactions`);
-        
-        for (const tx of recentTxs) {
-          console.log('✅ Found transaction via polling:', tx.hash);
-          
-          setTxDetails({
-            hash: tx.hash,
-            fromChain: networkMode === 'Testnet' ? 'Sepolia' : 'Ethereum',
-            toChain: 'Solana',
-            token: 'USDC',
-            amount: 0,
-            network: networkMode,
-          });
-          setShowSuccessModal(true);
-          
-          const { data: { user } } = await supabase.auth.getUser();
-          await supabase.from('wormhole_transactions').insert({
-            user_id: user?.id || null,
-            wallet_address: evmAddress.toLowerCase(),
-            tx_hash: tx.hash,
-            from_chain: networkMode === 'Testnet' ? 'Sepolia' : 'Ethereum',
-            to_chain: 'Solana',
-            from_token: 'USDC',
-            to_token: 'USDC',
-            amount: 0,
-            status: 'pending',
-          });
-          
-          toast({
-            title: "✅ Transaction Detected!",
-            description: (
-              <a 
-                href={`https://wormholescan.io/#/tx/${tx.hash}?network=${networkMode}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                Track on WormholeScan →
-              </a>
-            ) as any,
-          });
-        }
-        
-        setLastCheckedTimestamp(Date.now());
-        
-        if (recentTxs.length > 0) {
-          setIsMonitoring(false);
-        }
-      } catch (error) {
-        console.error('❌ Polling error:', error);
-      }
-    }, 5000); // Poll every 5 seconds (increased frequency)
-    
-    // Update remaining time countdown
-    const countdownInterval = setInterval(() => {
-      const elapsed = Date.now() - monitoringStartTime;
-      const remaining = Math.max(0, TIMEOUT_MS - elapsed);
-      setMonitoringTimeRemaining(Math.floor(remaining / 1000));
-      
-      if (remaining <= 0) {
-        console.log('⏰ Stopping polling - 30 minute timeout');
-        setIsMonitoring(false);
-      }
-    }, 1000);
-    
-    return () => {
-      clearInterval(pollInterval);
-      clearInterval(countdownInterval);
-    };
-  }, [isMonitoring, evmAddress, lastCheckedTimestamp, networkMode]);
 
   useEffect(() => {
     // Listen for ALL possible Wormhole transaction events
@@ -323,7 +207,6 @@ const WormholeConnectWidget = () => {
       
       setTxDetails(transactionDetails);
       setShowSuccessModal(true);
-      setIsMonitoring(false);
       
       const wormholeScanUrl = `https://wormholescan.io/#/tx/${txHash}?network=${networkMode}`;
       
@@ -610,7 +493,7 @@ const WormholeConnectWidget = () => {
     });
     
     return baseConfig;
-  }, [networkMode, defaultAmount, defaultFromChain, defaultToChain, defaultToken]);
+  }, [networkMode, defaultAmount, defaultFromChain, defaultToChain, defaultToken, claimId]);
 
   return (
     <ThemeProvider theme={muiTheme}>
@@ -624,97 +507,15 @@ const WormholeConnectWidget = () => {
       />
       
       <div className="w-full max-w-2xl mx-auto">
-        {/* Monitoring Control Panel */}
-        <div className="mb-4 p-4 border border-border rounded-xl bg-card space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm">Transaction Monitoring</h3>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setDebugMode(!debugMode)}
-            >
-              {debugMode ? '🐛 Debug ON' : '🐛 Debug OFF'}
-            </Button>
-          </div>
-          
-          {/* Status Display */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
-              <span className={`w-2 h-2 rounded-full ${isMonitoring ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></span>
-              <span className="font-medium">Status:</span>
-              <span className={isMonitoring ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
-                {isMonitoring ? 'Monitoring Active ✅' : 'Inactive ⏸️'}
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
-              <span className="font-medium">Wallet:</span>
-              <span className="font-mono text-[10px] truncate">
-                {evmAddress ? `${evmAddress.slice(0, 6)}...${evmAddress.slice(-4)}` : 'Not connected'}
-              </span>
-            </div>
-            
-            {lastPollTime && (
-              <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
-                <span className="font-medium">Last Check:</span>
-                <span>{Math.floor((Date.now() - lastPollTime.getTime()) / 1000)}s ago</span>
-              </div>
-            )}
-            
-            {isMonitoring && monitoringTimeRemaining > 0 && (
-              <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
-                <span className="font-medium">Time Remaining:</span>
-                <span>{Math.floor(monitoringTimeRemaining / 60)}:{String(monitoringTimeRemaining % 60).padStart(2, '0')}</span>
-              </div>
-            )}
-          </div>
-          
-          {/* Manual Control Buttons */}
-          <div className="flex gap-2">
-            <Button
-              onClick={() => {
-                if (!evmAddress) {
-                  toast({
-                    title: "⚠️ Wallet Not Connected",
-                    description: "Connect your wallet first to start monitoring.",
-                    variant: "destructive"
-                  });
-                  return;
-                }
-                setIsMonitoring(true);
-                setLastCheckedTimestamp(Date.now());
-                toast({
-                  title: "✅ Monitoring Started",
-                  description: "Now polling for transactions. Bridge your assets!",
-                });
-              }}
-              disabled={isMonitoring || !evmAddress}
-              className="flex-1"
-              size="sm"
-            >
-              🔍 Start Monitoring
-            </Button>
-            
-            <Button
-              onClick={() => {
-                setIsMonitoring(false);
-                toast({
-                  title: "⏸️ Monitoring Stopped",
-                  description: "Transaction monitoring paused.",
-                });
-              }}
-              disabled={!isMonitoring}
-              variant="outline"
-              className="flex-1"
-              size="sm"
-            >
-              ⏸️ Stop Monitoring
-            </Button>
-          </div>
-          
-          <p className="text-xs text-muted-foreground">
-            💡 Tip: Click "Start Monitoring" before bridging to ensure your transaction is captured automatically.
-          </p>
+        {/* Debug Mode Toggle */}
+        <div className="mb-4 flex justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setDebugMode(!debugMode)}
+          >
+            {debugMode ? '🐛 Debug ON' : '🐛 Debug OFF'}
+          </Button>
         </div>
         
         {/* Network Mode Toggle */}
@@ -748,7 +549,7 @@ const WormholeConnectWidget = () => {
         {/* Wormhole Connect Widget */}
         <div className="mb-4 border border-border rounded-2xl overflow-hidden bg-card shadow-lg">
           <WormholeConnect 
-            key={`${networkMode.toLowerCase()}-bridge-${widgetKey}-${Date.now()}`}
+            key={`${networkMode.toLowerCase()}-bridge-${widgetKey}`}
             config={wormholeConfig}
             theme={customWormholeTheme}
           />
@@ -850,8 +651,7 @@ const WormholeConnectWidget = () => {
             
             <div className="mt-3 pt-3 border-t border-yellow-300 dark:border-yellow-700">
               <p className="text-xs text-yellow-800 dark:text-yellow-200">
-                <strong>Debug Info:</strong> Monitoring={isMonitoring ? 'ON' : 'OFF'} • 
-                Wallet={evmAddress ? 'Connected' : 'Disconnected'} • 
+                <strong>Debug Info:</strong> Wallet={evmAddress ? 'Connected' : 'Disconnected'} • 
                 Listening to: wormhole-transfer, wormhole-transfer-complete, wormhole-transaction
               </p>
             </div>
