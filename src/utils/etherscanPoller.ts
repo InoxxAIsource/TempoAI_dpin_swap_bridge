@@ -28,45 +28,74 @@ export async function pollRecentTransactions(
   network: 'Mainnet' | 'Testnet',
   sinceTimestamp: number
 ): Promise<EtherscanTransaction[]> {
-  const apiKey = 'YourApiKeyToken';
+  const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
   const isTestnet = network === 'Testnet';
-  const apiUrl = isTestnet 
-    ? 'https://api-sepolia.etherscan.io/api'
-    : 'https://api.etherscan.io/api';
+  const alchemyUrl = isTestnet
+    ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
+    : `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}`;
   
   const wormholeContracts = WORMHOLE_CONTRACT_ADDRESSES[isTestnet ? 'Sepolia' : 'Mainnet'];
   
   try {
-    console.log(`🔍 Querying Etherscan for transactions from ${walletAddress}`);
-    const response = await fetch(
-      `${apiUrl}?module=account&action=txlist&address=${walletAddress}&startblock=0&endblock=99999999&sort=desc&apikey=${apiKey}`
-    );
+    console.log(`🔍 Querying Alchemy for transactions from ${walletAddress}`);
+    
+    // Use Alchemy's getAssetTransfers to get all transactions
+    const response = await fetch(alchemyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'alchemy_getAssetTransfers',
+        params: [{
+          fromAddress: walletAddress,
+          fromBlock: '0x0',
+          toBlock: 'latest',
+          category: ['external', 'erc20', 'erc721', 'erc1155'],
+          withMetadata: true,
+          excludeZeroValue: false,
+          maxCount: '0x3e8' // 1000 transactions max
+        }]
+      })
+    });
     
     const data = await response.json();
     
-    if (data.status !== '1') {
-      console.error('Etherscan API error:', data.message);
+    if (data.error) {
+      console.error('Alchemy API error:', data.error.message);
       return [];
     }
     
-    console.log(`📋 Found ${data.result.length} total transactions`);
+    const transfers = data.result?.transfers || [];
+    console.log(`📋 Found ${transfers.length} total transactions`);
     
     // Filter for transactions interacting with ANY Wormhole/CCTP contract
-    const recentWormholeTxs = data.result.filter((tx: EtherscanTransaction) => {
-      const txTime = parseInt(tx.timeStamp) * 1000;
-      const isRecent = txTime > sinceTimestamp;
-      const isWormholeContract = wormholeContracts.some(
-        (contract) => tx.to?.toLowerCase() === contract
-      );
-      const isFromUser = tx.from?.toLowerCase() === walletAddress.toLowerCase();
-      
-      return isRecent && isWormholeContract && isFromUser;
-    });
+    const recentWormholeTxs = transfers
+      .filter((transfer: any) => {
+        if (!transfer.metadata?.blockTimestamp || !transfer.to) return false;
+        
+        const txTime = new Date(transfer.metadata.blockTimestamp).getTime();
+        const isRecent = txTime > sinceTimestamp;
+        const isWormholeContract = wormholeContracts.some(
+          (contract) => transfer.to?.toLowerCase() === contract
+        );
+        
+        return isRecent && isWormholeContract;
+      })
+      .map((transfer: any) => ({
+        hash: transfer.hash,
+        from: transfer.from,
+        to: transfer.to,
+        value: transfer.value || '0',
+        timeStamp: Math.floor(new Date(transfer.metadata.blockTimestamp).getTime() / 1000).toString(),
+        input: '0x', // Alchemy doesn't return input data in getAssetTransfers
+        blockNumber: parseInt(transfer.blockNum, 16).toString()
+      }));
     
     console.log(`✅ Found ${recentWormholeTxs.length} Wormhole/CCTP transactions`);
     return recentWormholeTxs;
   } catch (error) {
-    console.error('Error polling Etherscan:', error);
+    console.error('Error polling Alchemy:', error);
     return [];
   }
 }
