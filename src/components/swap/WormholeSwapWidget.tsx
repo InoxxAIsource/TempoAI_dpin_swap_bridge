@@ -6,6 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { Button } from '@/components/ui/button';
+import { TransactionSuccessModal } from '@/components/bridge/TransactionSuccessModal';
+import { ExternalLink } from 'lucide-react';
 
 interface WormholeSwapWidgetProps {
   defaultSourceChain?: string;
@@ -22,6 +24,15 @@ export const WormholeSwapWidget = ({
 }: WormholeSwapWidgetProps) => {
   const [widgetKey, setWidgetKey] = useState(0);
   const [networkMode, setNetworkMode] = useState<'Testnet' | 'Mainnet'>('Testnet');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [txDetails, setTxDetails] = useState<{
+    hash: string;
+    fromChain: string;
+    toChain: string;
+    token: string;
+    amount: number;
+    network: 'Mainnet' | 'Testnet';
+  } | null>(null);
   const { theme: appTheme } = useTheme();
   const { toast } = useToast();
   const { evmAddress, solanaAddress } = useWalletContext(); // Only for transaction tracking
@@ -35,47 +46,71 @@ export const WormholeSwapWidget = ({
   // Listen for swap events
   useEffect(() => {
     const handleSwapEvent = async (event: any) => {
-      console.log('Wormhole swap event:', event.detail);
-      
-      try {
+      if (event.detail?.type === 'transfer' && event.detail?.txHash) {
+        const txData = event.detail;
         const walletAddress = (evmAddress || solanaAddress || '').toLowerCase();
         
-        // Save to database
-        const { error } = await supabase.from('cross_chain_swaps').insert({
-          wallet_address: walletAddress,
-          from_chain: event.detail?.fromChain || 'Unknown',
-          to_chain: event.detail?.toChain || 'Unknown',
-          from_token: event.detail?.fromToken || 'Unknown',
-          to_token: event.detail?.toToken || 'Unknown',
-          from_amount: event.detail?.amount || 0,
-          estimated_to_amount: event.detail?.estimatedAmount || 0,
-          route_used: event.detail?.route || {},
-          tx_hash: event.detail?.txHash || null,
-          status: 'pending',
-          network: 'Testnet',
-        });
+        // Store transaction details for modal immediately
+        const transactionDetails = {
+          hash: txData.txHash,
+          fromChain: txData.fromChain || 'Unknown',
+          toChain: txData.toChain || 'Unknown',
+          token: txData.fromToken || 'Unknown',
+          amount: txData.amount || 0,
+          network: networkMode,
+        };
+        
+        setTxDetails(transactionDetails);
+        setShowSuccessModal(true);
+        
+        // Generate WormholeScan URL
+        const wormholeScanUrl = `https://wormholescan.io/#/tx/${txData.txHash}?network=${networkMode}`;
+        
+        try {
+          // Save to database
+          const { error } = await supabase.from('cross_chain_swaps').insert({
+            wallet_address: walletAddress,
+            from_chain: transactionDetails.fromChain,
+            to_chain: transactionDetails.toChain,
+            from_token: transactionDetails.token,
+            to_token: txData.toToken || 'Unknown',
+            from_amount: transactionDetails.amount,
+            estimated_to_amount: txData.estimatedAmount || 0,
+            route_used: txData.route || {},
+            tx_hash: txData.txHash,
+            status: 'pending',
+            network: networkMode,
+          });
 
-        if (error) {
-          console.error('Error saving swap to database:', error);
-          toast({
-            title: "Database Error",
-            description: "Swap initiated but couldn't save to history",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Swap Initiated",
-            description: `Swapping ${event.detail?.fromToken} to ${event.detail?.toToken}`,
-          });
+          if (error) {
+            console.error('Error saving swap to database:', error);
+            toast({
+              title: "⚠️ Swap Tracking Failed",
+              description: (
+                <div className="space-y-2">
+                  <p>Swap initiated but couldn't save to history.</p>
+                  <a 
+                    href={wormholeScanUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Track on WormholeScan <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              ) as any,
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error('Error handling swap event:', error);
         }
-      } catch (error) {
-        console.error('Error handling swap event:', error);
       }
     };
 
     window.addEventListener('wormhole-transfer', handleSwapEvent);
     return () => window.removeEventListener('wormhole-transfer', handleSwapEvent);
-  }, [evmAddress, solanaAddress, toast]);
+  }, [evmAddress, solanaAddress, toast, networkMode]);
 
   // Portal Bridge CSS overrides
   const portalStyleOverrides = `
@@ -218,6 +253,14 @@ export const WormholeSwapWidget = ({
   return (
     <ThemeProvider theme={muiTheme}>
       <style dangerouslySetInnerHTML={{ __html: portalStyleOverrides }} />
+      
+      {/* Transaction Success Modal */}
+      <TransactionSuccessModal
+        open={showSuccessModal}
+        onOpenChange={setShowSuccessModal}
+        transaction={txDetails}
+      />
+      
       <div className="space-y-4">
         {/* Network Mode Toggle */}
         <div className="mb-4 flex items-center justify-center gap-2">

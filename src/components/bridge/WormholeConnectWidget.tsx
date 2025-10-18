@@ -10,6 +10,7 @@ import { HelpCircle, ChevronDown, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCoinGeckoProxy } from '@/hooks/useCoinGeckoProxy';
+import { TransactionSuccessModal } from './TransactionSuccessModal';
 
 // Import Helius API key from environment (securely stored via Lovable Cloud)
 const HELIUS_API_KEY = import.meta.env.VITE_HELIUS_API_KEY || '';
@@ -20,6 +21,15 @@ const WormholeConnectWidget = () => {
   const [searchParams] = useSearchParams();
   const [widgetKey, setWidgetKey] = useState(0);
   const [networkMode, setNetworkMode] = useState<'Testnet' | 'Mainnet'>('Testnet');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [txDetails, setTxDetails] = useState<{
+    hash: string;
+    fromChain: string;
+    toChain: string;
+    token: string;
+    amount: number;
+    network: 'Mainnet' | 'Testnet';
+  } | null>(null);
   
   // 🎣 Install CoinGecko proxy to bypass CORS
   useCoinGeckoProxy();
@@ -103,16 +113,48 @@ const WormholeConnectWidget = () => {
     // Listen for Wormhole transaction events
     const handleWormholeEvent = async (event: any) => {
       if (event.detail?.type === 'transfer' && event.detail?.txHash) {
+        const txData = event.detail;
+        const walletAddress = (evmAddress || solanaAddress || '').toLowerCase();
+        
+        // Store transaction details for modal immediately
+        const transactionDetails = {
+          hash: txData.txHash,
+          fromChain: txData.fromChain || 'Unknown',
+          toChain: txData.toChain || 'Unknown',
+          token: txData.token || 'Unknown',
+          amount: txData.amount || 0,
+          network: networkMode,
+        };
+        
+        setTxDetails(transactionDetails);
+        setShowSuccessModal(true);
+        
+        // Generate WormholeScan URL for clickable toast
+        const wormholeScanUrl = `https://wormholescan.io/#/tx/${txData.txHash}?network=${networkMode}`;
+        
         try {
-          const walletAddress = (evmAddress || solanaAddress || '').toLowerCase();
-          
           if (!walletAddress) {
             console.error('No wallet connected');
+            toast({
+              title: "⚠️ Transaction Sent",
+              description: (
+                <div className="space-y-2">
+                  <p>Transaction submitted but wallet not detected.</p>
+                  <a 
+                    href={wormholeScanUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Track on WormholeScan <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              ) as any,
+            });
             return;
           }
           
           const { data: { user } } = await supabase.auth.getUser();
-          const txData = event.detail;
           
           // CHECK: Is this a DePIN claim flow?
           if (claimId) {
@@ -131,29 +173,19 @@ const WormholeConnectWidget = () => {
               .limit(1);
               
             if (updateError) throw updateError;
-            
-            toast({
-              title: "🌱 DePIN Claim Transaction Submitted",
-              description: "Your rewards are being bridged. Check Claims page to track progress.",
-            });
           } else {
             // CREATE new transaction (existing behavior)
             await supabase.from('wormhole_transactions').insert({
               user_id: user?.id || null,
-              from_chain: txData.fromChain || 'Unknown',
-              to_chain: txData.toChain || 'Unknown',
-              from_token: txData.token || 'Unknown',
-              to_token: txData.token || 'Unknown',
-              amount: txData.amount || 0,
+              from_chain: transactionDetails.fromChain,
+              to_chain: transactionDetails.toChain,
+              from_token: transactionDetails.token,
+              to_token: transactionDetails.token,
+              amount: transactionDetails.amount,
               tx_hash: txData.txHash,
               status: 'pending',
               wormhole_vaa: txData.vaa || null,
               wallet_address: walletAddress,
-            });
-
-            toast({
-              title: "Transaction Submitted",
-              description: "Your bridge transaction is being tracked. Check the Claims page to monitor progress.",
             });
           }
           
@@ -164,8 +196,20 @@ const WormholeConnectWidget = () => {
         } catch (error) {
           console.error('Error saving transaction:', error);
           toast({
-            title: "Error",
-            description: "Failed to save transaction. Please note your transaction hash.",
+            title: "⚠️ Transaction Tracking Failed",
+            description: (
+              <div className="space-y-2">
+                <p>Transaction sent but couldn't save to history.</p>
+                <a 
+                  href={wormholeScanUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  Track on WormholeScan <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            ) as any,
             variant: "destructive"
           });
         }
@@ -177,7 +221,7 @@ const WormholeConnectWidget = () => {
     return () => {
       window.removeEventListener('wormhole-transfer', handleWormholeEvent as EventListener);
     };
-  }, [evmAddress, solanaAddress, claimId]);
+  }, [evmAddress, solanaAddress, claimId, networkMode]);
 
   // Create a proper MUI theme
   const muiTheme = useMemo(() => createTheme({
@@ -353,6 +397,14 @@ const WormholeConnectWidget = () => {
   return (
     <ThemeProvider theme={muiTheme}>
       <style dangerouslySetInnerHTML={{ __html: portalStyleOverrides }} />
+      
+      {/* Transaction Success Modal */}
+      <TransactionSuccessModal
+        open={showSuccessModal}
+        onOpenChange={setShowSuccessModal}
+        transaction={txDetails}
+      />
+      
       <div className="w-full max-w-2xl mx-auto">
         {/* Network Mode Toggle */}
         <div className="mb-4 space-y-2">

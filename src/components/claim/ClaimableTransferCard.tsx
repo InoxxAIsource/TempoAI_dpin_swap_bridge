@@ -177,13 +177,31 @@ const ClaimableTransferCard = ({ transfer, currentWallet, onRefresh }: Claimable
             )}
           </Button>
           
+          {transfer.tx_hash && (
+            <Button
+              onClick={() => {
+                const network = transfer.from_chain.toLowerCase().includes('testnet') || 
+                                transfer.from_chain.toLowerCase().includes('devnet') 
+                  ? 'Testnet' 
+                  : 'Mainnet';
+                const url = `https://wormholescan.io/#/tx/${transfer.tx_hash}?network=${network}`;
+                window.open(url, '_blank');
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              View on WormholeScan
+            </Button>
+          )}
+          
           <Button
             onClick={handleClaimOnWormhole}
             disabled={!transfer.tx_hash}
             className="w-full"
           >
             Claim on WormholeScan
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-4 h-4 ml-2" />
           </Button>
         </div>
       </div>
