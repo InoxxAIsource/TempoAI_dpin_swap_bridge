@@ -51,7 +51,7 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
             .from('wormhole_transactions')
             .select('id')
             .eq('tx_hash', tx.hash)
-            .single();
+            .maybeSingle();
           
           if (existing) {
             console.log('⏭️ Transaction already tracked, skipping');
@@ -73,6 +73,22 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
           const wormholeStatus = await checkWormholeTxStatus(tx.hash, networkMode);
           console.log('🌉 WormholeScan status:', wormholeStatus);
           
+          // Map WormholeScan status to database enum
+          const mapStatusToDbEnum = (scanStatus: string): 'pending' | 'completed' | 'failed' => {
+            switch (scanStatus) {
+              case 'completed':
+                return 'completed';
+              case 'not_found':
+              case 'vaa_generated':
+              case 'redemption_needed':
+              case 'pending':
+              default:
+                return 'pending';
+            }
+          };
+          
+          const dbStatus = mapStatusToDbEnum(wormholeStatus.status || 'pending');
+          
           const { data: { user } } = await supabase.auth.getUser();
           await supabase.from('wormhole_transactions').insert({
             wallet_address: evmAddress.toLowerCase(),
@@ -82,7 +98,7 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
             from_token: 'USDC',
             to_token: 'USDC',
             amount: 0,
-            status: wormholeStatus.status || 'pending',
+            status: dbStatus,
             wormhole_vaa: wormholeStatus.vaa || null,
             needs_redemption: wormholeStatus.needsRedemption || false,
           } as any);

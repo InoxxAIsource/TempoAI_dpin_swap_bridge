@@ -100,7 +100,7 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
         .from('wormhole_transactions')
         .select('id')
         .eq('tx_hash', cleanHash)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         setResult({ 
@@ -126,6 +126,22 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
       // Query WormholeScan API for cross-chain transfer status
       const wormholeStatus = await checkWormholeTxStatus(cleanHash, network);
       
+      // Map WormholeScan status to database enum
+      const mapStatusToDbEnum = (scanStatus: string): 'pending' | 'completed' | 'failed' => {
+        switch (scanStatus) {
+          case 'completed':
+            return 'completed';
+          case 'not_found':
+          case 'vaa_generated':
+          case 'redemption_needed':
+          case 'pending':
+          default:
+            return 'pending';
+        }
+      };
+      
+      const dbStatus = mapStatusToDbEnum(wormholeStatus.status || 'pending');
+      
       const fromChain = isTestnet ? 'Sepolia' : 'Ethereum';
       const toChain = 'Solana'; // Default, WormholeScan will update if different
       const token = 'USDC';
@@ -141,7 +157,7 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
           from_token: token,
           to_token: token,
           amount: amount,
-          status: wormholeStatus.status || 'pending',
+          status: dbStatus,
           wormhole_vaa: wormholeStatus.vaa || null,
           needs_redemption: wormholeStatus.needsRedemption || false,
         } as any);
