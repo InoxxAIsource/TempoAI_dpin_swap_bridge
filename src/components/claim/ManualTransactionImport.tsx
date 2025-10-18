@@ -147,22 +147,40 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
       const token = 'USDC';
       const amount = 0;
 
-      const { error: insertError } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const insertData = {
+        wallet_address: walletAddress.toLowerCase(),
+        tx_hash: cleanHash,
+        from_chain: fromChain,
+        to_chain: toChain,
+        from_token: token,
+        to_token: token,
+        amount: amount,
+        status: dbStatus,
+        wormhole_vaa: wormholeStatus.vaa || null,
+        needs_redemption: wormholeStatus.needsRedemption || false,
+        user_id: user?.id || null,
+      };
+      
+      console.log('💾 Manual import - attempting to insert:', insertData);
+      
+      const { data: insertedData, error: insertError } = await supabase
         .from('wormhole_transactions')
-        .insert({
-          wallet_address: walletAddress.toLowerCase(),
-          tx_hash: cleanHash,
-          from_chain: fromChain,
-          to_chain: toChain,
-          from_token: token,
-          to_token: token,
-          amount: amount,
-          status: dbStatus,
-          wormhole_vaa: wormholeStatus.vaa || null,
-          needs_redemption: wormholeStatus.needsRedemption || false,
-        } as any);
-
-      if (insertError) throw insertError;
+        .insert(insertData)
+        .select();
+      
+      if (insertError) {
+        console.error('❌ Manual import insert failed:', insertError);
+        setResult({ 
+          success: false, 
+          message: `Database error: ${insertError.message}. The transaction was not saved.` 
+        });
+        setLoading(false);
+        return;
+      }
+      
+      console.log('✅ Manual import saved to database:', insertedData);
 
       setResult({ 
         success: true, 

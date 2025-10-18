@@ -90,7 +90,8 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
           const dbStatus = mapStatusToDbEnum(wormholeStatus.status || 'pending');
           
           const { data: { user } } = await supabase.auth.getUser();
-          await supabase.from('wormhole_transactions').insert({
+          
+          const insertData = {
             wallet_address: evmAddress.toLowerCase(),
             tx_hash: tx.hash,
             from_chain: networkMode === 'Testnet' ? 'Sepolia' : 'Ethereum',
@@ -101,7 +102,27 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
             status: dbStatus,
             wormhole_vaa: wormholeStatus.vaa || null,
             needs_redemption: wormholeStatus.needsRedemption || false,
-          } as any);
+            user_id: user?.id || null,
+          };
+          
+          console.log('💾 Attempting to insert transaction:', insertData);
+          
+          const { data: insertedData, error: insertError } = await supabase
+            .from('wormhole_transactions')
+            .insert(insertData)
+            .select();
+          
+          if (insertError) {
+            console.error('❌ Database insert failed:', insertError);
+            toast({
+              title: "Database Error",
+              description: `Failed to save transaction: ${insertError.message}`,
+              variant: "destructive"
+            });
+            continue;
+          }
+          
+          console.log('✅ Transaction saved to database:', insertedData);
           
           // Show appropriate message based on status
           let toastTitle = "✅ Transaction Detected!";
