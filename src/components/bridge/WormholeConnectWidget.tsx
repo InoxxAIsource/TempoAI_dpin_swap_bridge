@@ -34,7 +34,9 @@ const WormholeConnectWidget = () => {
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [lastCheckedTimestamp, setLastCheckedTimestamp] = useState(0);
   const [capturedEvents, setCapturedEvents] = useState<any[]>([]);
-  const [debugMode, setDebugMode] = useState(true);
+  const [debugMode, setDebugMode] = useState(true); // Force enabled for debugging
+  const [lastPollTime, setLastPollTime] = useState<Date | null>(null);
+  const [monitoringTimeRemaining, setMonitoringTimeRemaining] = useState(0);
   
   // 🎣 Install CoinGecko proxy to bypass CORS
   useCoinGeckoProxy();
@@ -159,9 +161,16 @@ const WormholeConnectWidget = () => {
     if (!isMonitoring || !evmAddress) return;
     
     console.log('🔄 Starting active polling for wallet:', evmAddress);
+    const monitoringStartTime = Date.now();
+    const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+    
+    // Update last poll time immediately
+    setLastPollTime(new Date());
     
     const pollInterval = setInterval(async () => {
       try {
+        setLastPollTime(new Date());
+        
         const recentTxs = await pollRecentTransactions(
           evmAddress,
           networkMode,
@@ -219,16 +228,23 @@ const WormholeConnectWidget = () => {
       } catch (error) {
         console.error('❌ Polling error:', error);
       }
-    }, 15000);
+    }, 5000); // Poll every 5 seconds (increased frequency)
     
-    const stopTimeout = setTimeout(() => {
-      console.log('⏰ Stopping polling - 20 minute timeout');
-      setIsMonitoring(false);
-    }, 20 * 60 * 1000);
+    // Update remaining time countdown
+    const countdownInterval = setInterval(() => {
+      const elapsed = Date.now() - monitoringStartTime;
+      const remaining = Math.max(0, TIMEOUT_MS - elapsed);
+      setMonitoringTimeRemaining(Math.floor(remaining / 1000));
+      
+      if (remaining <= 0) {
+        console.log('⏰ Stopping polling - 30 minute timeout');
+        setIsMonitoring(false);
+      }
+    }, 1000);
     
     return () => {
       clearInterval(pollInterval);
-      clearTimeout(stopTimeout);
+      clearInterval(countdownInterval);
     };
   }, [isMonitoring, evmAddress, lastCheckedTimestamp, networkMode]);
 
@@ -608,6 +624,99 @@ const WormholeConnectWidget = () => {
       />
       
       <div className="w-full max-w-2xl mx-auto">
+        {/* Monitoring Control Panel */}
+        <div className="mb-4 p-4 border border-border rounded-xl bg-card space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm">Transaction Monitoring</h3>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDebugMode(!debugMode)}
+            >
+              {debugMode ? '🐛 Debug ON' : '🐛 Debug OFF'}
+            </Button>
+          </div>
+          
+          {/* Status Display */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
+              <span className={`w-2 h-2 rounded-full ${isMonitoring ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></span>
+              <span className="font-medium">Status:</span>
+              <span className={isMonitoring ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                {isMonitoring ? 'Monitoring Active ✅' : 'Inactive ⏸️'}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
+              <span className="font-medium">Wallet:</span>
+              <span className="font-mono text-[10px] truncate">
+                {evmAddress ? `${evmAddress.slice(0, 6)}...${evmAddress.slice(-4)}` : 'Not connected'}
+              </span>
+            </div>
+            
+            {lastPollTime && (
+              <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
+                <span className="font-medium">Last Check:</span>
+                <span>{Math.floor((Date.now() - lastPollTime.getTime()) / 1000)}s ago</span>
+              </div>
+            )}
+            
+            {isMonitoring && monitoringTimeRemaining > 0 && (
+              <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
+                <span className="font-medium">Time Remaining:</span>
+                <span>{Math.floor(monitoringTimeRemaining / 60)}:{String(monitoringTimeRemaining % 60).padStart(2, '0')}</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Manual Control Buttons */}
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                if (!evmAddress) {
+                  toast({
+                    title: "⚠️ Wallet Not Connected",
+                    description: "Connect your wallet first to start monitoring.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                setIsMonitoring(true);
+                setLastCheckedTimestamp(Date.now());
+                toast({
+                  title: "✅ Monitoring Started",
+                  description: "Now polling for transactions. Bridge your assets!",
+                });
+              }}
+              disabled={isMonitoring || !evmAddress}
+              className="flex-1"
+              size="sm"
+            >
+              🔍 Start Monitoring
+            </Button>
+            
+            <Button
+              onClick={() => {
+                setIsMonitoring(false);
+                toast({
+                  title: "⏸️ Monitoring Stopped",
+                  description: "Transaction monitoring paused.",
+                });
+              }}
+              disabled={!isMonitoring}
+              variant="outline"
+              className="flex-1"
+              size="sm"
+            >
+              ⏸️ Stop Monitoring
+            </Button>
+          </div>
+          
+          <p className="text-xs text-muted-foreground">
+            💡 Tip: Click "Start Monitoring" before bridging to ensure your transaction is captured automatically.
+          </p>
+        </div>
+        
         {/* Network Mode Toggle */}
         <div className="mb-4 space-y-2">
           <div className="flex items-center justify-center gap-2">
@@ -702,23 +811,49 @@ const WormholeConnectWidget = () => {
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Debug Panel */}
-        {debugMode && capturedEvents.length > 0 && (
-          <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
-              🐛 Debug: Captured Events ({capturedEvents.length})
-            </h3>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {capturedEvents.map((evt, idx) => (
-                <details key={idx} className="text-xs bg-white dark:bg-gray-800 p-2 rounded">
-                  <summary className="cursor-pointer font-mono">
-                    {evt.type} - {new Date(evt.timestamp).toLocaleTimeString()}
-                  </summary>
-                  <pre className="mt-2 overflow-x-auto text-[10px]">
-                    {JSON.stringify(evt.detail, null, 2)}
-                  </pre>
-                </details>
-              ))}
+        {/* Debug Panel - Always visible when debug mode is ON */}
+        {debugMode && (
+          <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-yellow-900 dark:text-yellow-100">
+                🐛 Debug Panel
+              </h3>
+              <div className="text-xs space-x-2">
+                <span className="text-yellow-700 dark:text-yellow-300">
+                  Events: {capturedEvents.length}
+                </span>
+                <span className="text-yellow-700 dark:text-yellow-300">
+                  • Network: {networkMode}
+                </span>
+              </div>
+            </div>
+            
+            {capturedEvents.length === 0 ? (
+              <div className="text-xs text-yellow-800 dark:text-yellow-200 bg-yellow-100 dark:bg-yellow-900/40 p-3 rounded">
+                <p className="font-medium mb-1">⏳ Waiting for events...</p>
+                <p>No Wormhole events captured yet. Events will appear here when transactions are initiated.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {capturedEvents.map((evt, idx) => (
+                  <details key={idx} className="text-xs bg-white dark:bg-gray-800 p-2 rounded border border-yellow-300 dark:border-yellow-700">
+                    <summary className="cursor-pointer font-mono font-medium">
+                      {evt.type} - {new Date(evt.timestamp).toLocaleTimeString()}
+                    </summary>
+                    <pre className="mt-2 overflow-x-auto text-[10px] bg-gray-50 dark:bg-gray-900 p-2 rounded">
+                      {JSON.stringify(evt.detail, null, 2)}
+                    </pre>
+                  </details>
+                ))}
+              </div>
+            )}
+            
+            <div className="mt-3 pt-3 border-t border-yellow-300 dark:border-yellow-700">
+              <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                <strong>Debug Info:</strong> Monitoring={isMonitoring ? 'ON' : 'OFF'} • 
+                Wallet={evmAddress ? 'Connected' : 'Disconnected'} • 
+                Listening to: wormhole-transfer, wormhole-transfer-complete, wormhole-transaction
+              </p>
             </div>
           </div>
         )}
