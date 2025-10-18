@@ -21,6 +21,8 @@ serve(async (req) => {
 
     // CoinGecko free API endpoint - no key required
     const url = `https://api.coingecko.com/api/v3/simple/price?ids=${tokenIds.join(',')}&vs_currencies=usd&include_24hr_change=true`;
+    
+    console.log(`CoinGecko URL: ${url}`);
 
     const response = await fetch(url, {
       headers: {

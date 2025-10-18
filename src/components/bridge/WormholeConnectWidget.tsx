@@ -9,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { HelpCircle, ChevronDown, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useCoinGeckoProxy } from '@/hooks/useCoinGeckoProxy';
 
 // Import Helius API key from environment (securely stored via Lovable Cloud)
 const HELIUS_API_KEY = import.meta.env.VITE_HELIUS_API_KEY || '';
@@ -19,6 +20,9 @@ const WormholeConnectWidget = () => {
   const [searchParams] = useSearchParams();
   const [widgetKey, setWidgetKey] = useState(0);
   const [networkMode, setNetworkMode] = useState<'Testnet' | 'Mainnet'>('Testnet');
+  
+  // 🎣 Install CoinGecko proxy to bypass CORS
+  useCoinGeckoProxy();
   
   // Read URL parameters for DePIN claim flow
   const defaultAmount = searchParams.get('amount');
@@ -94,22 +98,6 @@ const WormholeConnectWidget = () => {
     console.log('🌐 Network Mode Changed:', networkMode);
     console.log('🔑 Helius Key Present:', !!HELIUS_API_KEY);
   }, [networkMode]);
-
-  // Suppress CoinGecko CORS errors (they're expected - Wormhole widget calls directly)
-  useEffect(() => {
-    const originalError = console.error;
-    console.error = (...args) => {
-      const msg = typeof args[0] === 'string' ? args[0] : '';
-      if (msg.includes('coingecko') || msg.includes('CORS') || msg.includes('api.coingecko')) {
-        console.warn('⚠️ CoinGecko price fetch blocked (expected - prices may not display, but transfers work fine)');
-        return;
-      }
-      originalError(...args);
-    };
-    return () => {
-      console.error = originalError;
-    };
-  }, []);
 
   useEffect(() => {
     // Listen for Wormhole transaction events
