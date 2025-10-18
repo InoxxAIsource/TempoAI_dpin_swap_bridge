@@ -61,6 +61,7 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
           '0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78'.toLowerCase(), // Wormhole Core
           '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'.toLowerCase(), // CCTP TokenMessenger
           '0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275'.toLowerCase(), // CCTP MessageTransmitter
+          '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'.toLowerCase(), // CCTP TokenMinter
         ]
       : [
           '0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B'.toLowerCase(), // Wormhole Core
