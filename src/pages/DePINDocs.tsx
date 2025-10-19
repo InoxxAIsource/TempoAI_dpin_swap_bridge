@@ -8,6 +8,12 @@ import DePINTimeline from '@/components/depin/DePINTimeline';
 import ComparisonCards from '@/components/depin/ComparisonCards';
 import BenefitsShowcase from '@/components/depin/BenefitsShowcase';
 import WormholeExplainer from '@/components/depin/WormholeExplainer';
+import WormholeIntegrationFlow from '@/components/depin/WormholeIntegrationFlow';
+import WormholeCostComparison from '@/components/depin/WormholeCostComparison';
+import WormholeSecurityCard from '@/components/depin/WormholeSecurityCard';
+import WormholeUserJourneyMap from '@/components/depin/WormholeUserJourneyMap';
+import WormholeTransactionHistory from '@/components/depin/WormholeTransactionHistory';
+import CrossChainBenefitsTable from '@/components/depin/CrossChainBenefitsTable';
 import CalculationExamples from '@/components/depin/CalculationExamples';
 import ROICalculator from '@/components/depin/ROICalculator';
 import LearningPath from '@/components/depin/LearningPath';
@@ -132,6 +138,36 @@ const DePINDocs = () => {
         {/* Wormhole Tab */}
         <TabsContent value="wormhole" className="space-y-8">
           <WormholeExplainer />
+          
+          <div className="mt-12">
+            <h2 className="text-3xl font-bold mb-6">Wormhole's Role in Tempo DePIN</h2>
+            <WormholeIntegrationFlow />
+          </div>
+          
+          <div className="mt-12">
+            <h2 className="text-3xl font-bold mb-6">Cross-Chain Benefits</h2>
+            <CrossChainBenefitsTable />
+          </div>
+          
+          <div className="mt-12">
+            <h2 className="text-3xl font-bold mb-6">Bridge Cost Comparison</h2>
+            <WormholeCostComparison />
+          </div>
+          
+          <div className="mt-12">
+            <h2 className="text-3xl font-bold mb-6">Security & Trust</h2>
+            <WormholeSecurityCard />
+          </div>
+          
+          <div className="mt-12">
+            <h2 className="text-3xl font-bold mb-6">Your Journey with Wormhole</h2>
+            <WormholeUserJourneyMap />
+          </div>
+          
+          <div className="mt-12">
+            <h2 className="text-3xl font-bold mb-6">Your Transaction History</h2>
+            <WormholeTransactionHistory />
+          </div>
         </TabsContent>
 
         {/* Economics Tab */}
@@ -302,6 +338,50 @@ const isValid = ed25519.verify(
                 <p className="text-muted-foreground">
                   Ethereum, Polygon, Avalanche, Arbitrum, Optimism, Base, and BNB Chain. You can 
                   bridge your rewards to any of these chains.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold mb-2">What is Wormhole and why do we use it?</h3>
+                <p className="text-muted-foreground">
+                  Wormhole is a cross-chain bridge that lets you move your DePIN rewards from Ethereum (where they're earned) 
+                  to any of 30+ supported chains. This gives you flexibility to choose the best chain for your needs—low fees 
+                  on Polygon, Coinbase ecosystem on Base, high yields on Avalanche, etc.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold mb-2">Is Wormhole safe? What if the bridge gets hacked?</h3>
+                <p className="text-muted-foreground">
+                  Wormhole is secured by 19 independent Guardian validators (including Coinbase, Jump Crypto, Everstake). 
+                  Every transaction requires 13/19 signatures. The network has secured $40B+ in volume. While no system is 
+                  100% risk-free, Wormhole is one of the most battle-tested bridges in crypto.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold mb-2">How much does it cost to bridge via Wormhole?</h3>
+                <p className="text-muted-foreground">
+                  Bridge fees are very low: Polygon (~$0.50 total), Base (~$0.40 total), Arbitrum/Optimism (~$0.70 total). 
+                  Much cheaper than staying on Ethereum ($5-50 gas fees).
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold mb-2">How long does a Wormhole bridge take?</h3>
+                <p className="text-muted-foreground">
+                  Typically 1.5-3 minutes from start to finish: Source transaction (30s) + Guardian validation (30-60s) + 
+                  VAA generation (10-20s) + Destination redemption (30-60s).
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold mb-2">Which chain should I choose for my rewards?</h3>
+                <p className="text-muted-foreground">
+                  <strong>Low fees + DeFi:</strong> Polygon (Aave 6% APY, ~$0.50 cost). 
+                  <strong>Coinbase integration:</strong> Base (easy fiat off-ramp). 
+                  <strong>High yields:</strong> Avalanche (12%+ APY pools). 
+                  <strong>Maximum security:</strong> Keep on Ethereum (no bridge needed).
                 </p>
               </div>
 

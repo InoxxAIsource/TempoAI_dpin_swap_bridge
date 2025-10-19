@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useWallet } from '@/contexts/WalletContext';
+import { useWalletContext } from '@/contexts/WalletContext';
 
 interface Transaction {
   id: string;
@@ -22,7 +22,8 @@ interface Transaction {
 }
 
 const WormholeTransactionHistory = () => {
-  const { walletAddress } = useWallet();
+  const { evmAddress, solanaAddress } = useWalletContext();
+  const walletAddress = evmAddress || solanaAddress;
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
