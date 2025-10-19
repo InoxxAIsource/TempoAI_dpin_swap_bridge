@@ -20,6 +20,8 @@ const docSections = [
       { title: 'Getting Started', url: '/docs/ai/getting-started', icon: Book },
       { title: 'Features', url: '/docs/ai/features', icon: Bot },
       { title: 'Chat Interface', url: '/docs/ai/chat', icon: MessageSquare },
+      { title: 'Technical Details', url: '/docs/ai/technical', icon: Cpu },
+      { title: 'Use Cases', url: '/docs/ai/use-cases', icon: Lightbulb },
     ]
   },
   {

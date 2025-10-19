@@ -17,6 +17,8 @@ import DocsLayout from "./pages/DocsLayout";
 import AIGettingStarted from "./pages/docs/AIGettingStarted";
 import AIFeatures from "./pages/docs/AIFeatures";
 import AIChatGuide from "./pages/docs/AIChatGuide";
+import AITechnical from "./pages/docs/AITechnical";
+import AIUseCases from "./pages/docs/AIUseCases";
 import DePINGettingStarted from "./pages/docs/DePINGettingStarted";
 import DePINBenefits from "./pages/docs/DePINBenefits";
 import DePINWormhole from "./pages/docs/DePINWormhole";
@@ -51,6 +53,8 @@ const App = () => {
               <Route path="ai/getting-started" element={<AIGettingStarted />} />
               <Route path="ai/features" element={<AIFeatures />} />
               <Route path="ai/chat" element={<AIChatGuide />} />
+              <Route path="ai/technical" element={<AITechnical />} />
+              <Route path="ai/use-cases" element={<AIUseCases />} />
               
               {/* DePIN Network Section */}
               <Route path="depin/getting-started" element={<DePINGettingStarted />} />
