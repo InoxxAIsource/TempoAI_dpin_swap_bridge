@@ -248,9 +248,32 @@ const WormholeConnectWidget = () => {
             }
             
             const amount = verification.amount ? Number(verification.amount) : 0;
-            const token = verification.token || transactionDetails.token;
+            const token = verification.token || 'UNKNOWN';
             
-            console.log('💾 Verified amount:', amount, 'Token:', token);
+            console.log('💾 Verified data:', { amount, token, verification });
+
+            // Validate token is known
+            const validTokens = ['ETH', 'WETH', 'USDC', 'USDT'];
+            if (!validTokens.includes(token)) {
+              console.error('❌ Unknown token detected:', token);
+              toast({
+                title: "⚠️ Unknown Token",
+                description: `Token "${token}" is not supported. Transaction not saved.`,
+                variant: "destructive"
+              });
+              return;
+            }
+
+            // Validate amount is reasonable
+            if (amount <= 0 || amount > 1000) {
+              console.error('❌ Invalid amount:', amount);
+              toast({
+                title: "⚠️ Invalid Amount",
+                description: `Amount ${amount} is out of valid range (0-1000).`,
+                variant: "destructive"
+              });
+              return;
+            }
             
             const insertData = {
               user_id: user?.id || null,
@@ -265,7 +288,7 @@ const WormholeConnectWidget = () => {
               wallet_address: walletAddress,
             };
             
-            // Validate before insert
+            // Final validation before save
             const validation = validateTransactionData(insertData);
             if (!validation.isValid) {
               console.error('❌ Validation failed:', validation.errors);

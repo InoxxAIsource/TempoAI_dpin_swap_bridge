@@ -90,6 +90,24 @@ const Claim = () => {
             const { validateTransactionData } = await import('@/utils/transactionValidator');
             const verification = await verifyWormholeTransaction(tx.hash, networkMode as any);
             
+            console.log('🔍 Verification result:', {
+              isValid: verification.isValid,
+              isWormhole: verification.isWormholeTransfer,
+              token: verification.token,
+              amount: verification.amount,
+              status: verification.status
+            });
+
+            if (!verification.isValid || !verification.isWormholeTransfer) {
+              console.warn('⚠️ Skipping invalid transaction:', tx.hash);
+              continue;
+            }
+
+            if (!verification.amount || Number(verification.amount) <= 0) {
+              console.warn('⚠️ Skipping transaction with no amount:', tx.hash);
+              continue;
+            }
+            
             // Check WormholeScan for VAA
             const wormholeStatus = await checkWormholeTxStatus(tx.hash, networkMode);
             
@@ -100,9 +118,9 @@ const Claim = () => {
               tx_hash: tx.hash,
               from_chain: networkMode === 'Testnet' ? 'Sepolia' : 'Ethereum',
               to_chain: 'Solana',
-              from_token: verification.token || 'USDC',
-              to_token: verification.token || 'USDC',
-              amount: verification.amount ? Number(verification.amount) : 0,
+              from_token: verification.token || 'ETH',
+              to_token: verification.token || 'ETH',
+              amount: Number(verification.amount),
               status: (wormholeStatus.status === 'completed' ? 'completed' : 'pending') as 'completed' | 'pending' | 'failed',
               wormhole_vaa: wormholeStatus.vaa || null,
               needs_redemption: wormholeStatus.needsRedemption || false,
@@ -112,7 +130,7 @@ const Claim = () => {
             // Validate before insert
             const validation = validateTransactionData(insertData);
             if (!validation.isValid) {
-              console.warn('⚠️ Skipping invalid transaction:', validation.errors);
+              console.warn('⚠️ Skipping invalid transaction:', tx.hash, validation.errors);
               continue;
             }
             
@@ -145,12 +163,17 @@ const Claim = () => {
         return;
       }
 
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
       const { data, error } = await supabase
         .from('wormhole_transactions')
         .select('*')
         .eq('wallet_address', currentWallet.toLowerCase())
         .or('status.eq.pending,needs_redemption.eq.true')
-        .lt('amount', 1000000) // Filter out corrupted records
+        .gt('amount', 0)
+        .lt('amount', 1000)
+        .not('tx_hash', 'is', null)
+        .gte('created_at', sevenDaysAgo)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

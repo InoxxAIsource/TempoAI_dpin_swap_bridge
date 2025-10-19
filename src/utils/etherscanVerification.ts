@@ -104,35 +104,50 @@ export async function verifyWormholeTransaction(
     let amount: string | null = null;
     let token: string | null = null;
     
-    if (transferLogs.length > 0) {
-      // Parse the last transfer (usually the bridge transfer)
-      const lastTransfer = transferLogs[transferLogs.length - 1];
-      const tokenAddress = lastTransfer.address.toLowerCase();
-      
-      // Identify token
-      const tokens = TOKEN_ADDRESSES[network];
-      for (const [symbol, address] of Object.entries(tokens)) {
-        if (address.toLowerCase() === tokenAddress) {
-          token = symbol;
-          break;
-        }
-      }
-      
-      if (lastTransfer.data && lastTransfer.data !== '0x') {
-        try {
-          const rawAmount = parseInt(lastTransfer.data, 16);
-          const decimals = token ? TOKEN_DECIMALS[token] : 18;
-          
-          // Convert to human-readable format
-          const humanAmount = rawAmount / Math.pow(10, decimals);
-          amount = humanAmount.toString();
-          
-          console.log(`💰 Raw amount: ${rawAmount}, Decimals: ${decimals}, Human: ${humanAmount}, Token: ${token}`);
-        } catch (e) {
-          console.warn('⚠️ Could not parse amount from logs');
-        }
+  if (transferLogs.length > 0) {
+    // Parse the last transfer (usually the bridge transfer)
+    const lastTransfer = transferLogs[transferLogs.length - 1];
+    const tokenAddress = lastTransfer.address.toLowerCase();
+    
+    console.log('🔍 Detected token contract:', tokenAddress);
+    
+    // Identify token by contract address
+    const tokens = TOKEN_ADDRESSES[network];
+    for (const [symbol, address] of Object.entries(tokens)) {
+      if (address.toLowerCase() === tokenAddress) {
+        token = symbol;
+        console.log('✅ Token identified:', symbol);
+        break;
       }
     }
+    
+    // If no match, it might be native ETH wrapped
+    if (!token && tokenAddress === wormholeBridge) {
+      token = 'ETH';
+      console.log('✅ Token identified as ETH (bridge interaction)');
+    }
+    
+    if (lastTransfer.data && lastTransfer.data !== '0x') {
+      try {
+        const rawAmount = parseInt(lastTransfer.data, 16);
+        const decimals = token ? TOKEN_DECIMALS[token] : 18;
+        
+        // Convert to human-readable format
+        const humanAmount = rawAmount / Math.pow(10, decimals);
+        amount = humanAmount.toString();
+        
+        console.log(`💰 Parsed: ${rawAmount} (raw) → ${humanAmount} ${token} (human)`);
+      } catch (e) {
+        console.warn('⚠️ Could not parse amount from logs', e);
+      }
+    }
+  }
+  
+  // If still no token detected, check transaction value for native ETH
+  if (!token && receipt.to?.toLowerCase() === wormholeBridge) {
+    token = 'ETH';
+    console.log('✅ Token identified as ETH (native transfer to bridge)');
+  }
     
     return {
       isValid: true,
