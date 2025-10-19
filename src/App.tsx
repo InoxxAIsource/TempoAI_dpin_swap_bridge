@@ -25,6 +25,13 @@ import DePINWormhole from "./pages/docs/DePINWormhole";
 import DePINEconomics from "./pages/docs/DePINEconomics";
 import DePINAdvanced from "./pages/docs/DePINAdvanced";
 import DEPINFAQ from "./pages/docs/DePINFAQ";
+import BridgeGettingStarted from "./pages/docs/BridgeGettingStarted";
+import BridgeHowItWorks from "./pages/docs/BridgeHowItWorks";
+import BridgeNetworks from "./pages/docs/BridgeNetworks";
+import BridgeAdvanced from "./pages/docs/BridgeAdvanced";
+import SwapGettingStarted from "./pages/docs/SwapGettingStarted";
+import SwapHowItWorks from "./pages/docs/SwapHowItWorks";
+import SwapBestPractices from "./pages/docs/SwapBestPractices";
 
 const App = () => {
   return (
@@ -63,6 +70,17 @@ const App = () => {
               <Route path="depin/economics" element={<DePINEconomics />} />
               <Route path="depin/advanced" element={<DePINAdvanced />} />
               <Route path="depin/faq" element={<DEPINFAQ />} />
+              
+              {/* Cross-Chain Tools: Bridge Section */}
+              <Route path="bridge/getting-started" element={<BridgeGettingStarted />} />
+              <Route path="bridge/how-it-works" element={<BridgeHowItWorks />} />
+              <Route path="bridge/networks" element={<BridgeNetworks />} />
+              <Route path="bridge/advanced" element={<BridgeAdvanced />} />
+              
+              {/* Cross-Chain Tools: Swap Section */}
+              <Route path="swap/getting-started" element={<SwapGettingStarted />} />
+              <Route path="swap/how-it-works" element={<SwapHowItWorks />} />
+              <Route path="swap/best-practices" element={<SwapBestPractices />} />
             </Route>
             
             {/* Redirect old DePIN docs route */}

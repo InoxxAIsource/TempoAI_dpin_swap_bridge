@@ -34,6 +34,18 @@ const docSections = [
       { title: 'Advanced', url: '/docs/depin/advanced', icon: Cpu },
       { title: 'FAQ', url: '/docs/depin/faq', icon: Lightbulb },
     ]
+  },
+  {
+    label: 'Cross-Chain Tools',
+    items: [
+      { title: 'Bridge: Getting Started', url: '/docs/bridge/getting-started', icon: Book },
+      { title: 'Bridge: How It Works', url: '/docs/bridge/how-it-works', icon: Cpu },
+      { title: 'Bridge: Networks & Tokens', url: '/docs/bridge/networks', icon: TrendingUp },
+      { title: 'Bridge: Advanced', url: '/docs/bridge/advanced', icon: Shield },
+      { title: 'Swap: Getting Started', url: '/docs/swap/getting-started', icon: Book },
+      { title: 'Swap: How It Works', url: '/docs/swap/how-it-works', icon: Cpu },
+      { title: 'Swap: Best Practices', url: '/docs/swap/best-practices', icon: Lightbulb },
+    ]
   }
 ];
 
