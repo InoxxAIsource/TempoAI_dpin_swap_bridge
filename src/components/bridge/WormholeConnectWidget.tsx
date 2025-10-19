@@ -132,6 +132,15 @@ const WormholeConnectWidget = () => {
   useEffect(() => {
     // Listen for ALL possible Wormhole transaction events
     const handleWormholeEvent = async (event: any) => {
+      console.log('🔔 Wormhole event received:', event.type);
+      console.log('🔍 Full event data:', JSON.stringify(event.detail, null, 2));
+      
+      // Filter out approval events - these are NOT bridge transfers
+      if (event.type?.includes('Approval') || event.type?.includes('approval')) {
+        console.log('✅ Approval event detected (NOT A TRANSFER) - ignoring');
+        return;
+      }
+      
       // Store event for debug panel
       if (debugMode) {
         setCapturedEvents(prev => [...prev, {
@@ -155,8 +164,11 @@ const WormholeConnectWidget = () => {
         txData?.redeem?.sendTx;
       
       if (!txHash) {
+        console.log('ℹ️ No transaction hash found in event');
         return;
       }
+      
+      console.log('✅ Processing transaction:', txHash);
       
       const walletAddress = (evmAddress || solanaAddress || '').toLowerCase();
       
@@ -168,6 +180,9 @@ const WormholeConnectWidget = () => {
         amount: txData.amount || 0,
         network: networkMode,
       };
+      
+      console.log('📊 Transaction details:', transactionDetails);
+      console.log('💰 Amount captured:', transactionDetails.amount, 'Type:', typeof transactionDetails.amount);
       
       setTxDetails(transactionDetails);
       setShowSuccessModal(true);
@@ -218,8 +233,20 @@ const WormholeConnectWidget = () => {
           try {
             const amount = transactionDetails.amount ? Number(transactionDetails.amount) : 0;
             
+            console.log('💾 Attempting to save with amount:', amount);
+            
             if (!amount || amount <= 0) {
-              console.warn('⚠️ Amount not captured correctly:', transactionDetails);
+              console.error('❌ Invalid amount detected:', amount);
+              console.error('❌ Original transaction details:', transactionDetails);
+              
+              toast({
+                title: "⚠️ Transaction Recording Issue",
+                description: "Unable to detect transfer amount. This might be an approval transaction. Please check Etherscan and manually import if needed.",
+                variant: "destructive"
+              });
+              
+              // Don't save 0 amount transactions
+              return;
             }
             
             const insertData = {
@@ -235,6 +262,8 @@ const WormholeConnectWidget = () => {
               wallet_address: walletAddress,
             };
 
+            console.log('💾 Saving transaction to database:', insertData);
+
             const { error: insertError } = await supabase
               .from('wormhole_transactions')
               .insert(insertData);
@@ -248,6 +277,8 @@ const WormholeConnectWidget = () => {
               });
               throw new Error(insertError.message);
             }
+            
+            console.log('✅ Transaction saved successfully');
           } catch (err) {
             console.error('❌ Error saving transaction:', err);
             toast({

@@ -14,8 +14,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useWalletContext } from '@/contexts/WalletContext';
 import WalletModal from '@/components/WalletModal';
 import ManualTransactionImport from '@/components/claim/ManualTransactionImport';
-import { Wallet, Sprout, Plus, Clock } from 'lucide-react';
+import { Wallet, Sprout, Plus, Clock, AlertTriangle } from 'lucide-react';
 import { useWormholeVAAPoller } from '@/hooks/useWormholeVAAPoller';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface ClaimableTransfer {
   id: string;
@@ -170,6 +171,33 @@ const Claim = () => {
       
       <section className="px-4 md:px-6 lg:px-12 py-12 md:py-16 bg-secondary/30">
         <div className="max-w-6xl mx-auto">
+          {transfers.some(t => t.amount === 0 || !t.amount) && (
+            <Alert className="mb-6 border-yellow-500/50 bg-yellow-500/10">
+              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              <AlertTitle className="text-yellow-500">Invalid Transactions Detected</AlertTitle>
+              <AlertDescription className="text-sm">
+                <p className="mb-2">Some transactions have 0 amount. This usually means:</p>
+                <ul className="list-disc ml-6 space-y-1">
+                  <li>You approved token spending but didn't complete the actual transfer</li>
+                  <li>The transaction failed on the blockchain</li>
+                  <li>There was an error detecting the transfer amount</li>
+                </ul>
+                <p className="mt-3">
+                  Please verify these transactions on{' '}
+                  <a 
+                    href="https://sepolia.etherscan.io" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline text-yellow-500 hover:text-yellow-400"
+                  >
+                    Etherscan Sepolia
+                  </a>{' '}
+                  to check their actual status.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="flex items-center gap-2 md:gap-3 mb-6 md:mb-8">
             <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary" />
             <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold">Your Claimable Transfers</h2>
