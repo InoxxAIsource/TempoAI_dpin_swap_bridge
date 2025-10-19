@@ -2,6 +2,7 @@ import PageLayout from '../components/layout/PageLayout';
 import PageHero from '../components/layout/PageHero';
 import WormholeConnectWidget from '../components/bridge/WormholeConnectWidget';
 import ChainBadge from '../components/ui/ChainBadge';
+import MonitoringPanel from '../components/bridge/MonitoringPanel';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,8 +10,10 @@ import { YieldDepositModal } from '@/components/chat/YieldDepositModal';
 import { useWalletContext } from '@/contexts/WalletContext';
 
 const Bridge = () => {
+  const { evmAddress } = useWalletContext();
   const [searchParams] = useSearchParams();
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [networkMode] = useState<'Testnet' | 'Mainnet'>('Testnet');
   
   // Check if this is part of a yield strategy flow
   const nextAction = searchParams.get('nextAction');
@@ -44,8 +47,16 @@ const Bridge = () => {
       />
 
       <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto space-y-6">
           <WormholeConnectWidget />
+          
+          {/* Transaction Monitor */}
+          {evmAddress && (
+            <MonitoringPanel 
+              evmAddress={evmAddress} 
+              networkMode={networkMode}
+            />
+          )}
         </div>
       </section>
 

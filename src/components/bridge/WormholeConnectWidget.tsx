@@ -214,18 +214,42 @@ const WormholeConnectWidget = () => {
             
           if (updateError) throw updateError;
         } else {
-          await supabase.from('wormhole_transactions').insert({
-            user_id: user?.id || null,
-            from_chain: transactionDetails.fromChain,
-            to_chain: transactionDetails.toChain,
-            from_token: transactionDetails.token,
-            to_token: transactionDetails.token,
-            amount: transactionDetails.amount,
-            tx_hash: txHash,
-            status: 'pending',
-            wormhole_vaa: txData.vaa || null,
-            wallet_address: walletAddress,
-          });
+          // Insert new transaction
+          try {
+            const insertData = {
+              user_id: user?.id || null,
+              from_chain: transactionDetails.fromChain,
+              to_chain: transactionDetails.toChain,
+              from_token: transactionDetails.token,
+              to_token: transactionDetails.token,
+              amount: transactionDetails.amount,
+              tx_hash: txHash,
+              status: 'pending' as any,
+              wormhole_vaa: txData.vaa || null,
+              wallet_address: walletAddress,
+            };
+
+            const { error: insertError } = await supabase
+              .from('wormhole_transactions')
+              .insert(insertData);
+
+            if (insertError) {
+              console.error('❌ Failed to save transaction to database:', insertError);
+              toast({
+                variant: "destructive",
+                title: "⚠️ Transaction Save Failed",
+                description: "Transaction detected but failed to save. You can manually import it on the Claim page.",
+              });
+              throw new Error(insertError.message);
+            }
+          } catch (err) {
+            console.error('❌ Error saving transaction:', err);
+            toast({
+              variant: "destructive",
+              title: "⚠️ Error Saving Transaction",
+              description: err instanceof Error ? err.message : 'Unknown error occurred',
+            });
+          }
         }
         
         window.dispatchEvent(new CustomEvent('wormhole-transfer-complete', {
