@@ -17,6 +17,8 @@ import ManualTransactionImport from '@/components/claim/ManualTransactionImport'
 import { Wallet, Sprout, Plus, Clock, AlertTriangle } from 'lucide-react';
 import { useWormholeVAAPoller } from '@/hooks/useWormholeVAAPoller';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { monitorWalletTransactions } from '@/utils/web3TransactionMonitor';
+import { checkWormholeTxStatus } from '@/utils/wormholeScanAPI';
 
 interface ClaimableTransfer {
   id: string;
@@ -41,7 +43,7 @@ const Claim = () => {
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const { toast } = useToast();
-  const { evmAddress, solanaAddress, isAnyWalletConnected } = useWalletContext();
+  const { evmAddress, solanaAddress, isAnyWalletConnected, isEvmConnected } = useWalletContext();
   const currentWallet = evmAddress || solanaAddress;
 
   // Automatically poll for VAA on pending transactions
@@ -52,6 +54,72 @@ const Claim = () => {
     const cleanup = setupRealtimeSubscription();
     return cleanup;
   }, [currentWallet]);
+
+  // Auto-discover missing transactions from blockchain
+  useEffect(() => {
+    const discoverTransactions = async () => {
+      if (!currentWallet || !isEvmConnected) return;
+      
+      console.log('🔍 Auto-discovering transactions from blockchain...');
+      
+      const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      const networkMode = 'Testnet'; // TODO: Make this dynamic based on user preference
+      
+      const txs = await monitorWalletTransactions(
+        currentWallet,
+        networkMode,
+        sevenDaysAgo
+      );
+      
+      if (txs.length > 0) {
+        console.log(`📥 Found ${txs.length} blockchain transactions, checking if new...`);
+        
+        for (const tx of txs) {
+          // Check if already in database
+          const { data: existing } = await supabase
+            .from('wormhole_transactions')
+            .select('id')
+            .eq('tx_hash', tx.hash)
+            .maybeSingle();
+          
+          if (!existing) {
+            console.log(`💾 Importing new transaction: ${tx.hash}`);
+            
+            // Check WormholeScan for VAA
+            const wormholeStatus = await checkWormholeTxStatus(tx.hash, networkMode);
+            
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            await supabase
+              .from('wormhole_transactions')
+              .insert({
+                wallet_address: currentWallet.toLowerCase(),
+                tx_hash: tx.hash,
+                from_chain: networkMode === 'Testnet' ? 'Sepolia' : 'Ethereum',
+                to_chain: 'Solana',
+                from_token: 'USDC',
+                to_token: 'USDC',
+                amount: parseFloat(tx.value) || 0,
+                status: wormholeStatus.status === 'completed' ? 'completed' : 'pending',
+                wormhole_vaa: wormholeStatus.vaa || null,
+                needs_redemption: wormholeStatus.needsRedemption || false,
+                user_id: user?.id || null,
+              });
+            
+            toast({
+              title: "✨ Transaction Discovered",
+              description: `Auto-imported transaction from blockchain: ${tx.hash.slice(0, 10)}...`,
+            });
+          }
+        }
+        
+        // Refresh the list
+        fetchClaimableTransfers();
+      }
+    };
+    
+    discoverTransactions();
+  }, [currentWallet, isEvmConnected]);
 
   const fetchClaimableTransfers = async () => {
     try {

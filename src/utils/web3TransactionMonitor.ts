@@ -1,10 +1,18 @@
 import { createPublicClient, http } from 'viem';
 import { mainnet, sepolia } from 'viem/chains';
 
-// Wormhole Token Bridge contract addresses
+// Wormhole and CCTP contract addresses
 const WORMHOLE_CONTRACTS = {
-  mainnet: '0x3ee18B2214AFF97000D974cf647E7C347E8fa585' as `0x${string}`,
-  sepolia: '0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78' as `0x${string}`
+  mainnet: {
+    core: '0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B' as `0x${string}`,
+    tokenBridge: '0x3ee18B2214AFF97000D974cf647E7C347E8fa585' as `0x${string}`,
+    cctpMessenger: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d' as `0x${string}`,
+  },
+  sepolia: {
+    core: '0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78' as `0x${string}`,
+    tokenBridge: '0x0CBE91CF822c73C2315FB05100C2F714765d5c20' as `0x${string}`,
+    cctpMessenger: '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA' as `0x${string}`,
+  }
 };
 
 // Wormhole LogMessagePublished event ABI
@@ -42,30 +50,54 @@ export async function monitorWalletTransactions(
       transport: http(networkMode === 'Testnet' ? sepolia.rpcUrls.default.http[0] : mainnet.rpcUrls.default.http[0]),
     });
     
-    const contractAddress = networkMode === 'Testnet' 
+    const contracts = networkMode === 'Testnet' 
       ? WORMHOLE_CONTRACTS.sepolia 
       : WORMHOLE_CONTRACTS.mainnet;
 
     const latestBlock = await client.getBlockNumber();
-    const fromBlock = latestBlock - BigInt(500);
+    const fromBlock = latestBlock - BigInt(1000); // Scan last 1000 blocks
     
     console.log(`🔍 Scanning blocks ${fromBlock} to ${latestBlock} for wallet ${walletAddress}`);
     
-    // Get ALL LogMessagePublished events (no sender filter)
-    const logs = await client.getContractEvents({
-      address: contractAddress,
-      abi: WORMHOLE_EVENT_ABI,
-      eventName: 'LogMessagePublished',
-      fromBlock,
-      toBlock: latestBlock,
-    });
+    // Scan all Wormhole/CCTP contracts for events
+    const allLogs = [];
     
-    console.log(`📋 Found ${logs.length} total Wormhole logs`);
+    // Scan Wormhole Core Bridge
+    try {
+      const coreLogs = await client.getContractEvents({
+        address: contracts.core,
+        abi: WORMHOLE_EVENT_ABI,
+        eventName: 'LogMessagePublished',
+        fromBlock,
+        toBlock: latestBlock,
+      });
+      allLogs.push(...coreLogs);
+      console.log(`📋 Found ${coreLogs.length} Wormhole Core logs`);
+    } catch (err) {
+      console.error('Error scanning Core Bridge:', err);
+    }
+    
+    // Scan Wormhole Token Bridge
+    try {
+      const tokenLogs = await client.getContractEvents({
+        address: contracts.tokenBridge,
+        abi: WORMHOLE_EVENT_ABI,
+        eventName: 'LogMessagePublished',
+        fromBlock,
+        toBlock: latestBlock,
+      });
+      allLogs.push(...tokenLogs);
+      console.log(`📋 Found ${tokenLogs.length} TokenBridge logs`);
+    } catch (err) {
+      console.error('Error scanning TokenBridge:', err);
+    }
+    
+    console.log(`📋 Found ${allLogs.length} total Wormhole/CCTP logs`);
     
     // Now filter by checking if transaction sender is our wallet
     const wormholeTxs: WormholeTransaction[] = [];
     
-    for (const log of logs) {
+    for (const log of allLogs) {
       try {
         // Get the full transaction details
         const tx = await client.getTransaction({

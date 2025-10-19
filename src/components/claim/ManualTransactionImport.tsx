@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { checkWormholeTxStatus } from '@/utils/wormholeScanAPI';
+import { verifyWormholeTransaction } from '@/utils/etherscanVerification';
 
 interface ManualTransactionImportProps {
   onImportSuccess?: () => void;
@@ -26,51 +27,6 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
   const validateTxHash = (hash: string): boolean => {
     const ethRegex = /^0x[a-fA-F0-9]{64}$/;
     return ethRegex.test(hash);
-  };
-
-  const fetchAlchemyTransactionData = async (hash: string, isTestnet: boolean) => {
-    const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
-    const alchemyUrl = isTestnet
-      ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
-      : `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}`;
-    
-    const response = await fetch(alchemyUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getTransactionByHash',
-        params: [hash]
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (!data.result) {
-      throw new Error('Transaction not found via Alchemy');
-    }
-    
-    return data.result;
-  };
-
-  const checkIsWormholeTransaction = (ethData: any, isTestnet: boolean): boolean => {
-    // Check if transaction interacts with any known Wormhole/CCTP contract
-    const wormholeContracts = isTestnet
-      ? [
-          '0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78'.toLowerCase(), // Wormhole Core
-          '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'.toLowerCase(), // CCTP TokenMessenger
-          '0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275'.toLowerCase(), // CCTP MessageTransmitter
-          '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'.toLowerCase(), // CCTP TokenMinter
-        ]
-      : [
-          '0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B'.toLowerCase(), // Wormhole Core
-          '0x3ee18B2214AFF97000D974cf647E7C347E8fa585'.toLowerCase(), // TokenBridge
-          '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'.toLowerCase(), // CCTP TokenMessenger
-          '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64'.toLowerCase(), // CCTP MessageTransmitter
-        ];
-    
-    return wormholeContracts.includes(ethData.to?.toLowerCase());
   };
 
   const handleImport = async () => {
@@ -111,10 +67,22 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
         return;
       }
 
-      const ethData = await fetchAlchemyTransactionData(cleanHash, isTestnet);
+      // Verify transaction on-chain using blockchain verification
+      const verification = await verifyWormholeTransaction(
+        cleanHash, 
+        isTestnet ? 'sepolia' : 'mainnet'
+      );
       
-      // Verify this is a Wormhole/CCTP transaction
-      if (!checkIsWormholeTransaction(ethData, isTestnet)) {
+      if (!verification.isValid) {
+        setResult({
+          success: false,
+          message: 'Transaction not found or failed on blockchain',
+        });
+        setLoading(false);
+        return;
+      }
+      
+      if (!verification.isWormholeTransfer) {
         setResult({
           success: false,
           message: 'This transaction does not interact with Wormhole or CCTP contracts',
@@ -144,8 +112,8 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
       
       const fromChain = isTestnet ? 'Sepolia' : 'Ethereum';
       const toChain = 'Solana'; // Default, WormholeScan will update if different
-      const token = 'USDC';
-      const amount = 0;
+      const token = verification.token || 'USDC';
+      const amount = verification.amount ? parseFloat(verification.amount) : 0;
 
       const { data: { user } } = await supabase.auth.getUser();
       
