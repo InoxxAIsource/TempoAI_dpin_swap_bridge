@@ -15,6 +15,7 @@ import { useWalletContext } from '@/contexts/WalletContext';
 import WalletModal from '@/components/WalletModal';
 import ManualTransactionImport from '@/components/claim/ManualTransactionImport';
 import { Wallet, Sprout, Plus } from 'lucide-react';
+import { useWormholeVAAPoller } from '@/hooks/useWormholeVAAPoller';
 
 interface ClaimableTransfer {
   id: string;
@@ -41,6 +42,9 @@ const Claim = () => {
   const { toast } = useToast();
   const { evmAddress, solanaAddress, isAnyWalletConnected } = useWalletContext();
   const currentWallet = evmAddress || solanaAddress;
+
+  // Automatically poll for VAA on pending transactions
+  useWormholeVAAPoller(currentWallet);
 
   useEffect(() => {
     fetchClaimableTransfers();

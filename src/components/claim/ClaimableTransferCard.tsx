@@ -6,6 +6,7 @@ import ChainBadge from '@/components/ui/ChainBadge';
 import { ExternalLink, RefreshCw, ArrowRight, Wallet, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { checkWormholeTxStatus } from '@/utils/wormholeScanAPI';
 
 interface ClaimableTransferCardProps {
   transfer: {
@@ -66,6 +67,50 @@ const ClaimableTransferCard = ({ transfer, currentWallet, onRefresh }: Claimable
     }
   };
 
+  const handleFetchVAA = async () => {
+    if (!transfer.tx_hash) return;
+    
+    setChecking(true);
+    try {
+      const status = await checkWormholeTxStatus(transfer.tx_hash, 'Testnet');
+      
+      if (status.vaa) {
+        const { error } = await supabase
+          .from('wormhole_transactions')
+          .update({
+            wormhole_vaa: status.vaa,
+            needs_redemption: status.needsRedemption,
+          })
+          .eq('id', transfer.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "✅ VAA Retrieved",
+          description: status.needsRedemption 
+            ? "Transfer is ready to claim!" 
+            : "VAA fetched. Guardian verification complete.",
+        });
+        onRefresh();
+      } else {
+        toast({
+          title: "⏳ VAA Not Ready",
+          description: "Guardian verification still in progress. This usually takes 15-30 minutes.",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching VAA:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch VAA. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const handleClaimOnWormhole = () => {
     if (!transfer.tx_hash) return;
     
@@ -74,7 +119,7 @@ const ClaimableTransferCard = ({ transfer, currentWallet, onRefresh }: Claimable
       ? 'Testnet' 
       : 'Mainnet';
     
-    const url = `https://wormholescan.io/#/tx/${transfer.tx_hash}?network=${network}&view=redeem`;
+    const url = `https://wormholescan.io/#/tx/${transfer.tx_hash}?network=${network}`;
     window.open(url, '_blank');
     
     toast({
@@ -158,6 +203,24 @@ const ClaimableTransferCard = ({ transfer, currentWallet, onRefresh }: Claimable
             </div>
           )}
           
+          {!transfer.wormhole_vaa && transfer.status === 'pending' && (
+            <Button
+              onClick={handleFetchVAA}
+              disabled={checking}
+              variant="outline"
+              className="w-full"
+            >
+              {checking ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Fetching VAA...
+                </>
+              ) : (
+                'Fetch VAA'
+              )}
+            </Button>
+          )}
+          
           <Button
             onClick={handleCheckStatus}
             disabled={checking}
@@ -195,14 +258,16 @@ const ClaimableTransferCard = ({ transfer, currentWallet, onRefresh }: Claimable
             </Button>
           )}
           
-          <Button
-            onClick={handleClaimOnWormhole}
-            disabled={!transfer.tx_hash}
-            className="w-full"
-          >
-            Claim on WormholeScan
-            <ExternalLink className="w-4 h-4 ml-2" />
-          </Button>
+          {transfer.needs_redemption && (
+            <Button
+              onClick={handleClaimOnWormhole}
+              disabled={!transfer.tx_hash}
+              className="w-full"
+            >
+              Claim on WormholeScan
+              <ExternalLink className="w-4 h-4 ml-2" />
+            </Button>
+          )}
         </div>
       </div>
     </Card>

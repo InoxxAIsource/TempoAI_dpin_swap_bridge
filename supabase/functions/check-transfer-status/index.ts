@@ -24,9 +24,10 @@ serve(async (req) => {
 
     console.log('Checking transfer status for tx:', tx_hash);
 
-    // Query WormholeScan API
+    // Query WormholeScan API using operations endpoint (testnet)
+    const baseUrl = 'https://api.testnet.wormholescan.io';
     const wormholeResponse = await fetch(
-      `https://api.wormholescan.io/api/v1/transactions/${tx_hash}`,
+      `${baseUrl}/api/v1/operations?txHash=${tx_hash}`,
       {
         headers: {
           'Accept': 'application/json',
@@ -42,14 +43,14 @@ serve(async (req) => {
     const wormholeData = await wormholeResponse.json();
     console.log('WormholeScan response:', JSON.stringify(wormholeData, null, 2));
 
+    // Parse operations response
+    const operation = wormholeData.operations?.[0];
+    const sourceTx = operation?.sourceChain?.transaction;
+    const destTx = operation?.targetChain?.transaction;
+    
     // Determine if transfer needs redemption
-    // Check if VAA is available and destination chain hasn't received tokens
-    const needsRedemption = !!(
-      wormholeData.data?.vaa && 
-      wormholeData.data?.toChain &&
-      !wormholeData.data?.redeemedTxHash
-    );
-
+    const vaa = sourceTx?.vaa || null;
+    const needsRedemption = !!(vaa && !destTx?.txHash);
     const readyToClaim = needsRedemption;
 
     // Update database with status
@@ -77,8 +78,8 @@ serve(async (req) => {
       .from('wormhole_transactions')
       .update({
         needs_redemption: needsRedemption,
-        wormhole_vaa: wormholeData.data?.vaa || null,
-        status: wormholeData.data?.redeemedTxHash ? 'completed' : 'pending',
+        wormhole_vaa: vaa,
+        status: destTx?.txHash ? 'completed' : 'pending',
       })
       .eq('tx_hash', tx_hash)
       .eq('user_id', userData.user.id);
@@ -88,22 +89,18 @@ serve(async (req) => {
       throw updateError;
     }
 
-    // Determine network for WormholeScan URL
-    const network = wormholeData.data?.fromChain?.toLowerCase().includes('testnet') ||
-                    wormholeData.data?.fromChain?.toLowerCase().includes('devnet')
-      ? 'Testnet'
-      : 'Mainnet';
-
-    const redeemUrl = `https://wormholescan.io/#/tx/${tx_hash}?network=${network}&view=redeem`;
+    // Use testnet for WormholeScan URL
+    const network = 'Testnet';
+    const redeemUrl = `https://wormholescan.io/#/tx/${tx_hash}?network=${network}`;
 
     return new Response(
       JSON.stringify({
         ready_to_claim: readyToClaim,
         needs_redemption: needsRedemption,
         redeem_url: redeemUrl,
-        status: wormholeData.data?.status || 'unknown',
-        vaa_available: !!wormholeData.data?.vaa,
-        redeemed: !!wormholeData.data?.redeemedTxHash,
+        status: destTx?.txHash ? 'completed' : 'pending',
+        vaa_available: !!vaa,
+        redeemed: !!destTx?.txHash,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
