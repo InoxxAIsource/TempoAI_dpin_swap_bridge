@@ -28,12 +28,7 @@ export default function AIAssistantChat() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = async () => {
-    console.log('=== handleSend called ===');
-    console.log('Input value:', input);
-    console.log('isThinking:', isThinking);
-    
     if (!input.trim() || isThinking) {
-      console.log('Skipping send - empty input or already thinking');
       return;
     }
 
@@ -52,15 +47,12 @@ export default function AIAssistantChat() {
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      console.log('Environment variable VITE_SUPABASE_URL:', supabaseUrl);
       
       if (!supabaseUrl) {
         throw new Error('VITE_SUPABASE_URL is not configured. Please check your .env file.');
       }
       
       const url = `${supabaseUrl}/functions/v1/ai-defi-assistant`;
-      console.log('Calling AI endpoint:', url);
-      console.log('Sending messages:', [...messages, userMessage].length);
       
       // Call the AI edge function with streaming
       const response = await fetch(url, {
@@ -76,8 +68,6 @@ export default function AIAssistantChat() {
         }),
       });
 
-      console.log('Response status:', response.status, response.statusText);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('API Error:', errorData);
@@ -85,11 +75,8 @@ export default function AIAssistantChat() {
       }
 
       if (!response.body) {
-        console.error('No response body from API');
         throw new Error('No response body');
       }
-
-      console.log('Starting to stream response...');
 
       // Handle streaming response
       const reader = response.body.getReader();
@@ -152,13 +139,10 @@ export default function AIAssistantChat() {
         }
       }
     } catch (error) {
-      console.error('Error calling AI - Full error:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
       setIsThinking(false);
       
       // Add error message to chat
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error('Displaying error to user:', errorMessage);
       
       setMessages((prev) => [
         ...prev,

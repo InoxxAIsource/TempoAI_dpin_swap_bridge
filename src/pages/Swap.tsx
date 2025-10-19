@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { useSearchParams } from 'react-router-dom';
 
 const Swap = () => {
-  console.log('✅ Swap page loaded successfully');
   const [searchParams] = useSearchParams();
   
   // Extract URL params for pre-filling widget

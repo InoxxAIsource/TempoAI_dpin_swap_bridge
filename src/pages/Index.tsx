@@ -23,8 +23,6 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [pendingClaimsCount, setPendingClaimsCount] = useState(0);
   const navigate = useNavigate();
-  
-  console.log('Current active tab:', activeTab);
 
   useEffect(() => {
     fetchPendingClaimsCount();
@@ -45,7 +43,7 @@ const Index = () => {
         setPendingClaimsCount(count);
       }
     } catch (error) {
-      console.error('Error fetching pending claims:', error);
+      // Silent fail - non-critical feature
     }
   };
 
@@ -60,10 +58,7 @@ const Index = () => {
           <div className="px-4 md:px-6 lg:px-12 py-8 md:py-12">
             <Tabs 
               value={activeTab}
-              onValueChange={(value) => {
-                console.log('Tab clicked! Changing to:', value);
-                setActiveTab(value);
-              }} 
+              onValueChange={setActiveTab} 
               className="w-full max-w-7xl mx-auto"
             >
               <div className="sticky top-12 md:top-14 z-[100] bg-background/95 backdrop-blur-sm pb-3 md:pb-4 -mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-12 lg:px-12 mb-6 md:mb-8">
@@ -71,24 +66,19 @@ const Index = () => {
                   <TabsTrigger 
                     value="overview" 
                     className="py-2 md:py-3 text-xs md:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50"
-                    onClick={() => console.log('Overview tab clicked')}
                   >
                     Overview
                   </TabsTrigger>
                   <TabsTrigger 
                     value="about" 
                     className="py-2 md:py-3 text-xs md:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50"
-                    onClick={() => console.log('About tab clicked')}
                   >
                     About Protocol
                   </TabsTrigger>
                   <TabsTrigger 
                     value="redemption" 
                     className="py-2.5 md:py-3 text-sm md:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 relative"
-                    onClick={() => {
-                      console.log('Redemption tab clicked');
-                      navigate('/claim');
-                    }}
+                    onClick={() => navigate('/claim')}
                   >
                     Redemption
                     {pendingClaimsCount > 0 && (

@@ -86,16 +86,8 @@ const Header = () => {
   };
 
   const handleDisconnectAll = async () => {
-    console.log('[Header] Disconnect All clicked');
-    console.log('[Header] Current state:', { 
-      isAnyWalletConnected, 
-      isAuthenticated, 
-      authMethod 
-    });
-    
     try {
       await disconnectAll();
-      console.log('[Header] ✓ Disconnect completed successfully');
       
       // Force close the wallet modal if it's open
       setWalletModalOpen(false);
@@ -105,7 +97,6 @@ const Header = () => {
         description: 'All wallets and sessions have been cleared',
       });
     } catch (error) {
-      console.error('[Header] Disconnect failed:', error);
       toast({
         title: 'Disconnect Failed',
         description: error instanceof Error ? error.message : 'Failed to disconnect',

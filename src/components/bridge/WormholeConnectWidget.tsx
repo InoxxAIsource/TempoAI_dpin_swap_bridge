@@ -107,15 +107,12 @@ const WormholeConnectWidget = () => {
   // Log network mode changes and force widget remount
   useEffect(() => {
     setWidgetKey(prev => prev + 1);
-    console.log('🌐 Network Mode Changed:', networkMode);
-    console.log('🔑 Helius Key Present:', !!HELIUS_API_KEY);
   }, [networkMode]);
 
   // Check localStorage for pending transactions on mount
   useEffect(() => {
     const checkPendingTransactions = async () => {
       const pending = JSON.parse(localStorage.getItem('pending_wormhole_txs') || '[]');
-      console.log('🔍 Checking pending transactions:', pending);
       
       if (pending.length > 0) {
         toast({
@@ -135,36 +132,6 @@ const WormholeConnectWidget = () => {
   useEffect(() => {
     // Listen for ALL possible Wormhole transaction events
     const handleWormholeEvent = async (event: any) => {
-      console.log('=== FULL WORMHOLE EVENT DEBUG ===');
-      console.log('Event type:', event.type);
-      console.log('Event detail:', event.detail);
-      console.log('Event detail keys:', Object.keys(event.detail || {}));
-      
-      // Deep inspection of nested objects
-      const detail = event.detail;
-      if (detail) {
-        console.log('Checking nested structures:');
-        console.log('  detail.txHash:', detail.txHash);
-        console.log('  detail.tx_hash:', detail.tx_hash);
-        console.log('  detail.hash:', detail.hash);
-        console.log('  detail.transactionHash:', detail.transactionHash);
-        console.log('  detail.sendTx:', detail.sendTx);
-        console.log('  detail.transaction?.hash:', detail.transaction?.hash);
-        console.log('  detail.sourceTransaction:', detail.sourceTransaction);
-        console.log('  detail.txData?.hash:', detail.txData?.hash);
-        console.log('  detail.txData?.sendTx:', detail.txData?.sendTx);
-        
-        if (detail.txData) {
-          console.log('  detail.txData structure:', JSON.stringify(detail.txData, null, 2));
-        }
-        if (detail.redeem) {
-          console.log('  detail.redeem structure:', JSON.stringify(detail.redeem, null, 2));
-        }
-      }
-      
-      console.log('Full event stringified:', JSON.stringify(event.detail, null, 2));
-      console.log('=================================');
-      
       // Store event for debug panel
       if (debugMode) {
         setCapturedEvents(prev => [...prev, {
@@ -188,11 +155,8 @@ const WormholeConnectWidget = () => {
         txData?.redeem?.sendTx;
       
       if (!txHash) {
-        console.warn('⚠️ No transaction hash found in event:', event.type);
         return;
       }
-      
-      console.log('✅ Transaction hash detected:', txHash);
       
       const walletAddress = (evmAddress || solanaAddress || '').toLowerCase();
       
@@ -264,14 +228,10 @@ const WormholeConnectWidget = () => {
           });
         }
         
-        console.log('✅ Transaction saved to database');
-        
         window.dispatchEvent(new CustomEvent('wormhole-transfer-complete', {
           detail: { ...txData, claimId }
         }));
       } catch (error) {
-        console.error('❌ Error saving transaction:', error);
-        
         const pending = JSON.parse(localStorage.getItem('pending_wormhole_txs') || '[]');
         pending.push({
           hash: txHash,
@@ -280,7 +240,6 @@ const WormholeConnectWidget = () => {
           walletAddress: walletAddress || 'unknown'
         });
         localStorage.setItem('pending_wormhole_txs', JSON.stringify(pending));
-        console.log('💾 Saved to localStorage as fallback');
         
         toast({
           title: "⚠️ Transaction Tracking Failed",
@@ -310,8 +269,6 @@ const WormholeConnectWidget = () => {
       'wormhole-transaction',
       'transaction-success'
     ];
-
-    console.log('👂 Listening for Wormhole events:', events);
 
     events.forEach(eventName => {
       window.addEventListener(eventName, handleWormholeEvent as EventListener);
@@ -465,14 +422,6 @@ const WormholeConnectWidget = () => {
     
     // Add bridge defaults if URL params exist (DePIN claim flow)
     if (defaultAmount && defaultFromChain && defaultToChain) {
-      console.log('🌉 Wormhole Bridge Defaults:', {
-        fromChain: defaultFromChain,
-        toChain: defaultToChain,
-        token: defaultToken || 'USDC',
-        amount: defaultAmount,
-        claimId: claimId
-      });
-      
       return {
         ...baseConfig,
         bridgeDefaults: {
@@ -483,14 +432,6 @@ const WormholeConnectWidget = () => {
         }
       } as config.WormholeConnectConfig;
     }
-    
-    console.log('🌉 Wormhole Config:', {
-      network: networkMode,
-      rpcs: Object.keys(baseConfig.rpcs || {}),
-      solanaRPC: baseConfig.rpcs?.Solana,
-      heliusEnabled: !!HELIUS_API_KEY,
-      chains: activeConfig.chains,
-    });
     
     return baseConfig;
   }, [networkMode, defaultAmount, defaultFromChain, defaultToChain, defaultToken, claimId]);

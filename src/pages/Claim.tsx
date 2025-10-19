@@ -89,7 +89,6 @@ const Claim = () => {
         schema: 'public',
         table: 'wormhole_transactions'
       }, (payload) => {
-        console.log('Transfer status updated:', payload);
         fetchClaimableTransfers();
         
         if (payload.new && (payload.new as any).needs_redemption) {

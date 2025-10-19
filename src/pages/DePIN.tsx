@@ -51,7 +51,6 @@ const DePIN = () => {
   const { toast } = useToast();
   const { isAuthenticated, authMethod, walletAuthenticatedAddress, isSolanaConnected, isAnyWalletConnected } = useWalletContext();
   const navigate = useNavigate();
-  const [connectionDebugInfo, setConnectionDebugInfo] = useState('');
 
   useEffect(() => {
     checkFirstVisit();
@@ -116,34 +115,6 @@ const DePIN = () => {
     
     validateWalletState();
   }, [isAnyWalletConnected]);
-
-  // Connection status debugger
-  useEffect(() => {
-    const debugParts = [];
-    
-    if (isSolanaConnected) {
-      debugParts.push('🟢 Wallet Connected');
-    } else {
-      debugParts.push('🔴 Wallet Disconnected');
-    }
-    
-    if (isAuthenticated) {
-      debugParts.push('✅ Authenticated');
-      if (authMethod === 'wallet') {
-        debugParts.push('(via Wallet)');
-      } else if (authMethod === 'email') {
-        debugParts.push('(via Email)');
-      }
-    } else if (isSolanaConnected) {
-      debugParts.push('⏳ Awaiting Signature');
-    }
-    
-    if (walletAuthenticatedAddress) {
-      debugParts.push(`Address: ${walletAuthenticatedAddress.slice(0, 6)}...${walletAuthenticatedAddress.slice(-4)}`);
-    }
-    
-    setConnectionDebugInfo(debugParts.join(' | '));
-  }, [isSolanaConnected, isAuthenticated, authMethod, walletAuthenticatedAddress]);
 
   const checkFirstVisit = async () => {
     const hasVisited = localStorage.getItem('depin_visited');
@@ -246,7 +217,6 @@ const DePIN = () => {
         title: 'Demo Devices Created',
         description: '5 demo solar panels have been added to your network',
       });
-      console.log('✅ Demo devices created');
     } catch (error: any) {
       console.error('Error initializing demo:', error);
       toast({
@@ -378,7 +348,6 @@ const DePIN = () => {
 
       if (error) throw error;
       
-      console.log('[DePIN] Active claims:', data?.length || 0);
       setActiveClaims(data || []);
     } catch (error) {
       console.error('Error fetching active claims:', error);
@@ -444,15 +413,6 @@ const DePIN = () => {
         title="DePIN Network"
         description="Monitor your physical infrastructure devices and track cross-chain rewards"
       />
-
-      {/* Connection Status Debug Info */}
-      {connectionDebugInfo && (
-        <div className="mb-4 p-3 bg-muted/50 border border-border rounded-lg">
-          <p className="text-xs font-mono text-center text-muted-foreground">
-            {connectionDebugInfo}
-          </p>
-        </div>
-      )}
 
       {/* Onboarding Modal */}
       <OnboardingModal

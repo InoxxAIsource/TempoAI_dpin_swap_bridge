@@ -24,7 +24,6 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
   useEffect(() => {
     if (!isMonitoring || !evmAddress) return;
     
-    console.log('🔄 Starting active polling for wallet:', evmAddress);
     const monitoringStartTime = Date.now();
     const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
     
@@ -41,11 +40,7 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
           lastCheckedTimestamp
         );
         
-        console.log(`📡 Alchemy Poll result: ${recentTxs.length} new Wormhole/CCTP transactions`);
-        
         for (const tx of recentTxs) {
-          console.log('✅ Found transaction via Alchemy:', tx.hash);
-          
           // Check if already in database
           const { data: existing } = await supabase
             .from('wormhole_transactions')
@@ -54,7 +49,6 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
             .maybeSingle();
           
           if (existing) {
-            console.log('⏭️ Transaction already tracked, skipping');
             continue;
           }
           
@@ -71,7 +65,6 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
           
           // Check WormholeScan for transaction status
           const wormholeStatus = await checkWormholeTxStatus(tx.hash, networkMode);
-          console.log('🌉 WormholeScan status:', wormholeStatus);
           
           // Map WormholeScan status to database enum
           const mapStatusToDbEnum = (scanStatus: string): 'pending' | 'completed' | 'failed' => {
@@ -105,15 +98,12 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
             user_id: user?.id || null,
           };
           
-          console.log('💾 Attempting to insert transaction:', insertData);
-          
           const { data: insertedData, error: insertError } = await supabase
             .from('wormhole_transactions')
             .insert(insertData)
             .select();
           
           if (insertError) {
-            console.error('❌ Database insert failed:', insertError);
             toast({
               title: "Database Error",
               description: `Failed to save transaction: ${insertError.message}`,
@@ -121,8 +111,6 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
             });
             continue;
           }
-          
-          console.log('✅ Transaction saved to database:', insertedData);
           
           // Show appropriate message based on status
           let toastTitle = "✅ Transaction Detected!";
@@ -157,7 +145,7 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
           setIsMonitoring(false);
         }
       } catch (error) {
-        console.error('❌ Polling error:', error);
+        // Silent error - monitoring will continue
       }
     }, 10000); // Poll every 10 seconds instead of 5
     
@@ -167,7 +155,6 @@ const MonitoringPanel = memo(({ evmAddress, networkMode, onTransactionDetected }
       setMonitoringTimeRemaining(Math.floor(remaining / 1000));
       
       if (remaining <= 0) {
-        console.log('⏰ Stopping polling - 30 minute timeout');
         setIsMonitoring(false);
       }
     }, 1000);

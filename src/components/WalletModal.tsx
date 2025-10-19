@@ -23,7 +23,7 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
     try {
       await authenticateWithSolana();
     } catch (error) {
-      console.error('[WalletModal] Manual authentication failed:', error);
+      // Error is already handled by useWeb3Auth hook
     }
   };
 

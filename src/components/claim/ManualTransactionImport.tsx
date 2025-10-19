@@ -163,26 +163,21 @@ export default function ManualTransactionImport({ onImportSuccess }: ManualTrans
         user_id: user?.id || null,
       };
       
-      console.log('💾 Manual import - attempting to insert:', insertData);
-      
       const { data: insertedData, error: insertError } = await supabase
         .from('wormhole_transactions')
         .insert(insertData)
         .select();
       
       if (insertError) {
-        console.error('❌ Manual import insert failed:', insertError);
-        setResult({ 
+        setResult({
           success: false, 
           message: `Database error: ${insertError.message}. The transaction was not saved.` 
         });
         setLoading(false);
         return;
       }
-      
-      console.log('✅ Manual import saved to database:', insertedData);
 
-      setResult({ 
+      setResult({
         success: true, 
         message: 'Transaction imported successfully!' 
       });
