@@ -85,30 +85,44 @@ const Claim = () => {
           if (!existing) {
             console.log(`💾 Importing new transaction: ${tx.hash}`);
             
+            // Use blockchain verification for accurate data
+            const { verifyWormholeTransaction } = await import('@/utils/etherscanVerification');
+            const { validateTransactionData } = await import('@/utils/transactionValidator');
+            const verification = await verifyWormholeTransaction(tx.hash, networkMode as any);
+            
             // Check WormholeScan for VAA
             const wormholeStatus = await checkWormholeTxStatus(tx.hash, networkMode);
             
             const { data: { user } } = await supabase.auth.getUser();
             
+            const insertData = {
+              wallet_address: currentWallet.toLowerCase(),
+              tx_hash: tx.hash,
+              from_chain: networkMode === 'Testnet' ? 'Sepolia' : 'Ethereum',
+              to_chain: 'Solana',
+              from_token: verification.token || 'USDC',
+              to_token: verification.token || 'USDC',
+              amount: verification.amount ? Number(verification.amount) : 0,
+              status: (wormholeStatus.status === 'completed' ? 'completed' : 'pending') as 'completed' | 'pending' | 'failed',
+              wormhole_vaa: wormholeStatus.vaa || null,
+              needs_redemption: wormholeStatus.needsRedemption || false,
+              user_id: user?.id || null,
+            };
+            
+            // Validate before insert
+            const validation = validateTransactionData(insertData);
+            if (!validation.isValid) {
+              console.warn('⚠️ Skipping invalid transaction:', validation.errors);
+              continue;
+            }
+            
             await supabase
               .from('wormhole_transactions')
-              .insert({
-                wallet_address: currentWallet.toLowerCase(),
-                tx_hash: tx.hash,
-                from_chain: networkMode === 'Testnet' ? 'Sepolia' : 'Ethereum',
-                to_chain: 'Solana',
-                from_token: 'USDC',
-                to_token: 'USDC',
-                amount: parseFloat(tx.value) || 0,
-                status: wormholeStatus.status === 'completed' ? 'completed' : 'pending',
-                wormhole_vaa: wormholeStatus.vaa || null,
-                needs_redemption: wormholeStatus.needsRedemption || false,
-                user_id: user?.id || null,
-              });
+              .insert([insertData]);
             
             toast({
               title: "✨ Transaction Discovered",
-              description: `Auto-imported transaction from blockchain: ${tx.hash.slice(0, 10)}...`,
+              description: `Auto-imported ${insertData.amount} ${insertData.from_token}: ${tx.hash.slice(0, 10)}...`,
             });
           }
         }
@@ -136,6 +150,7 @@ const Claim = () => {
         .select('*')
         .eq('wallet_address', currentWallet.toLowerCase())
         .or('status.eq.pending,needs_redemption.eq.true')
+        .lt('amount', 1000000) // Filter out corrupted records
         .order('created_at', { ascending: false });
 
       if (error) throw error;

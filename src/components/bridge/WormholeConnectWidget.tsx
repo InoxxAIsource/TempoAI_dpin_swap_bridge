@@ -229,40 +229,55 @@ const WormholeConnectWidget = () => {
             
           if (updateError) throw updateError;
         } else {
-          // Insert new transaction
+          // Insert new transaction - use blockchain verification for accuracy
           try {
-            const amount = transactionDetails.amount ? Number(transactionDetails.amount) : 0;
+            // Import verification utility
+            const { verifyWormholeTransaction } = await import('@/utils/etherscanVerification');
+            const { validateTransactionData } = await import('@/utils/transactionValidator');
             
-            console.log('💾 Attempting to save with amount:', amount);
+            console.log('🔍 Verifying transaction on blockchain...');
+            const verification = await verifyWormholeTransaction(txHash, networkMode as any);
             
-            if (!amount || amount <= 0) {
-              console.error('❌ Invalid amount detected:', amount);
-              console.error('❌ Original transaction details:', transactionDetails);
-              
+            if (!verification.isValid || !verification.isWormholeTransfer) {
               toast({
-                title: "⚠️ Transaction Recording Issue",
-                description: "Unable to detect transfer amount. This might be an approval transaction. Please check Etherscan and manually import if needed.",
+                title: "⚠️ Invalid Transaction",
+                description: "This doesn't appear to be a valid Wormhole transfer.",
                 variant: "destructive"
               });
-              
-              // Don't save 0 amount transactions
               return;
             }
+            
+            const amount = verification.amount ? Number(verification.amount) : 0;
+            const token = verification.token || transactionDetails.token;
+            
+            console.log('💾 Verified amount:', amount, 'Token:', token);
             
             const insertData = {
               user_id: user?.id || null,
               from_chain: transactionDetails.fromChain,
               to_chain: transactionDetails.toChain,
-              from_token: transactionDetails.token,
-              to_token: transactionDetails.token,
+              from_token: token,
+              to_token: token,
               amount: amount,
               tx_hash: txHash,
               status: 'pending' as any,
               wormhole_vaa: txData.vaa || null,
               wallet_address: walletAddress,
             };
+            
+            // Validate before insert
+            const validation = validateTransactionData(insertData);
+            if (!validation.isValid) {
+              console.error('❌ Validation failed:', validation.errors);
+              toast({
+                title: "⚠️ Transaction Validation Failed",
+                description: validation.errors.join(', '),
+                variant: "destructive"
+              });
+              return;
+            }
 
-            console.log('💾 Saving transaction to database:', insertData);
+            console.log('💾 Saving verified transaction to database:', insertData);
 
             const { error: insertError } = await supabase
               .from('wormhole_transactions')
@@ -278,7 +293,7 @@ const WormholeConnectWidget = () => {
               throw new Error(insertError.message);
             }
             
-            console.log('✅ Transaction saved successfully');
+            console.log('✅ Transaction saved successfully with verified data');
           } catch (err) {
             console.error('❌ Error saving transaction:', err);
             toast({

@@ -12,6 +12,24 @@ const WORMHOLE_TOKEN_BRIDGE = {
   mainnet: '0x3ee18B2214AFF97000D974cf647E7C347E8fa585'
 };
 
+const TOKEN_DECIMALS: Record<string, number> = {
+  'ETH': 18,
+  'WETH': 18,
+  'USDC': 6,
+  'USDT': 6,
+};
+
+const TOKEN_ADDRESSES = {
+  sepolia: {
+    'WETH': '0x7b79995e5f793a07bc00c21412e50ecae098e7f9',
+    'USDC': '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238',
+  },
+  mainnet: {
+    'WETH': '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+    'USDC': '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+  }
+};
+
 export interface TransactionVerification {
   isValid: boolean;
   isWormholeTransfer: boolean;
@@ -84,13 +102,32 @@ export async function verifyWormholeTransaction(
     );
     
     let amount: string | null = null;
+    let token: string | null = null;
+    
     if (transferLogs.length > 0) {
       // Parse the last transfer (usually the bridge transfer)
       const lastTransfer = transferLogs[transferLogs.length - 1];
+      const tokenAddress = lastTransfer.address.toLowerCase();
+      
+      // Identify token
+      const tokens = TOKEN_ADDRESSES[network];
+      for (const [symbol, address] of Object.entries(tokens)) {
+        if (address.toLowerCase() === tokenAddress) {
+          token = symbol;
+          break;
+        }
+      }
+      
       if (lastTransfer.data && lastTransfer.data !== '0x') {
         try {
-          amount = parseInt(lastTransfer.data, 16).toString();
-          console.log(`💰 Amount parsed from logs: ${amount}`);
+          const rawAmount = parseInt(lastTransfer.data, 16);
+          const decimals = token ? TOKEN_DECIMALS[token] : 18;
+          
+          // Convert to human-readable format
+          const humanAmount = rawAmount / Math.pow(10, decimals);
+          amount = humanAmount.toString();
+          
+          console.log(`💰 Raw amount: ${rawAmount}, Decimals: ${decimals}, Human: ${humanAmount}, Token: ${token}`);
         } catch (e) {
           console.warn('⚠️ Could not parse amount from logs');
         }
@@ -101,7 +138,7 @@ export async function verifyWormholeTransaction(
       isValid: true,
       isWormholeTransfer: hasWormholeInteraction,
       amount,
-      token: null, // Would need to decode token address from logs
+      token,
       status: 'success'
     };
   } catch (error) {
