@@ -33,10 +33,23 @@ export const useWormholeVAAPoller = (walletAddress: string | null) => {
           return;
         }
 
-        console.log(`🔍 Polling for VAA on ${pendingTxs.length} pending transaction(s)`);
+        // Filter transactions that are old enough to check (at least 12 minutes old)
+        const now = new Date();
+        const matureTransactions = pendingTxs.filter(tx => {
+          const created = new Date(tx.created_at);
+          const minutesElapsed = Math.floor((now.getTime() - created.getTime()) / (1000 * 60));
+          return minutesElapsed >= 12; // Only check transactions older than 12 minutes
+        });
 
-        // Check each transaction
-        for (const tx of pendingTxs) {
+        if (matureTransactions.length === 0) {
+          // All transactions are too recent
+          return;
+        }
+
+        console.log(`🔍 Polling for VAA on ${matureTransactions.length} transaction(s) (${pendingTxs.length - matureTransactions.length} too recent)`);
+
+        // Check each mature transaction
+        for (const tx of matureTransactions) {
           if (!tx.tx_hash) continue;
 
           try {

@@ -216,13 +216,19 @@ const WormholeConnectWidget = () => {
         } else {
           // Insert new transaction
           try {
+            const amount = transactionDetails.amount ? Number(transactionDetails.amount) : 0;
+            
+            if (!amount || amount <= 0) {
+              console.warn('⚠️ Amount not captured correctly:', transactionDetails);
+            }
+            
             const insertData = {
               user_id: user?.id || null,
               from_chain: transactionDetails.fromChain,
               to_chain: transactionDetails.toChain,
               from_token: transactionDetails.token,
               to_token: transactionDetails.token,
-              amount: transactionDetails.amount,
+              amount: amount,
               tx_hash: txHash,
               status: 'pending' as any,
               wormhole_vaa: txData.vaa || null,

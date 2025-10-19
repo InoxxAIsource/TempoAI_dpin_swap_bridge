@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useWalletContext } from '@/contexts/WalletContext';
 import WalletModal from '@/components/WalletModal';
 import ManualTransactionImport from '@/components/claim/ManualTransactionImport';
-import { Wallet, Sprout, Plus } from 'lucide-react';
+import { Wallet, Sprout, Plus, Clock } from 'lucide-react';
 import { useWormholeVAAPoller } from '@/hooks/useWormholeVAAPoller';
 
 interface ClaimableTransfer {
@@ -115,6 +115,35 @@ const Claim = () => {
         title="Claim Your Transfers"
         description="Complete your cross-chain transfers and receive your tokens on the destination chain"
       />
+      
+      <section className="px-4 md:px-6 lg:px-12 py-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-6">
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-blue-500" />
+              Understanding Wormhole Bridge Timing
+            </h3>
+            <div className="grid md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <p className="font-semibold text-blue-500 mb-1">1. Blockchain Finality</p>
+                <p className="text-muted-foreground">15-20 minutes after transaction submission for Ethereum testnet to reach finality</p>
+              </div>
+              <div>
+                <p className="font-semibold text-blue-500 mb-1">2. Guardian Verification</p>
+                <p className="text-muted-foreground">5-15 minutes for Wormhole Guardians to sign and generate your VAA</p>
+              </div>
+              <div>
+                <p className="font-semibold text-blue-500 mb-1">3. Manual Redemption</p>
+                <p className="text-muted-foreground">Once VAA is ready, you can claim your tokens on the destination chain</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-4">
+              💡 Total expected time: <strong>20-35 minutes</strong> from transaction submission to ready-to-claim status.
+              Testnet may experience longer delays due to lower validator activity.
+            </p>
+          </div>
+        </div>
+      </section>
       
       <ClaimFlowDiagram />
       
