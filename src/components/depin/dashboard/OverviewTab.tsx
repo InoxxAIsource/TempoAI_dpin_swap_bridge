@@ -1,14 +1,35 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Map, TrendingUp, Shield, Zap, Globe } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Map, TrendingUp, Shield, Zap, Globe, Activity, Server } from 'lucide-react';
 import ProcessFlowSection from '../ProcessFlowSection';
 import ExplainerPanel from '../ExplainerPanel';
+import Globe3D from '../Globe3D';
+
+interface Device {
+  id: string;
+  device_id: string;
+  device_name: string;
+  device_type: string;
+  status: string;
+  is_verified: boolean;
+  metadata: any;
+  last_seen_at: string;
+  user_id: string;
+}
 
 interface OverviewTabProps {
   onNavigateToTab: (tab: string) => void;
+  devices?: Device[];
+  stats?: {
+    totalDevices: number;
+    activeDevices: number;
+    earnings: number;
+    uptime: number;
+  };
 }
 
-const OverviewTab = ({ onNavigateToTab }: OverviewTabProps) => {
+const OverviewTab = ({ onNavigateToTab, devices = [], stats }: OverviewTabProps) => {
   const quickActions = [
     {
       icon: Plus,
@@ -53,14 +74,60 @@ const OverviewTab = ({ onNavigateToTab }: OverviewTabProps) => {
 
   return (
     <div className="space-y-8">
-      {/* Hero Section */}
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">
-          Decentralized Physical Infrastructure Network
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-          Connect your physical devices to the decentralized network and earn rewards for contributing valuable data and services.
-        </p>
+      {/* Hero Section with 3D Globe */}
+      <div className="relative">
+        <div className="text-center space-y-4 mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">
+            Decentralized Physical Infrastructure Network
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Connect your physical devices to the decentralized network and earn rewards for contributing valuable data and services.
+          </p>
+        </div>
+
+        {/* 3D Globe */}
+        <div className="relative rounded-3xl overflow-hidden border-2 border-primary/20 shadow-2xl">
+          <Globe3D 
+            devices={devices}
+            onDeviceClick={(deviceId) => {
+              console.log('Device clicked:', deviceId);
+              onNavigateToTab('trace');
+            }}
+            autoRotate={true}
+          />
+
+          {/* Stats Overlay */}
+          {stats && (
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-full max-w-4xl px-4">
+              <Card className="bg-background/80 backdrop-blur-lg border-primary/30 shadow-xl">
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div className="text-center">
+                      <Server className="w-8 h-8 mx-auto mb-2 text-primary" />
+                      <p className="text-2xl font-bold text-foreground">{stats.totalDevices}</p>
+                      <p className="text-sm text-muted-foreground">Total Devices</p>
+                    </div>
+                    <div className="text-center">
+                      <Activity className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                      <p className="text-2xl font-bold text-foreground">{stats.activeDevices}</p>
+                      <p className="text-sm text-muted-foreground">Active Now</p>
+                    </div>
+                    <div className="text-center">
+                      <TrendingUp className="w-8 h-8 mx-auto mb-2 text-purple-500" />
+                      <p className="text-2xl font-bold text-foreground">${stats.earnings.toFixed(2)}</p>
+                      <p className="text-sm text-muted-foreground">Total Earnings</p>
+                    </div>
+                    <div className="text-center">
+                      <Shield className="w-8 h-8 mx-auto mb-2 text-blue-500" />
+                      <p className="text-2xl font-bold text-foreground">{stats.uptime.toFixed(1)}%</p>
+                      <p className="text-sm text-muted-foreground">Network Uptime</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Quick Actions */}

@@ -405,9 +405,18 @@ const DePIN = () => {
             <main className="flex-1 overflow-auto">
               <div className="px-4 md:px-6 lg:px-8 py-6">
                 <div className="max-w-7xl mx-auto">
-                  {currentTab === 'overview' && (
-                    <OverviewTab onNavigateToTab={handleTabChange} />
-                  )}
+            {currentTab === 'overview' && (
+              <OverviewTab 
+                onNavigateToTab={handleTabChange}
+                devices={devices}
+                stats={{
+                  totalDevices: devices.length,
+                  activeDevices,
+                  earnings,
+                  uptime
+                }}
+              />
+            )}
 
                   {currentTab === 'add-device' && (
                     <AddDeviceTab 
