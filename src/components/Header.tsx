@@ -195,11 +195,11 @@ const Header = () => {
                     Bridge
                   </DropdownMenuItem>
                 </Link>
-                <ComingSoonDialog featureName="AI Trading">
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Link to="/docs/ai-agent/getting-started">
+                  <DropdownMenuItem className={isActive('/docs/ai-agent/getting-started') ? 'bg-muted' : ''}>
                     AI Trading
                   </DropdownMenuItem>
-                </ComingSoonDialog>
+                </Link>
                 <ComingSoonDialog featureName="Staking">
                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                     Staking

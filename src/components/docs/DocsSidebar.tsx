@@ -25,6 +25,15 @@ const docSections = [
     ]
   },
   {
+    label: 'AI Agent Builder',
+    items: [
+      { title: 'Getting Started', url: '/docs/ai-agent/getting-started', icon: Book },
+      { title: 'Architecture', url: '/docs/ai-agent/architecture', icon: Cpu },
+      { title: 'AI Models & Training', url: '/docs/ai-agent/ai-models', icon: Bot },
+      { title: 'Wormhole Integration', url: '/docs/ai-agent/wormhole', icon: Shield },
+    ]
+  },
+  {
     label: 'DePIN Network',
     items: [
       { title: 'Introduction', url: '/docs/depin/getting-started', icon: Book },

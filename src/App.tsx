@@ -19,6 +19,10 @@ import AIFeatures from "./pages/docs/AIFeatures";
 import AIChatGuide from "./pages/docs/AIChatGuide";
 import AITechnical from "./pages/docs/AITechnical";
 import AIUseCases from "./pages/docs/AIUseCases";
+import AIAgentGettingStarted from "./pages/docs/AIAgentGettingStarted";
+import AIAgentArchitecture from "./pages/docs/AIAgentArchitecture";
+import AIAgentModels from "./pages/docs/AIAgentModels";
+import AIAgentWormhole from "./pages/docs/AIAgentWormhole";
 import DePINGettingStarted from "./pages/docs/DePINGettingStarted";
 import DePINBenefits from "./pages/docs/DePINBenefits";
 import DePINWormhole from "./pages/docs/DePINWormhole";
@@ -62,6 +66,12 @@ const App = () => {
               <Route path="ai/chat" element={<AIChatGuide />} />
               <Route path="ai/technical" element={<AITechnical />} />
               <Route path="ai/use-cases" element={<AIUseCases />} />
+              
+              {/* AI Agent Builder Section */}
+              <Route path="ai-agent/getting-started" element={<AIAgentGettingStarted />} />
+              <Route path="ai-agent/architecture" element={<AIAgentArchitecture />} />
+              <Route path="ai-agent/ai-models" element={<AIAgentModels />} />
+              <Route path="ai-agent/wormhole" element={<AIAgentWormhole />} />
               
               {/* DePIN Network Section */}
               <Route path="depin/getting-started" element={<DePINGettingStarted />} />
