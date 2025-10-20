@@ -1,18 +1,23 @@
-import { DocHero } from "@/components/docs/DocHero";
-import { DocSection } from "@/components/docs/DocSection";
-import { PageLayout } from "@/components/layout/PageLayout";
+import DocHero from "@/components/docs/DocHero";
+import DocSection from "@/components/docs/DocSection";
+import PageLayout from "@/components/layout/PageLayout";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Brain, Zap, TrendingUp, Shield } from "lucide-react";
-import { FeatureCard } from "@/components/docs/FeatureCard";
+import FeatureCard from "@/components/docs/FeatureCard";
 
 const AIAgentGettingStarted = () => {
   return (
     <PageLayout>
-      <DocHero
-        title="AI Agent Builder"
-        description="Build intelligent AI trading agents that make autonomous decisions using machine learning and LLMs"
-        badge="Advanced"
-      />
+      <div className="space-y-12">
+        <div>
+          <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm mb-4">
+            <span className="text-primary">New</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">AI Agent Builder - Getting Started</h1>
+          <p className="text-xl text-muted-foreground">
+            Build intelligent AI trading agents that automatically optimize your DeFi yields across chains using Wormhole.
+          </p>
+        </div>
 
       <DocSection title="Introduction to AI Trading Agents">
         <p className="text-lg mb-6">
@@ -37,25 +42,21 @@ const AIAgentGettingStarted = () => {
             title="LLM-Based Agents"
             description="Use GPT-5, Gemini, or Claude to analyze market data and make decisions using natural language reasoning"
             icon={Brain}
-            difficulty="Beginner"
           />
           <FeatureCard
             title="Reinforcement Learning"
             description="Train custom RL models that learn optimal trading strategies through trial and error"
             icon={TrendingUp}
-            difficulty="Advanced"
           />
           <FeatureCard
             title="Supervised Learning"
             description="Build ML classifiers that predict profitable opportunities based on historical patterns"
             icon={Zap}
-            difficulty="Intermediate"
           />
           <FeatureCard
             title="Wormhole Integration"
             description="All agent types seamlessly bridge assets across chains for optimal yield positioning"
             icon={Shield}
-            difficulty="All Levels"
           />
         </div>
       </DocSection>
@@ -283,6 +284,7 @@ const AIAgentGettingStarted = () => {
           </a>
         </div>
       </DocSection>
+      </div>
     </PageLayout>
   );
 };

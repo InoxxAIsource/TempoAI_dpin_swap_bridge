@@ -1,7 +1,7 @@
-import { DocHero } from "@/components/docs/DocHero";
-import { DocSection } from "@/components/docs/DocSection";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { CodeBlock } from "@/components/docs/CodeBlock";
+import DocHero from "@/components/docs/DocHero";
+import DocSection from "@/components/docs/DocSection";
+import PageLayout from "@/components/layout/PageLayout";
+import CodeBlock from "@/components/docs/CodeBlock";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Brain, TrendingUp, Zap, AlertTriangle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -376,11 +376,16 @@ print(f"Confidence: {best['confidence']:.2%}")`;
 
   return (
     <PageLayout>
-      <DocHero
-        title="AI Model Options"
-        description="Explore LLM, Reinforcement Learning, and Machine Learning approaches for building intelligent trading agents"
-        badge="Core"
-      />
+      <div className="space-y-12">
+        <div>
+          <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm mb-4">
+            <span className="text-primary">Core</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">AI Model Options</h1>
+          <p className="text-xl text-muted-foreground">
+            Explore different AI model types for building trading agents: LLM-based, Reinforcement Learning, and Supervised Learning approaches.
+          </p>
+        </div>
 
       <DocSection title="Choose Your AI Approach">
         <p className="text-lg mb-6">
@@ -650,6 +655,7 @@ print(f"Confidence: {best['confidence']:.2%}")`;
           </a>
         </div>
       </DocSection>
+      </div>
     </PageLayout>
   );
 };

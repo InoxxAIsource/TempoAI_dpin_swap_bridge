@@ -1,16 +1,21 @@
-import { DocHero } from "@/components/docs/DocHero";
-import { DocSection } from "@/components/docs/DocSection";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Mermaid } from "@/components/docs/Mermaid";
+import DocHero from "@/components/docs/DocHero";
+import DocSection from "@/components/docs/DocSection";
+import PageLayout from "@/components/layout/PageLayout";
+import Mermaid from "@/components/docs/Mermaid";
 
 const AIAgentArchitecture = () => {
   return (
     <PageLayout>
-      <DocHero
-        title="AI Agent Architecture"
-        description="Understand how AI trading agents work and integrate with Wormhole for cross-chain operations"
-        badge="Technical"
-      />
+      <div className="space-y-12">
+        <div>
+          <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm mb-4">
+            <span className="text-primary">Advanced</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">AI Agent Architecture</h1>
+          <p className="text-xl text-muted-foreground">
+            Deep dive into how AI trading agents work, their components, and cross-chain decision-making with Wormhole.
+          </p>
+        </div>
 
       <DocSection title="High-Level Architecture">
         <p className="text-lg mb-6">
@@ -379,6 +384,7 @@ graph TB
           </a>
         </div>
       </DocSection>
+      </div>
     </PageLayout>
   );
 };

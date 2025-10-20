@@ -1,8 +1,8 @@
-import { DocHero } from "@/components/docs/DocHero";
-import { DocSection } from "@/components/docs/DocSection";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { CodeBlock } from "@/components/docs/CodeBlock";
-import { Mermaid } from "@/components/docs/Mermaid";
+import DocHero from "@/components/docs/DocHero";
+import DocSection from "@/components/docs/DocSection";
+import PageLayout from "@/components/layout/PageLayout";
+import CodeBlock from "@/components/docs/CodeBlock";
+import Mermaid from "@/components/docs/Mermaid";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Zap, Shield, Clock } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,7 +63,7 @@ class WormholeAIBridge:
         # Execute bridge
         print(f"✅ Bridging {amount} {token}: {from_chain} → {to_chain}")
         print(f"   APY: {current_apy}% → {target_apy}% (+{apy_improvement}%)")
-        print(f"   Cost: ${total_cost:.2f}, ROI in {roi_days:.1f} days")
+        print(f"   Cost: \${total_cost:.2f}, ROI in {roi_days:.1f} days")
         
         tx = await self.wh.bridge(
             token=token,
@@ -204,7 +204,7 @@ class WormholeAIBridge {
         // Execute bridge
         console.log(\`✅ Bridging \${amount} \${token}: \${fromChain} → \${toChain}\`);
         console.log(\`   APY: \${currentApy}% → \${targetApy}% (+\${apyImprovement}%)\`);
-        console.log(\`   Cost: $\${totalCost.toFixed(2)}, ROI in \${roiDays.toFixed(1)} days\`);
+        console.log(\`   Cost: \\$\${totalCost.toFixed(2)}, ROI in \${roiDays.toFixed(1)} days\`);
         
         const tx = await this.wh.bridge({
             token,
@@ -382,11 +382,16 @@ asyncio.run(main())`;
 
   return (
     <PageLayout>
-      <DocHero
-        title="Wormhole Integration for AI Agents"
-        description="Learn how to integrate Wormhole cross-chain bridging into your AI trading agents"
-        badge="Critical"
-      />
+      <div className="space-y-12">
+        <div>
+          <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm mb-4">
+            <span className="text-primary">Critical</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Wormhole Integration for AI Agents</h1>
+          <p className="text-xl text-muted-foreground">
+            Learn how to integrate Wormhole cross-chain bridging into your AI trading agents
+          </p>
+        </div>
 
       <DocSection title="Why Wormhole for AI Agents">
         <p className="text-lg mb-6">
@@ -676,6 +681,7 @@ sequenceDiagram
           </a>
         </div>
       </DocSection>
+      </div>
     </PageLayout>
   );
 };
