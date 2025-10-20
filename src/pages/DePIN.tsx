@@ -3,8 +3,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PageLayout from '@/components/layout/PageLayout';
 import PageHero from '@/components/layout/PageHero';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { Badge } from '@/components/ui/badge';
+import { 
+  LayoutDashboard, 
+  Plus, 
+  MapPin, 
+  Wallet, 
+  Gift 
+} from "lucide-react";
 import OverviewTab from '@/components/depin/dashboard/OverviewTab';
 import AddDeviceTab from '@/components/depin/dashboard/AddDeviceTab';
 import TraceDevicesTab from '@/components/depin/dashboard/TraceDevicesTab';
@@ -47,6 +65,35 @@ const DePIN = () => {
   const navigate = useNavigate();
 
   const currentTab = searchParams.get('tab') || 'overview';
+
+  const navigationItems = [
+    {
+      title: "Overview",
+      value: "overview",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Add Device",
+      value: "add-device",
+      icon: Plus,
+    },
+    {
+      title: "Trace Devices",
+      value: "trace",
+      icon: MapPin,
+    },
+    {
+      title: "Portfolio",
+      value: "portfolio",
+      icon: Wallet,
+    },
+    {
+      title: "Claim",
+      value: "claim",
+      icon: Gift,
+      badge: activeClaims.length,
+    },
+  ];
 
   useEffect(() => {
     if (session?.user) {
@@ -313,63 +360,91 @@ const DePIN = () => {
         }}
       />
 
-      <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b pb-4 px-4 md:px-6 lg:px-12">
-          <TabsList className="grid w-full grid-cols-5 max-w-3xl mx-auto">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="add-device">Add Device</TabsTrigger>
-            <TabsTrigger value="trace">Trace Devices</TabsTrigger>
-            <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-            <TabsTrigger value="claim" className="relative">
-              Claim
-              {activeClaims.length > 0 && (
-                <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center" variant="destructive">
-                  {activeClaims.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+      <SidebarProvider defaultOpen={true}>
+        <div className="flex min-h-screen w-full">
+          {/* Left Sidebar */}
+          <Sidebar className="border-r">
+            <SidebarContent>
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {navigationItems.map((item) => (
+                      <SidebarMenuItem key={item.value}>
+                        <SidebarMenuButton
+                          onClick={() => handleTabChange(item.value)}
+                          isActive={currentTab === item.value}
+                          className="w-full"
+                        >
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                          {item.badge && item.badge > 0 && (
+                            <Badge className="ml-auto h-5 w-5 p-0 flex items-center justify-center" variant="destructive">
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+          </Sidebar>
+
+          {/* Right Content Area */}
+          <SidebarInset className="flex-1">
+            {/* Header with Toggle */}
+            <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 lg:px-8">
+              <SidebarTrigger />
+              <h2 className="text-lg font-semibold">
+                {navigationItems.find(item => item.value === currentTab)?.title || 'Dashboard'}
+              </h2>
+            </header>
+
+            {/* Main Content */}
+            <main className="flex-1 overflow-auto">
+              <div className="px-4 md:px-6 lg:px-8 py-6">
+                <div className="max-w-7xl mx-auto">
+                  {currentTab === 'overview' && (
+                    <OverviewTab onNavigateToTab={handleTabChange} />
+                  )}
+
+                  {currentTab === 'add-device' && (
+                    <AddDeviceTab 
+                      onDeviceAdded={() => {
+                        handleDeviceAdded();
+                        handleTabChange('trace');
+                      }}
+                      onOpenSetupGuide={() => setShowSetupGuide(true)}
+                    />
+                  )}
+
+                  {currentTab === 'trace' && (
+                    <TraceDevicesTab devices={devices} />
+                  )}
+
+                  {currentTab === 'portfolio' && (
+                    <PortfolioTab 
+                      earnings={earnings}
+                      dailyRate={dailyRate}
+                      activeDevices={activeDevices}
+                      uptime={uptime}
+                    />
+                  )}
+
+                  {currentTab === 'claim' && (
+                    <ClaimTab 
+                      pendingRewards={pendingRewards}
+                      activeClaims={activeClaims}
+                      onClaimClick={() => setShowBatchClaim(true)}
+                    />
+                  )}
+                </div>
+              </div>
+            </main>
+          </SidebarInset>
         </div>
-
-        <div className="px-4 md:px-6 lg:px-12 py-8">
-          <div className="max-w-7xl mx-auto space-y-8">
-            <TabsContent value="overview">
-              <OverviewTab onNavigateToTab={handleTabChange} />
-            </TabsContent>
-
-            <TabsContent value="add-device">
-              <AddDeviceTab 
-                onDeviceAdded={() => {
-                  handleDeviceAdded();
-                  handleTabChange('trace');
-                }}
-                onOpenSetupGuide={() => setShowSetupGuide(true)}
-              />
-            </TabsContent>
-
-            <TabsContent value="trace">
-              <TraceDevicesTab devices={devices} />
-            </TabsContent>
-
-            <TabsContent value="portfolio">
-              <PortfolioTab 
-                earnings={earnings}
-                dailyRate={dailyRate}
-                activeDevices={activeDevices}
-                uptime={uptime}
-              />
-            </TabsContent>
-
-            <TabsContent value="claim">
-              <ClaimTab 
-                pendingRewards={pendingRewards}
-                activeClaims={activeClaims}
-                onClaimClick={() => setShowBatchClaim(true)}
-              />
-            </TabsContent>
-          </div>
-        </div>
-      </Tabs>
+      </SidebarProvider>
     </PageLayout>
   );
 };
