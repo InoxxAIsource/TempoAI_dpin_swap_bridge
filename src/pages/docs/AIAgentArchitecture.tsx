@@ -1,12 +1,10 @@
 import DocHero from "@/components/docs/DocHero";
 import DocSection from "@/components/docs/DocSection";
-import PageLayout from "@/components/layout/PageLayout";
 import Mermaid from "@/components/docs/Mermaid";
 
 const AIAgentArchitecture = () => {
   return (
-    <PageLayout>
-      <div className="space-y-12">
+    <div className="space-y-12">
         <div>
           <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm mb-4">
             <span className="text-primary">Advanced</span>
@@ -384,8 +382,7 @@ graph TB
           </a>
         </div>
       </DocSection>
-      </div>
-    </PageLayout>
+    </div>
   );
 };
 

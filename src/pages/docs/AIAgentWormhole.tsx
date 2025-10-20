@@ -1,6 +1,5 @@
 import DocHero from "@/components/docs/DocHero";
 import DocSection from "@/components/docs/DocSection";
-import PageLayout from "@/components/layout/PageLayout";
 import CodeBlock from "@/components/docs/CodeBlock";
 import Mermaid from "@/components/docs/Mermaid";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -381,8 +380,7 @@ async def main():
 asyncio.run(main())`;
 
   return (
-    <PageLayout>
-      <div className="space-y-12">
+    <div className="space-y-12">
         <div>
           <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm mb-4">
             <span className="text-primary">Critical</span>
@@ -681,8 +679,7 @@ sequenceDiagram
           </a>
         </div>
       </DocSection>
-      </div>
-    </PageLayout>
+    </div>
   );
 };
 

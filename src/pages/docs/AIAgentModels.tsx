@@ -1,6 +1,5 @@
 import DocHero from "@/components/docs/DocHero";
 import DocSection from "@/components/docs/DocSection";
-import PageLayout from "@/components/layout/PageLayout";
 import CodeBlock from "@/components/docs/CodeBlock";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Brain, TrendingUp, Zap, AlertTriangle } from "lucide-react";
@@ -375,8 +374,7 @@ print(f"\\nBest opportunity: {best['chain']} - {best['protocol']}")
 print(f"Confidence: {best['confidence']:.2%}")`;
 
   return (
-    <PageLayout>
-      <div className="space-y-12">
+    <div className="space-y-12">
         <div>
           <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm mb-4">
             <span className="text-primary">Core</span>
@@ -655,8 +653,7 @@ print(f"Confidence: {best['confidence']:.2%}")`;
           </a>
         </div>
       </DocSection>
-      </div>
-    </PageLayout>
+    </div>
   );
 };
 
