@@ -1,14 +1,12 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Gift, Wallet, Plus, Book } from 'lucide-react';
 import { toast } from 'sonner';
 import PageLayout from '@/components/layout/PageLayout';
 import PageHero from '@/components/layout/PageHero';
-import { Skeleton } from '@/components/ui/skeleton';
+import Globe2DPlaceholder from '@/components/depin/Globe2DPlaceholder';
 import OnboardingModal from '@/components/depin/OnboardingModal';
-
-const Globe3D = lazy(() => import('@/components/depin/Globe3D'));
 import SetupGuideModal from '@/components/depin/SetupGuideModal';
 import BatchClaimModal from '@/components/depin/BatchClaimModal';
 import ClaimTab from '@/components/depin/dashboard/ClaimTab';
@@ -258,24 +256,15 @@ const DePIN = () => {
 
       <div className="px-4 md:px-6 lg:px-12 pb-12">
         <div className="max-w-6xl mx-auto space-y-8">
-          {/* 3D Globe Hero - Always Visible */}
+          {/* Globe Hero - Always Visible */}
           <div className="relative">
-            <Suspense fallback={
-              <div className="w-full h-[500px] md:h-[600px] lg:h-[700px] bg-secondary/20 rounded-lg flex items-center justify-center">
-                <div className="text-center space-y-4">
-                  <Skeleton className="h-32 w-32 rounded-full mx-auto" />
-                  <p className="text-muted-foreground">Loading 3D Globe...</p>
-                </div>
-              </div>
-            }>
-              <Globe3D
-                devices={devices}
-                onDeviceClick={(deviceId) => {
-                  console.log('Device clicked:', deviceId);
-                }}
-                autoRotate={true}
-              />
-            </Suspense>
+            <Globe2DPlaceholder
+              devices={devices}
+              onDeviceClick={(deviceId) => {
+                console.log('Device clicked:', deviceId);
+              }}
+              autoRotate={true}
+            />
 
             {/* Stats Overlay */}
             <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-full max-w-3xl px-4">

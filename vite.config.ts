@@ -23,8 +23,6 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: {
-          'three-core': ['three'],
-          'three-react': ['@react-three/fiber', '@react-three/drei'],
           'wallet': ['@rainbow-me/rainbowkit', 'wagmi', 'viem'],
           'wormhole': ['@wormhole-foundation/sdk', '@wormhole-foundation/wormhole-connect']
         }
