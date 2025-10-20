@@ -1,14 +1,11 @@
-import { useState, useMemo, lazy, Suspense } from 'react';
+import { useState, useMemo } from 'react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import MapControls from '../globe/MapControls';
 import DevicePopup from '../globe/DevicePopup';
+import DeviceMap from '../globe/DeviceMap';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-
-// Lazy load the 3D Globe to reduce initial bundle size
-const Globe3D = lazy(() => import('../globe/Globe3D'));
 
 interface Device {
   id: string;
@@ -92,17 +89,11 @@ const TraceDevicesTab = ({ devices }: TraceDevicesTabProps) => {
         </div>
 
         <div className="lg:col-span-3">
-          <Suspense fallback={
-            <div className="h-[600px] w-full rounded-lg bg-card border">
-              <Skeleton className="h-full w-full" />
-            </div>
-          }>
-            <Globe3D
-              devices={filteredDevices}
-              onDeviceClick={handleDeviceClick}
-              autoRotate={autoRotate}
-            />
-          </Suspense>
+          <DeviceMap
+            devices={filteredDevices}
+            onDeviceClick={handleDeviceClick}
+            autoRotate={autoRotate}
+          />
         </div>
       </div>
 
