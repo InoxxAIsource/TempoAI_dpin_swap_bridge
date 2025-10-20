@@ -14,8 +14,8 @@ const Hero = () => {
         </div>
 
         <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-bold leading-tight md:leading-tight lg:leading-tight mb-6 md:mb-12 max-w-5xl">
-          The unified{' '}
-          <span className="block">DeFi/DePin platform</span>
+          The Unified AI{' '}
+          <span className="block">DeFi/DePin Platform</span>
           <span className="block">for everyone</span>
         </h1>
 
