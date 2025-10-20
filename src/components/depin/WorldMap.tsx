@@ -40,56 +40,125 @@ const WorldMap = ({ devices, onDeviceClick }: WorldMapProps) => {
   };
 
   return (
-    <div className="relative w-full h-[500px] bg-gradient-to-br from-primary/5 via-background to-secondary/10 rounded-3xl border border-border overflow-hidden">
-      {/* World Map Background - Simplified SVG */}
+    <div className="relative w-full h-[500px] bg-gradient-to-br from-primary/5 via-background to-primary/10 rounded-3xl border-2 border-primary/20 overflow-hidden">
+      {/* Animated corner brackets - HUD style */}
+      <div className="absolute top-0 left-0 w-16 h-16 border-l-2 border-t-2 border-primary/50" />
+      <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-primary/50" />
+      <div className="absolute bottom-0 left-0 w-16 h-16 border-l-2 border-b-2 border-primary/50" />
+      <div className="absolute bottom-0 right-0 w-16 h-16 border-r-2 border-b-2 border-primary/50" />
+
+      {/* Holographic scanline effect */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'linear-gradient(to bottom, transparent 0%, hsl(var(--primary) / 0.1) 50%, transparent 100%)',
+          height: '100px',
+        }}
+        animate={{
+          y: [-100, 600],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "linear"
+        }}
+      />
+
+      {/* Enhanced World Map Background */}
       <svg 
         viewBox="0 0 100 60" 
-        className="w-full h-full"
-        style={{ filter: 'opacity(0.15)' }}
+        className="w-full h-full absolute inset-0"
+        style={{ opacity: 0.25 }}
       >
+        <defs>
+          <linearGradient id="mapGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.1" />
+          </linearGradient>
+        </defs>
+        
         {/* North America */}
         <path 
           d="M 10 15 L 15 10 L 25 12 L 30 8 L 35 10 L 38 15 L 40 25 L 35 35 L 30 40 L 25 45 L 20 48 L 15 45 L 12 35 L 10 25 Z" 
-          fill="currentColor" 
-          className="text-muted"
+          fill="url(#mapGradient)"
+          stroke="hsl(var(--primary))"
+          strokeWidth="0.2"
         />
         {/* Europe */}
         <path 
           d="M 45 20 L 50 18 L 55 20 L 57 25 L 55 30 L 50 32 L 45 30 L 43 25 Z" 
-          fill="currentColor" 
-          className="text-muted"
+          fill="url(#mapGradient)"
+          stroke="hsl(var(--primary))"
+          strokeWidth="0.2"
         />
         {/* Asia */}
         <path 
           d="M 58 18 L 65 15 L 75 18 L 82 22 L 85 28 L 82 35 L 75 40 L 70 42 L 65 40 L 60 35 L 58 28 Z" 
-          fill="currentColor" 
-          className="text-muted"
+          fill="url(#mapGradient)"
+          stroke="hsl(var(--primary))"
+          strokeWidth="0.2"
         />
         {/* South America */}
         <path 
           d="M 28 48 L 32 45 L 35 48 L 36 53 L 33 57 L 30 55 L 28 52 Z" 
-          fill="currentColor" 
-          className="text-muted"
+          fill="url(#mapGradient)"
+          stroke="hsl(var(--primary))"
+          strokeWidth="0.2"
         />
         {/* Africa */}
         <path 
           d="M 48 35 L 52 32 L 55 35 L 56 42 L 53 48 L 48 50 L 45 47 L 44 40 Z" 
-          fill="currentColor" 
-          className="text-muted"
+          fill="url(#mapGradient)"
+          stroke="hsl(var(--primary))"
+          strokeWidth="0.2"
         />
         {/* Australia */}
         <path 
           d="M 75 45 L 80 43 L 85 45 L 86 50 L 82 52 L 77 50 L 75 48 Z" 
-          fill="currentColor" 
-          className="text-muted"
+          fill="url(#mapGradient)"
+          stroke="hsl(var(--primary))"
+          strokeWidth="0.2"
         />
       </svg>
 
-      {/* Grid overlay */}
-      <div className="absolute inset-0 opacity-10" style={{
-        backgroundImage: 'linear-gradient(hsl(var(--border)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)',
-        backgroundSize: '20px 20px'
-      }} />
+      {/* Animated tech grid overlay */}
+      <motion.div 
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: 'linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)',
+          backgroundSize: '40px 40px'
+        }}
+        animate={{
+          backgroundPosition: ['0px 0px', '40px 40px']
+        }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          ease: "linear"
+        }}
+      />
+
+      {/* Floating particles */}
+      {[...Array(20)].map((_, i) => (
+        <motion.div
+          key={`particle-${i}`}
+          className="absolute w-1 h-1 bg-primary/30 rounded-full"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0.3, 0.8, 0.3],
+            scale: [1, 1.5, 1],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 2,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+          }}
+        />
+      ))}
 
       {/* Device Pins with Tooltips */}
       <TooltipProvider delayDuration={200}>
@@ -127,20 +196,20 @@ const WorldMap = ({ devices, onDeviceClick }: WorldMapProps) => {
                   onHoverEnd={() => setHoveredDevice(null)}
                   onClick={() => onDeviceClick?.(device.device_id)}
                 >
-                  {/* Outer pulsing ring */}
+                  {/* Multiple pulsing rings */}
                   <motion.div
-                    className={`absolute inset-0 rounded-full ${
-                      isVerified ? 'bg-green-500' : 'bg-blue-500'
+                    className={`absolute rounded-full ${
+                      isVerified ? 'bg-green-500' : 'bg-primary'
                     }`}
                     style={{
-                      width: isVerified ? '28px' : '24px',
-                      height: isVerified ? '28px' : '24px',
+                      width: '40px',
+                      height: '40px',
                       transform: 'translate(-50%, -50%)',
                       left: '50%',
                       top: '50%'
                     }}
                     animate={{
-                      scale: [1, 2.5, 2.5],
+                      scale: [1, 3, 3],
                       opacity: [0.6, 0, 0]
                     }}
                     transition={{
@@ -150,22 +219,69 @@ const WorldMap = ({ devices, onDeviceClick }: WorldMapProps) => {
                     }}
                   />
                   
-                  {/* Main pin */}
+                  <motion.div
+                    className={`absolute rounded-full ${
+                      isVerified ? 'bg-green-500' : 'bg-primary'
+                    }`}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      transform: 'translate(-50%, -50%)',
+                      left: '50%',
+                      top: '50%'
+                    }}
+                    animate={{
+                      scale: [1, 2.5, 2.5],
+                      opacity: [0.4, 0, 0]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeOut",
+                      delay: 0.5
+                    }}
+                  />
+
+                  {/* Holographic glow */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      width: '50px',
+                      height: '50px',
+                      transform: 'translate(-50%, -50%)',
+                      left: '50%',
+                      top: '50%',
+                      background: `radial-gradient(circle, ${isVerified ? 'rgba(34, 197, 94, 0.3)' : 'hsl(var(--primary) / 0.3)'} 0%, transparent 70%)`,
+                      filter: 'blur(8px)',
+                    }}
+                    animate={{
+                      scale: [1, 1.3, 1],
+                      opacity: [0.5, 0.8, 0.5]
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                  
+                  {/* Main pin with energy effect */}
                   <motion.div
                     className={`relative rounded-full ${
                       isVerified 
-                        ? 'bg-green-500 shadow-lg shadow-green-500/50' 
-                        : 'bg-blue-500 shadow-lg shadow-blue-500/50'
-                    } flex items-center justify-center`}
+                        ? 'bg-gradient-to-br from-green-400 to-green-600' 
+                        : 'bg-gradient-to-br from-primary/90 to-primary'
+                    } flex items-center justify-center border-2 border-white/30`}
                     style={{
-                      width: isVerified ? '28px' : '24px',
-                      height: isVerified ? '28px' : '24px',
+                      width: isVerified ? '36px' : '32px',
+                      height: isVerified ? '36px' : '32px',
+                      boxShadow: `0 0 20px ${isVerified ? 'rgba(34, 197, 94, 0.6)' : 'hsl(var(--primary) / 0.6)'}`,
                     }}
                     animate={{
                       boxShadow: isOnline 
                         ? isVerified
-                          ? ['0 0 20px rgba(34, 197, 94, 0.5)', '0 0 30px rgba(34, 197, 94, 0.8)', '0 0 20px rgba(34, 197, 94, 0.5)']
-                          : ['0 0 20px rgba(59, 130, 246, 0.5)', '0 0 30px rgba(59, 130, 246, 0.8)', '0 0 20px rgba(59, 130, 246, 0.5)']
+                          ? ['0 0 20px rgba(34, 197, 94, 0.6)', '0 0 40px rgba(34, 197, 94, 1)', '0 0 20px rgba(34, 197, 94, 0.6)']
+                          : ['0 0 20px hsl(var(--primary) / 0.6)', '0 0 40px hsl(var(--primary) / 1)', '0 0 20px hsl(var(--primary) / 0.6)']
                         : undefined
                     }}
                     transition={{
@@ -174,10 +290,27 @@ const WorldMap = ({ devices, onDeviceClick }: WorldMapProps) => {
                       ease: "easeInOut"
                     }}
                   >
+                    {/* Inner shimmer effect */}
+                    <motion.div
+                      className="absolute inset-0 rounded-full overflow-hidden"
+                      animate={{
+                        rotate: [0, 360]
+                      }}
+                      transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        ease: "linear"
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent" style={{
+                        transform: 'translateX(-100%)',
+                      }} />
+                    </motion.div>
+
                     {isVerified ? (
-                      <Shield className="w-3.5 h-3.5 text-white" />
+                      <Shield className="w-5 h-5 text-white relative z-10" />
                     ) : (
-                      <MapPin className="w-3.5 h-3.5 text-white" />
+                      <MapPin className="w-5 h-5 text-white relative z-10" />
                     )}
                   </motion.div>
                 </motion.div>
@@ -235,8 +368,16 @@ const WorldMap = ({ devices, onDeviceClick }: WorldMapProps) => {
         })}
       </TooltipProvider>
 
-      {/* Connection lines between verified devices */}
+      {/* Enhanced connection lines with data flow */}
       <svg className="absolute inset-0 pointer-events-none">
+        <defs>
+          <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.2" />
+            <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.2" />
+          </linearGradient>
+        </defs>
+        
         {devices
           .filter(d => d.is_verified)
           .map((device, index, verifiedDevices) => {
@@ -249,20 +390,38 @@ const WorldMap = ({ devices, onDeviceClick }: WorldMapProps) => {
             if (!coords1 || !coords2) return null;
             
             return (
-              <motion.line
-                key={`${device.device_id}-${nextDevice.device_id}`}
-                x1={`${coords1.x}%`}
-                y1={`${coords1.y}%`}
-                x2={`${coords2.x}%`}
-                y2={`${coords2.y}%`}
-                stroke="hsl(var(--primary))"
-                strokeWidth="1"
-                strokeDasharray="4 4"
-                opacity="0.3"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 2, delay: 0.5 }}
-              />
+              <g key={`${device.device_id}-${nextDevice.device_id}`}>
+                {/* Base connection line */}
+                <motion.line
+                  x1={`${coords1.x}%`}
+                  y1={`${coords1.y}%`}
+                  x2={`${coords2.x}%`}
+                  y2={`${coords2.y}%`}
+                  stroke="url(#lineGradient)"
+                  strokeWidth="2"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 2, delay: 0.5 }}
+                />
+                
+                {/* Animated data packets */}
+                <motion.circle
+                  r="2"
+                  fill="hsl(var(--primary))"
+                  filter="blur(1px)"
+                  animate={{
+                    cx: [`${coords1.x}%`, `${coords2.x}%`],
+                    cy: [`${coords1.y}%`, `${coords2.y}%`],
+                    opacity: [0, 1, 1, 0]
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    delay: index * 0.3,
+                    ease: "easeInOut"
+                  }}
+                />
+              </g>
             );
           })}
       </svg>
