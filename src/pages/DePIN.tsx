@@ -1,38 +1,21 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { Gift, Wallet, Plus, Book } from 'lucide-react';
 import { toast } from 'sonner';
 import PageLayout from '@/components/layout/PageLayout';
 import PageHero from '@/components/layout/PageHero';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { Badge } from '@/components/ui/badge';
-import { 
-  LayoutDashboard, 
-  Plus, 
-  MapPin, 
-  Wallet, 
-  Gift 
-} from "lucide-react";
-import OverviewTab from '@/components/depin/dashboard/OverviewTab';
-import AddDeviceTab from '@/components/depin/dashboard/AddDeviceTab';
-import TraceDevicesTab from '@/components/depin/dashboard/TraceDevicesTab';
-import PortfolioTab from '@/components/depin/dashboard/PortfolioTab';
-import ClaimTab from '@/components/depin/dashboard/ClaimTab';
-import SetupGuideModal from '@/components/depin/SetupGuideModal';
+import Globe3D from '@/components/depin/Globe3D';
 import OnboardingModal from '@/components/depin/OnboardingModal';
+import SetupGuideModal from '@/components/depin/SetupGuideModal';
 import BatchClaimModal from '@/components/depin/BatchClaimModal';
+import ClaimTab from '@/components/depin/dashboard/ClaimTab';
+import PortfolioTab from '@/components/depin/dashboard/PortfolioTab';
+import AddDeviceTab from '@/components/depin/dashboard/AddDeviceTab';
+import DocsTab from '@/components/depin/dashboard/DocsTab';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
 import { useWalletContext } from '@/contexts/WalletContext';
-import { useSearchParams, useNavigate } from 'react-router-dom';
 
 interface Device {
   id: string;
@@ -47,413 +30,323 @@ interface Device {
 }
 
 const DePIN = () => {
-  const { isAuthenticated, session } = useWalletContext();
   const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') || 'portfolio';
+  const { isAuthenticated, session } = useWalletContext();
+
   const [devices, setDevices] = useState<Device[]>([]);
   const [earnings, setEarnings] = useState(0);
   const [activeDevices, setActiveDevices] = useState(0);
   const [uptime, setUptime] = useState(0);
   const [dailyRate, setDailyRate] = useState(0);
-  const [showSetupGuide, setShowSetupGuide] = useState(false);
+  const [activeClaims, setActiveClaims] = useState<any[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [showBatchClaim, setShowBatchClaim] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [showWalletModal, setShowWalletModal] = useState(false);
-  const [selectedDeviceId, setSelectedDeviceId] = useState('');
-  const [activeClaims, setActiveClaims] = useState<any[]>([]);
-  const [authMethod, setAuthMethod] = useState<'wallet' | 'email' | null>(null);
-  const navigate = useNavigate();
-
-  const currentTab = searchParams.get('tab') || 'overview';
-
-  const navigationItems = [
-    {
-      title: "Overview",
-      value: "overview",
-      icon: LayoutDashboard,
-    },
-    {
-      title: "Add Device",
-      value: "add-device",
-      icon: Plus,
-    },
-    {
-      title: "Trace Devices",
-      value: "trace",
-      icon: MapPin,
-    },
-    {
-      title: "Portfolio",
-      value: "portfolio",
-      icon: Wallet,
-    },
-    {
-      title: "Claim",
-      value: "claim",
-      icon: Gift,
-      badge: activeClaims.length,
-    },
-  ];
-
-  useEffect(() => {
-    if (session?.user) {
-      const provider = session.user.app_metadata?.provider;
-      setAuthMethod(provider === 'email' ? 'email' : 'wallet');
-    }
-  }, [session]);
-
-  // Check if user is visiting for the first time
-  const checkFirstVisit = async () => {
-    if (!isAuthenticated || !session?.user) return;
-
-    const { data: existingDevices } = await supabase
-      .from('device_registry')
-      .select('id')
-      .eq('user_id', session.user.id);
-
-    if (!existingDevices || existingDevices.length === 0) {
-      const hasSeenOnboarding = localStorage.getItem('depin_onboarding_seen');
-      if (!hasSeenOnboarding) {
-        setShowOnboarding(true);
-        localStorage.setItem('depin_onboarding_seen', 'true');
-      }
-    }
-  };
-
-  // Demo setup
-  const handleStartDemo = async () => {
-    if (!session?.user) {
-      toast.error('Please sign in to start demo');
-      return;
-    }
-
-    try {
-      await initializeDemo(session.user.id);
-      setShowOnboarding(false);
-      toast.success('Demo devices created! Simulation starting...');
-      await fetchDevices();
-    } catch (error: any) {
-      toast.error('Failed to initialize demo');
-    }
-  };
-
-  const handleConnectReal = () => {
-    setShowOnboarding(false);
-    handleTabChange('add-device');
-  };
-
-  const initializeDemo = async (userId: string) => {
-    const demoDevices = [
-      { type: 'solar-panel', name: 'Demo Solar Panel A', location: 'California, USA', capacity: '10kW' },
-      { type: 'solar-panel', name: 'Demo Solar Panel B', location: 'Texas, USA', capacity: '15kW' },
-      { type: 'weather-station', name: 'Demo Weather Station', location: 'New York, USA', capacity: 'N/A' },
-    ];
-
-    for (const device of demoDevices) {
-      const deviceId = `${device.type}-demo-${Date.now()}-${Math.random()}`;
-      await supabase.from('device_registry').insert({
-        user_id: userId,
-        device_id: deviceId,
-        device_name: device.name,
-        device_type: device.type,
-        metadata: { location: device.location, capacity: device.capacity },
-        status: 'active',
-      });
-    }
-  };
-
-  // Fetch devices
-  const fetchDevices = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('device_registry')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (data) {
-        setDevices(data);
-        const active = data.filter((d) => d.status === 'active').length;
-        setActiveDevices(active);
-
-        const now = new Date().getTime();
-        const onlineDevices = data.filter(
-          (d) => d.last_seen_at && now - new Date(d.last_seen_at).getTime() < 5 * 60 * 1000
-        );
-        const avgUp = onlineDevices.length > 0 ? (onlineDevices.length / data.length) * 100 : 0;
-        setUptime(avgUp);
-      }
-    } catch (error: any) {
-      console.error('Error fetching devices:', error);
-    }
-  };
-
-  // Fetch earnings
-  const fetchEarnings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('depin_rewards')
-        .select('amount, created_at');
-
-      if (error) throw error;
-
-      if (data) {
-        const total = data.reduce((sum, r) => sum + Number(r.amount), 0);
-        setEarnings(total);
-
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const recentRewards = data.filter((r) => new Date(r.created_at) > oneDayAgo);
-        const daily = recentRewards.reduce((sum, r) => sum + Number(r.amount), 0);
-        setDailyRate(daily);
-      }
-    } catch (error: any) {
-      console.error('Error fetching earnings:', error);
-    }
-  };
-
-  // Fetch active claims
-  const fetchActiveClaims = async () => {
-    try {
-      if (!session?.user) return;
-
-      const { data, error } = await supabase
-        .from('depin_reward_claims')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .in('status', ['pending', 'contract_prepared', 'ready_to_claim'])
-        .order('claimed_at', { ascending: false });
-
-      if (error) throw error;
-      if (data) setActiveClaims(data);
-    } catch (error: any) {
-      console.error('Error fetching claims:', error);
-    }
-  };
-
-  // Delete device
-  const handleDeleteDevice = async (deviceId: string) => {
-    try {
-      const { error } = await supabase
-        .from('device_registry')
-        .delete()
-        .eq('id', deviceId);
-
-      if (error) throw error;
-      toast.success('Device deleted successfully');
-      fetchDevices();
-    } catch (error: any) {
-      toast.error('Failed to delete device');
-    }
-  };
-
-  // Device added callback
-  const handleDeviceAdded = () => {
-    fetchDevices();
-  };
-
-  // Start simulation
-  const startSimulation = async () => {
-    try {
-      await supabase.functions.invoke('simulate-device-events');
-    } catch (error) {
-      console.log('Simulation not started:', error);
-    }
-  };
 
   useEffect(() => {
     checkFirstVisit();
+  }, []);
+
+  const checkFirstVisit = async () => {
+    const hasVisited = localStorage.getItem('depin-visited');
+    if (!hasVisited) {
+      setShowOnboarding(true);
+      localStorage.setItem('depin-visited', 'true');
+    }
+  };
+
+  const fetchDevices = async () => {
+    if (!session?.user?.id) return;
+
+    const { data, error } = await supabase
+      .from('device_registry')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching devices:', error);
+      return;
+    }
+
+    setDevices(data || []);
+    const active = data?.filter((d) => d.status === 'active').length || 0;
+    setActiveDevices(active);
+
+    if (data && data.length > 0) {
+      const now = new Date().getTime();
+      const onlineDevices = data.filter(
+        (d) => d.last_seen_at && now - new Date(d.last_seen_at).getTime() < 5 * 60 * 1000
+      );
+      const avgUp = onlineDevices.length > 0 ? (onlineDevices.length / data.length) * 100 : 0;
+      setUptime(avgUp);
+    }
+  };
+
+  const fetchEarnings = async () => {
+    if (!session?.user?.id) return;
+
+    const { data, error } = await supabase
+      .from('depin_rewards')
+      .select('amount, created_at')
+      .eq('user_id', session.user.id);
+
+    if (error) {
+      console.error('Error fetching earnings:', error);
+      return;
+    }
+
+    const total = data?.reduce((acc, reward) => acc + reward.amount, 0) || 0;
+    setEarnings(total);
+
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const recentRewards = data?.filter((r) => r.created_at >= oneDayAgo) || [];
+    const dailyTotal = recentRewards.reduce((acc, r) => acc + r.amount, 0);
+    setDailyRate(dailyTotal);
+  };
+
+  const fetchActiveClaims = async () => {
+    if (!session?.user?.id) return;
+
+    const { data, error } = await supabase
+      .from('depin_reward_claims')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .in('status', ['pending', 'contract_prepared', 'ready_to_claim']);
+
+    if (!error && data) {
+      setActiveClaims(data);
+    }
+  };
+
+  const handleDeviceAdded = () => {
     fetchDevices();
-    fetchEarnings();
-    fetchActiveClaims();
+    toast.success('Device added successfully!');
+  };
 
-    const fetchUserId = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) setUserId(user.id);
-    };
-    fetchUserId();
+  const handleDeleteDevice = async (deviceId: string) => {
+    const { error } = await supabase
+      .from('device_registry')
+      .delete()
+      .eq('id', deviceId);
 
-    // Real-time updates
-    const channel = supabase
-      .channel('depin-updates')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'device_registry'
-      }, () => {
-        fetchDevices();
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'depin_rewards'
-      }, () => {
-        fetchEarnings();
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'depin_reward_claims'
-      }, () => {
-        fetchActiveClaims();
-      })
+    if (error) {
+      toast.error('Failed to delete device');
+      return;
+    }
+
+    toast.success('Device deleted');
+    fetchDevices();
+  };
+
+  const startSimulation = async () => {
+    if (!session?.user?.id) return;
+
+    try {
+      await supabase.functions.invoke('simulate-device-events', {
+        body: { userId: session.user.id },
+      });
+    } catch (error) {
+      console.error('Simulation error:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchDevices();
+      fetchEarnings();
+      fetchActiveClaims();
+      setUserId(session.user.id);
+    }
+
+    const devicesChannel = supabase
+      .channel('depin-devices-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'device_registry' },
+        () => fetchDevices()
+      )
+      .subscribe();
+
+    const rewardsChannel = supabase
+      .channel('depin-rewards-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'depin_rewards' },
+        () => fetchEarnings()
+      )
+      .subscribe();
+
+    const claimsChannel = supabase
+      .channel('depin-claims-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'depin_reward_claims' },
+        () => fetchActiveClaims()
+      )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      devicesChannel.unsubscribe();
+      rewardsChannel.unsubscribe();
+      claimsChannel.unsubscribe();
     };
-  }, [session?.user]);
+  }, [session?.user?.id]);
 
   useEffect(() => {
-    if (isAuthenticated && session?.user) {
+    if (session?.user?.id) {
       startSimulation();
     }
-  }, [isAuthenticated, session?.user]);
+  }, [session?.user?.id]);
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
   };
 
-  // Prepare device breakdown for batch claim
-  const deviceBreakdown = devices.map(d => ({
-    deviceId: d.device_id,
-    deviceName: d.device_name,
-    amount: 10.5 // Mock amount
+  const deviceBreakdown = devices.map((device) => ({
+    deviceId: device.device_id,
+    deviceName: device.device_name,
+    amount: 0,
   }));
-
-  const pendingRewards = earnings;
 
   return (
     <PageLayout>
-      <PageHero 
-        title="DePIN Dashboard" 
-        description="Manage your Decentralized Physical Infrastructure devices and earnings"
-      />
-      
-      <OnboardingModal 
-        open={showOnboarding}
-        onClose={() => setShowOnboarding(false)}
-        onStartDemo={handleStartDemo}
-        onConnectReal={handleConnectReal}
-        isAuthenticated={isAuthenticated}
-        authMethod={authMethod}
-        onShowWalletModal={() => setShowWalletModal(true)}
-        onNavigateToAuth={() => navigate('/auth')}
+      <PageHero
+        title="DePIN Dashboard"
+        description="Manage your devices and earn rewards"
       />
 
-      <SetupGuideModal 
-        open={showSetupGuide}
-        onClose={() => setShowSetupGuide(false)}
-        deviceId={selectedDeviceId || 'demo-device'}
-      />
+      {showOnboarding && (
+        <OnboardingModal
+          open={showOnboarding}
+          onClose={() => setShowOnboarding(false)}
+          onStartDemo={() => {}}
+          onConnectReal={() => setShowOnboarding(false)}
+          isAuthenticated={isAuthenticated}
+          authMethod={isAuthenticated ? 'wallet' : null}
+          onShowWalletModal={() => {}}
+          onNavigateToAuth={() => {}}
+        />
+      )}
 
-      <BatchClaimModal
-        open={showBatchClaim}
-        onClose={() => setShowBatchClaim(false)}
-        deviceBreakdown={deviceBreakdown}
-        totalAmount={earnings}
-        requestedAmount={null}
-        preferredChain="Solana"
-        onSuccess={() => {
-          fetchEarnings();
-          fetchActiveClaims();
-        }}
-      />
+      {showSetupGuide && (
+        <SetupGuideModal
+          open={showSetupGuide}
+          onClose={() => setShowSetupGuide(false)}
+          deviceId="demo-device"
+        />
+      )}
 
-      <SidebarProvider defaultOpen={true}>
-        <div className="flex min-h-screen w-full">
-          {/* Left Sidebar */}
-          <Sidebar className="border-r">
-            <SidebarContent>
-              <SidebarGroup>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {navigationItems.map((item) => (
-                      <SidebarMenuItem key={item.value}>
-                        <SidebarMenuButton
-                          onClick={() => handleTabChange(item.value)}
-                          isActive={currentTab === item.value}
-                          className="w-full"
-                        >
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                          {item.badge && item.badge > 0 && (
-                            <Badge className="ml-auto h-5 w-5 p-0 flex items-center justify-center" variant="destructive">
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            </SidebarContent>
-          </Sidebar>
+      {showBatchClaim && (
+        <BatchClaimModal
+          open={showBatchClaim}
+          onClose={() => setShowBatchClaim(false)}
+          deviceBreakdown={deviceBreakdown}
+          totalAmount={earnings}
+          requestedAmount={null}
+          preferredChain="Solana"
+          onSuccess={() => {
+            fetchEarnings();
+            fetchActiveClaims();
+          }}
+        />
+      )}
 
-          {/* Right Content Area */}
-          <SidebarInset className="flex-1">
-            {/* Header with Toggle */}
-            <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 lg:px-8">
-              <SidebarTrigger />
-              <h2 className="text-lg font-semibold">
-                {navigationItems.find(item => item.value === currentTab)?.title || 'Dashboard'}
-              </h2>
-            </header>
+      <div className="px-4 md:px-6 lg:px-12 pb-12">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* 3D Globe Hero - Always Visible */}
+          <div className="relative">
+            <Globe3D
+              devices={devices}
+              onDeviceClick={(deviceId) => {
+                console.log('Device clicked:', deviceId);
+              }}
+              autoRotate={true}
+            />
 
-            {/* Main Content */}
-            <main className="flex-1 overflow-auto">
-              <div className="px-4 md:px-6 lg:px-8 py-6">
-                <div className="max-w-7xl mx-auto">
-            {currentTab === 'overview' && (
-              <OverviewTab 
-                onNavigateToTab={handleTabChange}
-                devices={devices}
-                stats={{
-                  totalDevices: devices.length,
-                  activeDevices,
-                  earnings,
-                  uptime
-                }}
-              />
-            )}
-
-                  {currentTab === 'add-device' && (
-                    <AddDeviceTab 
-                      onDeviceAdded={() => {
-                        handleDeviceAdded();
-                        handleTabChange('trace');
-                      }}
-                      onOpenSetupGuide={() => setShowSetupGuide(true)}
-                    />
-                  )}
-
-                  {currentTab === 'trace' && (
-                    <TraceDevicesTab devices={devices} />
-                  )}
-
-                  {currentTab === 'portfolio' && (
-                    <PortfolioTab 
-                      earnings={earnings}
-                      dailyRate={dailyRate}
-                      activeDevices={activeDevices}
-                      uptime={uptime}
-                    />
-                  )}
-
-                  {currentTab === 'claim' && (
-                    <ClaimTab 
-                      pendingRewards={pendingRewards}
-                      activeClaims={activeClaims}
-                      onClaimClick={() => setShowBatchClaim(true)}
-                    />
-                  )}
+            {/* Stats Overlay */}
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-full max-w-3xl px-4">
+              <Card className="bg-background/95 backdrop-blur-sm border-2 border-primary/20 shadow-xl">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Total Devices</p>
+                    <p className="text-2xl font-bold">{devices.length}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Active</p>
+                    <p className="text-2xl font-bold text-green-500">{activeDevices}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Total Earned</p>
+                    <p className="text-2xl font-bold">{earnings.toFixed(4)} ETH</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Uptime</p>
+                    <p className="text-2xl font-bold">{uptime}%</p>
+                  </div>
                 </div>
-              </div>
-            </main>
-          </SidebarInset>
+              </Card>
+            </div>
+          </div>
+
+          {/* Horizontal Tabs */}
+          <Tabs value={currentTab} onValueChange={handleTabChange}>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="claim" className="relative">
+                <Gift className="w-4 h-4 mr-2" />
+                Claim
+                {activeClaims.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {activeClaims.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="portfolio">
+                <Wallet className="w-4 h-4 mr-2" />
+                Portfolio
+              </TabsTrigger>
+              <TabsTrigger value="add-device">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Device
+              </TabsTrigger>
+              <TabsTrigger value="docs">
+                <Book className="w-4 h-4 mr-2" />
+                DePIN Docs
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="claim" className="mt-6">
+              <ClaimTab
+                pendingRewards={earnings}
+                activeClaims={activeClaims}
+                onClaimClick={() => setShowBatchClaim(true)}
+              />
+            </TabsContent>
+
+            <TabsContent value="portfolio" className="mt-6">
+              <PortfolioTab
+                earnings={earnings}
+                dailyRate={dailyRate}
+                activeDevices={activeDevices}
+                uptime={uptime}
+              />
+            </TabsContent>
+
+            <TabsContent value="add-device" className="mt-6">
+              <AddDeviceTab
+                onDeviceAdded={handleDeviceAdded}
+                onOpenSetupGuide={() => setShowSetupGuide(true)}
+              />
+            </TabsContent>
+
+            <TabsContent value="docs" className="mt-6">
+              <DocsTab />
+            </TabsContent>
+          </Tabs>
         </div>
-      </SidebarProvider>
+      </div>
     </PageLayout>
   );
 };

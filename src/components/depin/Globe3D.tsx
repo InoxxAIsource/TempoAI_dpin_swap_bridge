@@ -37,7 +37,7 @@ function Earth() {
   return (
     <group>
       {/* Main Earth Sphere */}
-      <Sphere ref={earthRef} args={[GLOBE_RADIUS, 64, 64]}>
+      <Sphere ref={earthRef} args={[GLOBE_RADIUS, 32, 32]}>
         <meshStandardMaterial
           color="#1e40af"
           metalness={0.4}
@@ -48,21 +48,11 @@ function Earth() {
       </Sphere>
 
       {/* Atmosphere Glow */}
-      <Sphere args={[GLOBE_RADIUS + 0.05, 64, 64]}>
+      <Sphere args={[GLOBE_RADIUS + 0.05, 32, 32]}>
         <meshBasicMaterial
           color="#3b82f6"
           transparent
           opacity={0.15}
-          side={THREE.BackSide}
-        />
-      </Sphere>
-
-      {/* Outer Glow */}
-      <Sphere args={[GLOBE_RADIUS + 0.15, 64, 64]}>
-        <meshBasicMaterial
-          color="#60a5fa"
-          transparent
-          opacity={0.05}
           side={THREE.BackSide}
         />
       </Sphere>
@@ -116,7 +106,7 @@ function DeviceMarker({
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
       >
-        <sphereGeometry args={[0.05, 16, 16]} />
+        <sphereGeometry args={[0.05, 8, 8]} />
         <meshStandardMaterial
           color={markerColor}
           emissive={markerColor}
@@ -154,8 +144,8 @@ function Stars() {
   const starsRef = useRef<THREE.Points>(null);
 
   const starPositions = useMemo(() => {
-    const positions = new Float32Array(2000 * 3);
-    for (let i = 0; i < 2000; i++) {
+    const positions = new Float32Array(500 * 3);
+    for (let i = 0; i < 500; i++) {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(Math.random() * 2 - 1);
       const radius = 10 + Math.random() * 10;
@@ -205,10 +195,10 @@ export default function Globe3D({
   );
 
   return (
-    <div className="w-full h-[600px] lg:h-[700px] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+    <div className="w-full h-[500px] md:h-[600px] lg:h-[700px] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-3xl overflow-hidden border-2 border-primary/20">
       <Canvas
         camera={{ position: [0, 0, 5], fov: 45 }}
-        gl={{ antialias: true }}
+        gl={{ antialias: false }}
       >
         {/* Lighting */}
         <ambientLight intensity={0.3} />
