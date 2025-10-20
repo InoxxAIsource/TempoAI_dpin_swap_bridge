@@ -313,8 +313,8 @@ const DePIN = () => {
         }}
       />
 
-      <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full space-y-8">
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b pb-4">
+      <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
+        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b pb-4 px-4 md:px-6 lg:px-12">
           <TabsList className="grid w-full grid-cols-5 max-w-3xl mx-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="add-device">Add Device</TabsTrigger>
@@ -331,40 +331,44 @@ const DePIN = () => {
           </TabsList>
         </div>
 
-        <TabsContent value="overview" className="space-y-8">
-          <OverviewTab onNavigateToTab={handleTabChange} />
-        </TabsContent>
+        <div className="px-4 md:px-6 lg:px-12 py-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            <TabsContent value="overview">
+              <OverviewTab onNavigateToTab={handleTabChange} />
+            </TabsContent>
 
-        <TabsContent value="add-device">
-          <AddDeviceTab 
-            onDeviceAdded={() => {
-              handleDeviceAdded();
-              handleTabChange('trace');
-            }}
-            onOpenSetupGuide={() => setShowSetupGuide(true)}
-          />
-        </TabsContent>
+            <TabsContent value="add-device">
+              <AddDeviceTab 
+                onDeviceAdded={() => {
+                  handleDeviceAdded();
+                  handleTabChange('trace');
+                }}
+                onOpenSetupGuide={() => setShowSetupGuide(true)}
+              />
+            </TabsContent>
 
-        <TabsContent value="trace">
-          <TraceDevicesTab devices={devices} />
-        </TabsContent>
+            <TabsContent value="trace">
+              <TraceDevicesTab devices={devices} />
+            </TabsContent>
 
-        <TabsContent value="portfolio">
-          <PortfolioTab 
-            earnings={earnings}
-            dailyRate={dailyRate}
-            activeDevices={activeDevices}
-            uptime={uptime}
-          />
-        </TabsContent>
+            <TabsContent value="portfolio">
+              <PortfolioTab 
+                earnings={earnings}
+                dailyRate={dailyRate}
+                activeDevices={activeDevices}
+                uptime={uptime}
+              />
+            </TabsContent>
 
-        <TabsContent value="claim">
-          <ClaimTab 
-            pendingRewards={pendingRewards}
-            activeClaims={activeClaims}
-            onClaimClick={() => setShowBatchClaim(true)}
-          />
-        </TabsContent>
+            <TabsContent value="claim">
+              <ClaimTab 
+                pendingRewards={pendingRewards}
+                activeClaims={activeClaims}
+                onClaimClick={() => setShowBatchClaim(true)}
+              />
+            </TabsContent>
+          </div>
+        </div>
       </Tabs>
     </PageLayout>
   );
