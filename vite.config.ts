@@ -15,4 +15,19 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress warnings about comments in node_modules
+        if (warning.code === 'INVALID_ANNOTATION' && warning.message.includes('/*#__PURE__*/')) {
+          return;
+        }
+        // Suppress module externalization warnings
+        if (warning.code === 'UNRESOLVED_IMPORT' && warning.message.includes('externalized for browser compatibility')) {
+          return;
+        }
+        warn(warning);
+      }
+    }
+  }
 }));
