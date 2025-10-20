@@ -118,15 +118,15 @@ const Portfolio = () => {
               variant="ghost"
               size="sm"
               onClick={() => navigate('/depin')}
-              className="gap-2"
+              className="gap-2 min-h-[44px]"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 md:h-5 md:h-5" />
               Back to DePIN
             </Button>
           </div>
 
           {/* Active Devices Card */}
-          <Card className="mb-8">
+          <Card className="mb-6 md:mb-8 p-4 md:p-6">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Active Devices</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
@@ -141,7 +141,7 @@ const Portfolio = () => {
 
           {/* Pending Claims Section */}
           {pendingClaims.length > 0 && (
-            <div className="mb-8 space-y-4">
+            <div className="mb-6 md:mb-8 space-y-4 md:space-y-6">
               <h2 className="text-2xl font-bold">Pending Claims</h2>
               {pendingClaims.map((claim) => (
                 <Card key={claim.id}>
@@ -158,7 +158,7 @@ const Portfolio = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Status Badge */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 md:gap-3 flex-wrap">
                       {!claim.contract_prepared_at && (
                         <Badge variant="outline" className="gap-1">
                           <Circle className="w-3 h-3 fill-current" />
@@ -204,10 +204,10 @@ const Portfolio = () => {
                     {claim.wormhole_tx?.needs_redemption && (
                       <Button
                         onClick={() => navigate('/claim')}
-                        className="w-full gap-2"
+                        className="w-full gap-2 min-h-[44px]"
                       >
                         Claim on Destination Chain
-                        <ExternalLink className="w-4 h-4" />
+                        <ExternalLink className="w-4 h-4 md:h-5 md:h-5" />
                       </Button>
                     )}
                   </CardContent>

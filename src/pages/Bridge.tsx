@@ -61,11 +61,11 @@ const Bridge = () => {
       </section>
 
       {/* Supported Chains */}
-      <section className="px-4 md:px-6 lg:px-12 py-6 md:py-8 pb-16 md:pb-20">
+      <section className="px-4 sm:px-6 lg:px-12 py-6 md:py-8 pb-16 md:pb-20">
         <div className="max-w-6xl mx-auto">
           <div className="border border-border rounded-2xl p-4 md:p-6 lg:p-8 bg-card">
             <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Supported Chains</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
               {['Ethereum', 'Polygon', 'Arbitrum', 'Avalanche', 'Solana', 'Optimism', 'BNB Chain', 'Base', 'Fantom', 'Celo', 'Moonbeam', 'Aurora'].map((chain) => (
                 <ChainBadge key={chain} chain={chain} />
               ))}

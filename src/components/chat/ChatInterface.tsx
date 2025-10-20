@@ -597,7 +597,7 @@ export default function ChatInterface() {
       {/* Sidebar */}
       <div
         className={cn(
-          'fixed left-0 top-0 z-50 h-full w-64 bg-zinc-950 border-r border-zinc-800 transition-transform duration-300 md:relative md:translate-x-0',
+          'fixed left-0 top-0 z-50 h-full w-72 bg-zinc-950 border-r border-zinc-800 transition-transform duration-300 md:relative md:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -694,15 +694,15 @@ export default function ChatInterface() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Message Tempo AI..."
-                    className="w-full px-4 py-3 pr-12 rounded-2xl border border-zinc-700 bg-zinc-900 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[56px]"
+                    className="w-full px-4 py-3 pr-14 rounded-2xl border border-zinc-700 bg-zinc-900 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[56px] text-base"
                     rows={1}
                   />
                   <button
                     onClick={() => handleSend()}
                     disabled={!input.trim() || isThinking}
-                    className="absolute right-3 bottom-3 p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors"
+                    className="absolute right-3 bottom-3 p-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors min-w-[44px] min-h-[44px]"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -716,12 +716,12 @@ export default function ChatInterface() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-xl">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-xl">
                 {prePrompts.map((prompt, idx) => (
                   <button
                     key={idx}
                     onClick={() => handlePrePrompt(prompt)}
-                    className="group relative p-4 text-left text-sm rounded-xl border border-zinc-700 bg-gradient-to-br from-zinc-900 to-zinc-900/50 hover:from-zinc-800 hover:to-zinc-800/50 hover:border-zinc-600 transition-all duration-200 hover:scale-[1.02] cursor-pointer"
+                    className="group relative p-4 text-left text-sm rounded-xl border border-zinc-700 bg-gradient-to-br from-zinc-900 to-zinc-900/50 hover:from-zinc-800 hover:to-zinc-800/50 hover:border-zinc-600 transition-all duration-200 hover:scale-[1.02] cursor-pointer min-h-[44px]"
                   >
                     <span className="flex items-start justify-between gap-2">
                       <span className="flex-1">{prompt}</span>
@@ -789,21 +789,21 @@ export default function ChatInterface() {
                          Continue with:
                        </p>
                      </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                       {prompts.map((prompt, idx) => (
-                         <button
-                           key={`followup-${messageCount}-${idx}-${prompt.substring(0, 20)}`}
-                           onClick={() => {
-                             handlePrePrompt(prompt);
-                           }}
-                           className="group p-3 text-left text-xs rounded-xl border border-zinc-700 bg-gradient-to-br from-zinc-900 to-zinc-900/50 hover:from-zinc-800 hover:to-zinc-800/50 hover:border-zinc-600 transition-all duration-200 hover:scale-[1.02] cursor-pointer"
-                         >
-                           <span className="flex items-start justify-between gap-2">
-                             <span className="flex-1">{prompt}</span>
-                             <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all" />
-                           </span>
-                         </button>
-                       ))}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {prompts.map((prompt, idx) => (
+                          <button
+                            key={`followup-${messageCount}-${idx}-${prompt.substring(0, 20)}`}
+                            onClick={() => {
+                              handlePrePrompt(prompt);
+                            }}
+                            className="group p-3 text-left text-sm rounded-xl border border-zinc-700 bg-gradient-to-br from-zinc-900 to-zinc-900/50 hover:from-zinc-800 hover:to-zinc-800/50 hover:border-zinc-600 transition-all duration-200 hover:scale-[1.02] cursor-pointer min-h-[44px]"
+                          >
+                            <span className="flex items-start justify-between gap-2">
+                              <span className="flex-1">{prompt}</span>
+                              <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all" />
+                            </span>
+                          </button>
+                        ))}
                      </div>
                    </div>
                  );
@@ -814,9 +814,9 @@ export default function ChatInterface() {
 
         {/* Bottom UI Container - Fixed at bottom with proper stacking */}
         {hasMessages && (
-          <div className="fixed bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-800 shadow-[0_-4px_12px_rgba(0,0,0,0.5)] z-50 md:left-64">
+          <div className="fixed bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-800 shadow-[0_-4px_12px_rgba(0,0,0,0.5)] z-50 md:left-72">
             {/* Input Area */}
-            <div className="p-4 bg-zinc-950">
+            <div className="p-3 md:p-4 bg-zinc-950">
               <div className="max-w-3xl mx-auto">
                 <div className="relative">
                   <textarea
@@ -825,18 +825,18 @@ export default function ChatInterface() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Message Tempo AI..."
-                    className="w-full px-4 py-3 pr-12 rounded-2xl border border-zinc-700 bg-zinc-900 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[56px]"
+                    className="w-full px-4 py-3 pr-14 rounded-2xl border border-zinc-700 bg-zinc-900 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[56px] text-base"
                     rows={1}
                   />
                   <button
                     onClick={() => handleSend()}
                     disabled={!input.trim() || isThinking}
-                    className="absolute right-3 bottom-3 p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors"
+                    className="absolute right-3 bottom-3 p-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors min-w-[44px] min-h-[44px]"
                   >
                     {isThinking ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
-                      <Send className="w-4 h-4" />
+                      <Send className="w-5 h-5" />
                     )}
                   </button>
                 </div>

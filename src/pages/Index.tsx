@@ -61,23 +61,23 @@ const Index = () => {
               onValueChange={setActiveTab} 
               className="w-full max-w-7xl mx-auto"
             >
-              <div className="sticky top-12 md:top-14 z-[100] bg-background/95 backdrop-blur-sm pb-3 md:pb-4 -mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-12 lg:px-12 mb-6 md:mb-8">
-                <TabsList className="grid w-full max-w-7xl mx-auto grid-cols-1 sm:grid-cols-3 h-auto p-1.5 md:p-2 bg-muted shadow-lg border border-border gap-1 sm:gap-0">
+              <div className="sticky top-14 md:top-16 z-[100] bg-background/95 backdrop-blur-sm border-b border-border pb-3 md:pb-4 -mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-12 lg:px-12 mb-6 md:mb-8">
+                <TabsList className="grid w-full max-w-7xl mx-auto grid-cols-1 sm:grid-cols-3 h-auto p-2 md:p-2 bg-muted shadow-lg border border-border gap-1 sm:gap-0">
                   <TabsTrigger 
                     value="overview" 
-                    className="py-2 md:py-3 text-xs md:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50"
+                    className="py-3 md:py-3.5 text-sm sm:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 min-h-[44px]"
                   >
                     Overview
                   </TabsTrigger>
                   <TabsTrigger 
                     value="about" 
-                    className="py-2 md:py-3 text-xs md:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50"
+                    className="py-3 md:py-3.5 text-sm sm:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 min-h-[44px]"
                   >
                     About Protocol
                   </TabsTrigger>
                   <TabsTrigger 
                     value="redemption" 
-                    className="py-2.5 md:py-3 text-sm md:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 relative"
+                    className="py-3 md:py-3.5 text-sm sm:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 relative min-h-[44px]"
                     onClick={() => navigate('/claim')}
                   >
                     Redemption

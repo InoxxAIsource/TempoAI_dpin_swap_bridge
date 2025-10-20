@@ -68,8 +68,8 @@ export function DocsSidebar() {
     isActive ? 'bg-primary/10 text-primary font-semibold border-l-2 border-primary' : 'hover:bg-muted/50';
 
   return (
-    <Sidebar className={open ? 'w-64' : 'w-14'}>
-      <SidebarContent>
+    <Sidebar className={open ? 'w-64' : 'w-0 md:w-14'} collapsible="offcanvas">
+      <SidebarContent className="overflow-hidden">
         {docSections.map((section) => {
           const hasActiveItem = section.items.some((item) => isActive(item.url));
           
@@ -82,7 +82,7 @@ export function DocsSidebar() {
                 <SidebarMenu>
                   {section.items.map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
+                      <SidebarMenuButton asChild className="py-2.5 px-3">
                         <NavLink to={item.url} end className={getNavCls}>
                           <item.icon className="h-4 w-4" />
                           {open && <span className="ml-2">{item.title}</span>}

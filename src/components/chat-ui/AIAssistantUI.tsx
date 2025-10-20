@@ -10,9 +10,8 @@ export default function AIAssistantUI() {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("theme");
       if (saved) return saved;
-      if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark";
     }
-    return "light";
+    return "light"; // Always default to light mode
   });
 
   useEffect(() => {

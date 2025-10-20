@@ -158,4 +158,53 @@ All colors MUST be HSL.
       user-select: none;
     }
   }
+
+  /* Enhanced mobile optimizations */
+  @media (max-width: 640px) {
+    /* Improve touch targets */
+    button, a, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Prevent text overflow */
+    h1, h2, h3, h4, h5, h6 {
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+    
+    /* Improve form inputs */
+    input, textarea, select {
+      font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    /* Better modal/dialog sizing */
+    [role="dialog"] {
+      max-width: calc(100vw - 2rem);
+      max-height: calc(100vh - 2rem);
+    }
+    
+    /* Improve card padding */
+    .card {
+      padding: 1rem;
+    }
+    
+    /* Stack flex items on very small screens */
+    .flex-mobile-stack {
+      flex-direction: column;
+    }
+  }
+
+  /* Tablet optimizations */
+  @media (min-width: 641px) and (max-width: 1024px) {
+    /* Adjust sidebar widths */
+    [data-sidebar] {
+      width: 240px;
+    }
+    
+    /* Improve grid spacing */
+    .grid {
+      gap: 1rem;
+    }
+  }
 }
