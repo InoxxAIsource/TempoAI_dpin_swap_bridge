@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Coins, ArrowRight, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import ClaimStatusTracker from '@/components/depin/ClaimStatusTracker';
+import ClaimStatusTracker from '@/components/claim/ClaimStatusTracker';
 
 interface Claim {
   id: string;
@@ -96,11 +96,12 @@ const ClaimTab = ({ pendingRewards, activeClaims, onClaimClick }: ClaimTabProps)
                   {getStatusBadge(claim.status)}
                 </div>
               </CardHeader>
-              <CardContent>
+               <CardContent>
                 <ClaimStatusTracker
                   status={claim.status}
                   txHash={claim.eth_transfer_tx}
-                  chain={claim.destination_chain}
+                  fromChain="Sepolia"
+                  toChain={claim.destination_chain}
                 />
               </CardContent>
             </Card>

@@ -41,6 +41,10 @@ const TraceDevicesTab = ({ devices }: TraceDevicesTabProps) => {
   const [autoRotate, setAutoRotate] = useState(true);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
+  const handleDeviceClick = (device: TraceDevicesTabProps['devices'][0]) => {
+    setSelectedDevice(device as Device);
+  };
+
   const filteredDevices = useMemo(() => {
     return devices.filter((device) => {
       if (showMyDevicesOnly && device.user_id !== session?.user?.id) return false;
@@ -87,7 +91,7 @@ const TraceDevicesTab = ({ devices }: TraceDevicesTabProps) => {
         <div className="lg:col-span-3">
           <Globe3D
             devices={filteredDevices}
-            onDeviceClick={setSelectedDevice}
+            onDeviceClick={handleDeviceClick}
             autoRotate={autoRotate}
           />
         </div>
