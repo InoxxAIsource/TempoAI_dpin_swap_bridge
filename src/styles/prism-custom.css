@@ -1,0 +1,154 @@
+/* Custom Prism.js Theme for Tempo Docs */
+
+/* Base code block styling */
+code[class*="language-"],
+pre[class*="language-"] {
+  color: #e8eaed;
+  background: transparent;
+  text-shadow: none;
+  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  direction: ltr;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  tab-size: 2;
+  hyphens: none;
+}
+
+/* Light mode adjustments */
+:root[class="light"] code[class*="language-"],
+:root[class="light"] pre[class*="language-"] {
+  color: #24292f;
+}
+
+/* Comments */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #6a737d;
+  font-style: italic;
+}
+
+/* Punctuation */
+.token.punctuation {
+  color: #9ca3af;
+}
+
+/* Keywords (class, def, import, return, if, else, etc.) */
+.token.keyword {
+  color: #d73a49; /* Red/Pink - matches your image */
+  font-weight: 600;
+}
+
+/* Strings */
+.token.string,
+.token.char,
+.token.attr-value {
+  color: #22863a; /* Green */
+}
+
+/* Numbers and Booleans */
+.token.boolean,
+.token.number {
+  color: #005cc5; /* Blue */
+}
+
+/* Functions and Method Names */
+.token.function,
+.token.function-name {
+  color: #6f42c1; /* Purple */
+}
+
+/* Class Names */
+.token.class-name {
+  color: #6f42c1; /* Purple */
+  font-weight: 600;
+}
+
+/* Operators */
+.token.operator,
+.token.entity,
+.token.url {
+  color: #e36209; /* Orange */
+}
+
+/* Variables */
+.token.variable {
+  color: #e36209; /* Orange */
+}
+
+/* Properties */
+.token.property,
+.token.tag,
+.token.constant,
+.token.symbol {
+  color: #22863a; /* Green */
+}
+
+/* Attributes */
+.token.attr-name {
+  color: #6f42c1; /* Purple */
+}
+
+/* Built-in functions */
+.token.builtin {
+  color: #005cc5; /* Blue */
+}
+
+/* Regex */
+.token.regex,
+.token.important {
+  color: #e36209; /* Orange */
+  font-weight: 600;
+}
+
+/* Decorators (Python) */
+.token.decorator {
+  color: #6f42c1; /* Purple */
+}
+
+/* Light mode color adjustments */
+:root[class="light"] .token.keyword {
+  color: #d73a49;
+}
+
+:root[class="light"] .token.string {
+  color: #032f62;
+}
+
+:root[class="light"] .token.function {
+  color: #6f42c1;
+}
+
+:root[class="light"] .token.number {
+  color: #005cc5;
+}
+
+:root[class="light"] .token.operator {
+  color: #d73a49;
+}
+
+/* Dark mode enhancements */
+:root[class="dark"] .token.keyword {
+  color: #ff7b72;
+}
+
+:root[class="dark"] .token.string {
+  color: #a5d6ff;
+}
+
+:root[class="dark"] .token.function {
+  color: #d2a8ff;
+}
+
+:root[class="dark"] .token.number {
+  color: #79c0ff;
+}
+
+:root[class="dark"] .token.operator {
+  color: #ff7b72;
+}

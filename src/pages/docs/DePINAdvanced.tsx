@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
+import CodeBlock from '@/components/docs/CodeBlock';
 
 const DePINAdvanced = () => {
   return (
@@ -19,9 +20,8 @@ const DePINAdvanced = () => {
               Every metric reported by verified devices is signed using Ed25519 cryptography. This 
               ensures data integrity and prevents tampering.
             </p>
-            <Card className="p-4 bg-muted/30">
-              <pre className="text-sm overflow-x-auto">
-{`// Device signs metric with private key
+            <CodeBlock 
+              code={`// Device signs metric with private key
 const signature = ed25519.sign(
   message: metricData,
   privateKey: devicePrivateKey
@@ -33,8 +33,8 @@ const isValid = ed25519.verify(
   message: metricData,
   publicKey: devicePublicKey
 );`}
-              </pre>
-            </Card>
+              language="javascript"
+            />
           </div>
 
           <div>
@@ -42,9 +42,8 @@ const isValid = ed25519.verify(
             <p className="text-muted-foreground mb-4">
               Devices are stored in a Supabase table with the following structure:
             </p>
-            <Card className="p-4 bg-muted/30">
-              <pre className="text-sm overflow-x-auto">
-{`Table: device_registry
+            <CodeBlock 
+              code={`Table: device_registry
 ├─ id: UUID (primary key)
 ├─ user_id: UUID (references auth.users)
 ├─ name: TEXT (device name)
@@ -56,8 +55,9 @@ const isValid = ed25519.verify(
 ├─ metadata: JSONB (location, capacity, etc.)
 ├─ created_at: TIMESTAMP
 └─ last_seen: TIMESTAMP`}
-              </pre>
-            </Card>
+              language="bash"
+              filename="device_registry schema"
+            />
           </div>
 
           <div>
@@ -89,9 +89,8 @@ const isValid = ed25519.verify(
             <p className="text-muted-foreground mb-4">
               You can add custom device types by modifying the device metadata:
             </p>
-            <Card className="p-4 bg-muted/30">
-              <pre className="text-sm overflow-x-auto">
-{`{
+            <CodeBlock 
+              code={`{
   "type": "custom_iot_sensor",
   "reward_rate": 0.002,
   "metric_type": "air_quality_index",
@@ -101,8 +100,9 @@ const isValid = ed25519.verify(
     "longitude": -122.4194
   }
 }`}
-              </pre>
-            </Card>
+              language="json"
+              filename="Custom device metadata"
+            />
           </div>
 
           <div>

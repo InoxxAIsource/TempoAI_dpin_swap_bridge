@@ -1,5 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, Copy } from 'lucide-react';
+import Prism from 'prismjs';
+
+// Import language support
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-jsx';
+import 'prismjs/components/prism-tsx';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-solidity';
+
+// Import custom Prism theme
+import '@/styles/prism-custom.css';
 
 interface CodeBlockProps {
   code: string;
@@ -9,6 +23,10 @@ interface CodeBlockProps {
 
 const CodeBlock = ({ code, language = 'typescript', filename }: CodeBlockProps) => {
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    Prism.highlightAll();
+  }, [code, language]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
@@ -37,7 +55,7 @@ const CodeBlock = ({ code, language = 'typescript', filename }: CodeBlockProps) 
           )}
         </button>
         <pre className="p-4 overflow-x-auto">
-          <code className="text-sm font-mono text-foreground/90">
+          <code className={`language-${language} text-sm font-mono`}>
             {code}
           </code>
         </pre>
