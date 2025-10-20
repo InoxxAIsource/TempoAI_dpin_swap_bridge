@@ -19,7 +19,16 @@ export default defineConfig(({ mode }) => ({
     sourcemap: false,
     minify: 'esbuild',
     target: 'esnext',
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
+      output: {
+        manualChunks: {
+          'three-core': ['three'],
+          'three-react': ['@react-three/fiber', '@react-three/drei'],
+          'wallet': ['@rainbow-me/rainbowkit', 'wagmi', 'viem'],
+          'wormhole': ['@wormhole-foundation/sdk', '@wormhole-foundation/wormhole-connect']
+        }
+      },
       onwarn(warning, warn) {
         if (warning.code === 'INVALID_ANNOTATION' || warning.code === 'UNRESOLVED_IMPORT') {
           return;
