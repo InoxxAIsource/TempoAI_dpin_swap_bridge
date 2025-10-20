@@ -15,37 +15,10 @@ import CTASection from '@/components/CTASection';
 import Footer from '@/components/Footer';
 import StartEarningChat from '@/components/StartEarningChat';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const [pendingClaimsCount, setPendingClaimsCount] = useState(0);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchPendingClaimsCount();
-  }, []);
-
-  const fetchPendingClaimsCount = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { count, error } = await supabase
-        .from('wormhole_transactions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .or('status.eq.pending,needs_redemption.eq.true');
-
-      if (!error && count) {
-        setPendingClaimsCount(count);
-      }
-    } catch (error) {
-      // Silent fail - non-critical feature
-    }
-  };
 
   return (
     <div className="relative min-h-screen">
@@ -62,7 +35,7 @@ const Index = () => {
               className="w-full max-w-7xl mx-auto"
             >
               <div className="sticky top-14 md:top-16 z-[100] bg-background/95 backdrop-blur-sm border-b border-border pb-3 md:pb-4 -mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-12 lg:px-12 mb-6 md:mb-8">
-                <TabsList className="grid w-full max-w-7xl mx-auto grid-cols-1 sm:grid-cols-3 h-auto p-2 md:p-2 bg-muted shadow-lg border border-border gap-1 sm:gap-0">
+                <TabsList className="grid w-full max-w-7xl mx-auto grid-cols-1 sm:grid-cols-2 h-auto p-2 md:p-2 bg-muted shadow-lg border border-border gap-1 sm:gap-0">
                   <TabsTrigger 
                     value="overview" 
                     className="py-3 md:py-3.5 text-sm sm:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 min-h-[44px]"
@@ -74,18 +47,6 @@ const Index = () => {
                     className="py-3 md:py-3.5 text-sm sm:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 min-h-[44px]"
                   >
                     About Protocol
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="redemption" 
-                    className="py-3 md:py-3.5 text-sm sm:text-base cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 relative min-h-[44px]"
-                    onClick={() => navigate('/claim')}
-                  >
-                    Redemption
-                    {pendingClaimsCount > 0 && (
-                      <span className="ml-2 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
-                        {pendingClaimsCount}
-                      </span>
-                    )}
                   </TabsTrigger>
                 </TabsList>
               </div>
