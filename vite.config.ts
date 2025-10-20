@@ -16,26 +16,12 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    sourcemap: false, // Disable sourcemaps to reduce memory usage
-    chunkSizeWarningLimit: 1000,
+    sourcemap: false,
+    minify: 'esbuild',
+    target: 'esnext',
     rollupOptions: {
-      output: {
-        manualChunks: {
-          // Split large vendor libraries into separate chunks
-          'three': ['three'],
-          'react-three': ['@react-three/fiber', '@react-three/drei'],
-          'wallet-libs': ['@rainbow-me/rainbowkit', 'wagmi', 'viem'],
-          'solana': ['@solana/wallet-adapter-react', '@solana/wallet-adapter-react-ui', '@solana/web3.js'],
-          'wormhole': ['@wormhole-foundation/wormhole-connect', '@wormhole-foundation/sdk'],
-        },
-      },
       onwarn(warning, warn) {
-        // Suppress warnings about comments in node_modules
-        if (warning.code === 'INVALID_ANNOTATION' && warning.message.includes('/*#__PURE__*/')) {
-          return;
-        }
-        // Suppress module externalization warnings
-        if (warning.code === 'UNRESOLVED_IMPORT' && warning.message.includes('externalized for browser compatibility')) {
+        if (warning.code === 'INVALID_ANNOTATION' || warning.code === 'UNRESOLVED_IMPORT') {
           return;
         }
         warn(warning);
