@@ -2,17 +2,41 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0;url=/">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading...</title>
   <script>
-    // Redirect to root with path preserved in query
-    const pathName = window.location.pathname;
-    if (pathName !== '/') {
-      window.location.href = '/' + window.location.search + window.location.hash;
-    }
+    // Preserve the requested path and let React Router handle it
+    (function() {
+      var path = window.location.pathname;
+      var search = window.location.search;
+      var hash = window.location.hash;
+      
+      // Don't redirect if already at root
+      if (path === '/' || path === '/index.html') {
+        return;
+      }
+      
+      // Store the original path for React Router
+      sessionStorage.setItem('spa_redirect_path', path + search + hash);
+      
+      // Fetch and load index.html content without changing URL
+      fetch('/index.html')
+        .then(response => response.text())
+        .then(html => {
+          document.open();
+          document.write(html);
+          document.close();
+        })
+        .catch(() => {
+          // Fallback: redirect to root if fetch fails
+          window.location.href = '/' + search + hash;
+        });
+    })();
   </script>
-  <title>Redirecting...</title>
 </head>
 <body>
-  <p>Redirecting...</p>
+  <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif;">
+    <p>Loading application...</p>
+  </div>
 </body>
 </html>

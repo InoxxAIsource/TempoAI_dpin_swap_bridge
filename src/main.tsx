@@ -5,6 +5,15 @@ import "./index.css";
 import '@rainbow-me/rainbowkit/styles.css';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
+// Handle SPA routing fallback from 404.html
+if (typeof window !== 'undefined') {
+  const redirectPath = sessionStorage.getItem('spa_redirect_path');
+  if (redirectPath) {
+    sessionStorage.removeItem('spa_redirect_path');
+    window.history.replaceState(null, '', redirectPath);
+  }
+}
+
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
