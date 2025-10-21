@@ -3,7 +3,9 @@ import Mermaid from '@/components/docs/Mermaid';
 import TransactionFlowDiagram from '@/components/docs/bridge-swap/TransactionFlowDiagram';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Zap, Network, TrendingUp, Lock } from 'lucide-react';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Zap, Network, TrendingUp, Lock, Maximize2 } from 'lucide-react';
+import routeOptimizationImage from '@/assets/route-optimization-diagram.png';
 
 const SwapHowItWorks = () => {
   const routeOptimizationChart = `
@@ -236,7 +238,32 @@ graph TD
         title="Route Optimization Algorithm"
         subtitle="How the best swap route is selected"
       >
-        <Mermaid chart={routeOptimizationChart} />
+        <Dialog>
+          <DialogTrigger asChild>
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow group">
+              <CardContent className="p-6 relative">
+                <img 
+                  src={routeOptimizationImage} 
+                  alt="Route Optimization Flow - DEX aggregation showing how multiple exchanges are compared to find the best swap rate"
+                  className="h-auto"
+                  style={{ width: '1400px', maxWidth: '100%' }}
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-3">
+                    <Maximize2 className="h-6 w-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </DialogTrigger>
+          <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] overflow-auto">
+            <img 
+              src={routeOptimizationImage} 
+              alt="Route Optimization Flow - Full resolution diagram showing DEX aggregation process"
+              className="w-full h-auto"
+            />
+          </DialogContent>
+        </Dialog>
 
         <div className="mt-6 space-y-4">
           <Card>
