@@ -2,7 +2,9 @@ import DocSection from '@/components/docs/DocSection';
 import Mermaid from '@/components/docs/Mermaid';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, Network, FileCheck, Zap } from 'lucide-react';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Shield, Network, FileCheck, Zap, Maximize2 } from 'lucide-react';
+import transactionFlowImage from '@/assets/transaction-flow-diagram.png';
 
 const BridgeHowItWorks = () => {
   const transactionFlowChart = `
@@ -125,7 +127,29 @@ graph TD
         title="Transaction Lifecycle"
         subtitle="Step-by-step breakdown of a bridge transaction"
       >
-        <Mermaid chart={transactionFlowChart} />
+        <Dialog>
+          <DialogTrigger asChild>
+            <div className="relative group cursor-pointer my-8 rounded-xl border border-border bg-card/50 overflow-hidden hover:border-primary/50 transition-colors">
+              <img 
+                src={transactionFlowImage} 
+                alt="Transaction Flow Diagram - Cross-chain bridge sequence showing 6 steps from lock/burn tokens to mint/unlock tokens"
+                className="w-full h-auto"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-3">
+                  <Maximize2 className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+          </DialogTrigger>
+          <DialogContent className="max-w-6xl w-[95vw]">
+            <img 
+              src={transactionFlowImage} 
+              alt="Transaction Flow Diagram - Cross-chain bridge sequence showing 6 steps from lock/burn tokens to mint/unlock tokens"
+              className="w-full h-auto"
+            />
+          </DialogContent>
+        </Dialog>
 
         <div className="space-y-6 mt-8">
           <div>
