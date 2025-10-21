@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Maximize2 } from 'lucide-react';
 import bridgeSwapComparisonImage from '@/assets/bridge-swap-comparison-diagram.png';
+import bridgeFlowImage from '@/assets/bridge-flow-diagram.png';
 
 const TransactionFlowDiagram = () => {
   const bridgeFlow = `
@@ -97,7 +98,32 @@ graph TD
               User must manually switch wallets and claim tokens on the destination chain. Requires destination gas.
             </p>
           </div>
-          <Mermaid chart={bridgeFlow} />
+          <Dialog>
+            <DialogTrigger asChild>
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow group">
+                <CardContent className="p-6 relative">
+                  <img 
+                    src={bridgeFlowImage} 
+                    alt="Bridge Flow Sequence - Showing lock/burn, guardian consensus, VAA generation, and manual claiming process"
+                    className="h-auto"
+                    style={{ width: '1200px', maxWidth: '100%' }}
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-3">
+                      <Maximize2 className="h-6 w-6" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </DialogTrigger>
+            <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] overflow-auto">
+              <img 
+                src={bridgeFlowImage} 
+                alt="Bridge Flow Sequence - Full resolution diagram"
+                className="w-full h-auto"
+              />
+            </DialogContent>
+          </Dialog>
           <div className="bg-muted/50 p-4 rounded-lg text-sm">
             <p className="font-semibold mb-2">Key Steps:</p>
             <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
