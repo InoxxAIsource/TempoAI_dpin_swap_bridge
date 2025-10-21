@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -21,19 +21,34 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
   const isMobile = useIsMobile();
   const [hasTriedAutoAuth, setHasTriedAutoAuth] = useState(false);
 
+  const handleManualAuth = useCallback(async () => {
+    try {
+      await authenticateWithSolana();
+    } catch (error) {
+      // Error is already handled by useWeb3Auth hook
+    }
+  }, [authenticateWithSolana]);
+
   // Auto-authentication when Solana wallet connects
   useEffect(() => {
-    if (isSolanaConnected && !isWalletAuthenticated && !isAuthenticating && !authError && !hasTriedAutoAuth && open) {
-      console.log('[WalletModal] Auto-triggering Solana authentication on mobile');
+    // Don't run if modal is not open
+    if (!open) return;
+    
+    if (isSolanaConnected && !isWalletAuthenticated && !isAuthenticating && !authError && !hasTriedAutoAuth) {
+      console.log('[WalletModal] Auto-triggering Solana authentication');
       setHasTriedAutoAuth(true);
       
       // Small delay to ensure wallet is fully connected
       const timer = setTimeout(() => {
-        authenticateWithSolana();
+        // Double-check modal is still open before authenticating
+        if (open) {
+          authenticateWithSolana();
+        }
       }, 800);
       
       return () => clearTimeout(timer);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSolanaConnected, isWalletAuthenticated, isAuthenticating, authError, hasTriedAutoAuth, open]);
 
   // Reset auto-auth flag when modal closes or wallet disconnects
@@ -42,14 +57,6 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
       setHasTriedAutoAuth(false);
     }
   }, [open, isSolanaConnected]);
-
-  const handleManualAuth = async () => {
-    try {
-      await authenticateWithSolana();
-    } catch (error) {
-      // Error is already handled by useWeb3Auth hook
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

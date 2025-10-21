@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -9,31 +9,20 @@ export const useWeb3Auth = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
+  const isMountedRef = useRef(true);
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
-  // Check for pending authentication on mount (mobile deep link resume)
+  // Track component mounted state
   useEffect(() => {
-    const checkPendingAuth = async () => {
-      const pendingAuthStr = localStorage.getItem('pending_solana_auth');
-      if (pendingAuthStr && publicKey) {
-        try {
-          const pendingAuth = JSON.parse(pendingAuthStr);
-          const timeSinceAttempt = Date.now() - pendingAuth.timestamp;
-          
-          // If less than 5 minutes since attempt and wallet matches
-          if (timeSinceAttempt < 5 * 60 * 1000 && 
-              pendingAuth.walletAddress === publicKey.toString()) {
-            console.log('[useWeb3Auth] Detected pending authentication from deep link');
-            // Don't auto-resume - let WalletModal handle it to avoid loops
-          }
-        } catch (error) {
-          console.error('[useWeb3Auth] Error checking pending auth:', error);
-          localStorage.removeItem('pending_solana_auth');
-        }
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Clear any pending timeouts on unmount
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
-    
-    checkPendingAuth();
-  }, [publicKey]);
+  }, []);
 
   const authenticateWithSolana = async () => {
     if (!publicKey || !signMessage || !connected) {
@@ -59,7 +48,9 @@ export const useWeb3Auth = () => {
     localStorage.setItem('pending_solana_auth', JSON.stringify(pendingAuthData));
 
     // Set up timeout detection (30 seconds)
-    const timeoutId = setTimeout(() => {
+    timeoutRef.current = setTimeout(() => {
+      if (!isMountedRef.current) return; // Don't update if unmounted
+      
       console.warn('[useWeb3Auth] Authentication timeout - signature request may be stuck');
       setIsAuthenticating(false);
       const timeoutError = 'Authentication timed out. Please try again and approve the signature request in your wallet.';
@@ -99,9 +90,12 @@ export const useWeb3Auth = () => {
       try {
         signature = await signMessage(encodedMessage);
         console.log('[useWeb3Auth] ✓ Signature obtained');
-        clearTimeout(timeoutId); // Clear timeout on successful signature
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
       } catch (signError: any) {
-        clearTimeout(timeoutId); // Clear timeout on error
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        
+        if (!isMountedRef.current) return; // Don't update state if unmounted
+        
         console.error('[useWeb3Auth] Signature rejected:', signError);
         const errorMsg = signError.message?.includes('rejected') || signError.message?.includes('denied')
           ? 'Signature request was rejected. Please try again and approve the request.'
@@ -185,6 +179,8 @@ export const useWeb3Auth = () => {
         // Don't throw - authentication succeeded, linking is secondary
       }
       
+      if (!isMountedRef.current) return; // Don't update state if unmounted
+      
       console.log('[useWeb3Auth] ✓ Authentication successful!');
       
       // Clear pending auth and reset retry count on success
@@ -197,6 +193,8 @@ export const useWeb3Auth = () => {
       });
       
     } catch (error: any) {
+      if (!isMountedRef.current) return; // Don't update state if unmounted
+      
       console.error('[useWeb3Auth] Authentication error:', error);
       
       // Clear pending auth and increment retry count on error
@@ -212,7 +210,9 @@ export const useWeb3Auth = () => {
         variant: 'destructive',
       });
     } finally {
-      setIsAuthenticating(false);
+      if (isMountedRef.current) {
+        setIsAuthenticating(false);
+      }
     }
   };
 
