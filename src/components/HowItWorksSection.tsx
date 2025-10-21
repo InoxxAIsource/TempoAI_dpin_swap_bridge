@@ -1,3 +1,9 @@
+import { useState } from 'react';
+import { ZoomIn } from 'lucide-react';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import howItWorksOnboardingImage from '@/assets/how-it-works-onboarding.png';
+import howItWorksSetupImage from '@/assets/how-it-works-setup.png';
+
 const HowItWorksSection = () => {
   const steps = [
     {
@@ -60,6 +66,63 @@ const HowItWorksSection = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="mt-16 md:mt-24">
+          <div className="text-center mb-12">
+            <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4">
+              Complete DePIN Workflow
+            </h3>
+            <p className="text-muted-foreground">
+              Detailed journey from first visit to live device metrics. Click diagrams to zoom.
+            </p>
+          </div>
+
+          <div className="space-y-6 max-w-5xl mx-auto">
+            <Dialog>
+              <DialogTrigger asChild>
+                <div className="p-4 rounded-xl border border-border bg-card/50 cursor-pointer hover:border-primary/50 transition-colors relative group">
+                  <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <ZoomIn className="w-5 h-5" />
+                  </div>
+                  <img 
+                    src={howItWorksOnboardingImage} 
+                    alt="Device Onboarding Flow - First time user experience" 
+                    className="w-full h-auto"
+                  />
+                </div>
+              </DialogTrigger>
+              <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-auto">
+                <img 
+                  src={howItWorksOnboardingImage} 
+                  alt="Device Onboarding Flow - Detailed view" 
+                  className="w-full h-auto"
+                />
+              </DialogContent>
+            </Dialog>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <div className="p-4 rounded-xl border border-border bg-card/50 cursor-pointer hover:border-primary/50 transition-colors relative group">
+                  <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <ZoomIn className="w-5 h-5" />
+                  </div>
+                  <img 
+                    src={howItWorksSetupImage} 
+                    alt="Device Setup Flow - Demo and real hardware configuration" 
+                    className="w-full h-auto"
+                  />
+                </div>
+              </DialogTrigger>
+              <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-auto">
+                <img 
+                  src={howItWorksSetupImage} 
+                  alt="Device Setup Flow - Detailed view" 
+                  className="w-full h-auto"
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
     </section>
