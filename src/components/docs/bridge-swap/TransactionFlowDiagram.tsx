@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Maximize2 } from 'lucide-react';
 import bridgeSwapComparisonImage from '@/assets/bridge-swap-comparison-diagram.png';
 import bridgeFlowImage from '@/assets/bridge-flow-diagram.png';
+import swapFlowImage from '@/assets/swap-flow-diagram.png';
 
 const TransactionFlowDiagram = () => {
   const bridgeFlow = `
@@ -143,7 +144,32 @@ graph TD
               Fully automated process. User only initiates; claiming and swapping happen automatically.
             </p>
           </div>
-          <Mermaid chart={swapFlow} />
+          <Dialog>
+            <DialogTrigger asChild>
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow group">
+                <CardContent className="p-6 relative">
+                  <img 
+                    src={swapFlowImage} 
+                    alt="Swap Flow Sequence - Showing automatic VAA submission, DEX execution, and token delivery without user intervention"
+                    className="h-auto"
+                    style={{ width: '1200px', maxWidth: '100%' }}
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-3">
+                      <Maximize2 className="h-6 w-6" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </DialogTrigger>
+            <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] overflow-auto">
+              <img 
+                src={swapFlowImage} 
+                alt="Swap Flow Sequence - Full resolution diagram"
+                className="w-full h-auto"
+              />
+            </DialogContent>
+          </Dialog>
           <div className="bg-muted/50 p-4 rounded-lg text-sm">
             <p className="font-semibold mb-2">Key Differences:</p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
