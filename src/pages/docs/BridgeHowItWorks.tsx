@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Shield, Network, FileCheck, Zap, Maximize2 } from 'lucide-react';
 import transactionFlowImage from '@/assets/transaction-flow-diagram.png';
+import architectureImage from '@/assets/architecture-diagram.png';
 
 const BridgeHowItWorks = () => {
   const transactionFlowChart = `
@@ -267,7 +268,29 @@ graph TD
         title="Full System Architecture"
         subtitle="How Tempo integrates with Wormhole"
       >
-        <Mermaid chart={architectureChart} />
+        <Dialog>
+          <DialogTrigger asChild>
+            <div className="relative group cursor-pointer my-8 rounded-xl border border-border bg-card/50 overflow-hidden hover:border-primary/50 transition-colors">
+              <img 
+                src={architectureImage} 
+                alt="System Architecture Diagram - Complete flow showing 11 steps from user wallet through Wormhole bridge to destination chain"
+                className="w-full h-auto"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-3">
+                  <Maximize2 className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+          </DialogTrigger>
+          <DialogContent className="max-w-6xl w-[95vw]">
+            <img 
+              src={architectureImage} 
+              alt="System Architecture Diagram - Complete flow showing 11 steps from user wallet through Wormhole bridge to destination chain"
+              className="w-full h-auto"
+            />
+          </DialogContent>
+        </Dialog>
 
         <div className="mt-6 space-y-4">
           <Card>
