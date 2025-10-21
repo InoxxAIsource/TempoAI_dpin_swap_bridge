@@ -7,12 +7,13 @@ import ScrollingBackground from '../ScrollingBackground';
 interface PageLayoutProps {
   children: ReactNode;
   showFooter?: boolean;
+  showBackground?: boolean;
 }
 
-const PageLayout = ({ children, showFooter = false }: PageLayoutProps) => {
+const PageLayout = ({ children, showFooter = false, showBackground = true }: PageLayoutProps) => {
   return (
     <div className="min-h-screen relative">
-      <ScrollingBackground />
+      {showBackground && <ScrollingBackground />}
       <Header />
       <motion.main
         initial={{ opacity: 0 }}

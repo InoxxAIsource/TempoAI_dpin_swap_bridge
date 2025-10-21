@@ -5,7 +5,7 @@ import PageLayout from '@/components/layout/PageLayout';
 
 const DocsLayout = () => {
   return (
-    <PageLayout>
+    <PageLayout showBackground={false}>
       <SidebarProvider defaultOpen={true}>
         <div className="min-h-screen flex w-full">
           <DocsSidebar />
