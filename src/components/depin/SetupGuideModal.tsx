@@ -21,6 +21,190 @@ const SetupGuideModal = ({ open, onClose, deviceId }: SetupGuideModalProps) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const downloadPythonScript = () => {
+    const scriptContent = `#!/usr/bin/env python3
+"""
+Tempo DePIN Client
+Collects device metrics and reports them to the Tempo network
+"""
+import json
+import time
+import requests
+import psutil
+import platform
+from datetime import datetime
+from nacl.signing import SigningKey
+from nacl.encoding import Base64Encoder
+import sys
+import logging
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
+class TempoDePINClient:
+    def __init__(self, config_path):
+        with open(config_path, 'r') as f:
+            self.config = json.load(f)
+        
+        self.device_id = self.config['device_id']
+        self.public_key = self.config['public_key']
+        self.api_endpoint = self.config['api_endpoint']
+        self.report_interval = self.config.get('report_interval', 30)
+        
+        # Generate signing key (in production, load from secure storage)
+        self.signing_key = SigningKey.generate()
+        logger.info(f"Initialized client for device: {self.device_id}")
+    
+    def collect_metrics(self):
+        """Collect system metrics"""
+        try:
+            metrics = {
+                'cpu_percent': psutil.cpu_percent(interval=1),
+                'memory_percent': psutil.virtual_memory().percent,
+                'disk_percent': psutil.disk_usage('/').percent,
+                'uptime_seconds': int(time.time() - psutil.boot_time()),
+                'platform': platform.system(),
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            
+            # Network stats
+            net_io = psutil.net_io_counters()
+            metrics['bytes_sent'] = net_io.bytes_sent
+            metrics['bytes_recv'] = net_io.bytes_recv
+            
+            logger.info(f"Collected metrics: CPU {metrics['cpu_percent']}%, Memory {metrics['memory_percent']}%")
+            return metrics
+        except Exception as e:
+            logger.error(f"Error collecting metrics: {e}")
+            return None
+    
+    def sign_data(self, data):
+        """Sign data with device's private key"""
+        try:
+            message = json.dumps(data, sort_keys=True).encode()
+            signed = self.signing_key.sign(message)
+            signature = signed.signature
+            return Base64Encoder.encode(signature).decode()
+        except Exception as e:
+            logger.error(f"Error signing data: {e}")
+            return None
+    
+    def report_metrics(self, metrics):
+        """Send metrics to the Tempo network"""
+        try:
+            signature = self.sign_data(metrics)
+            
+            payload = {
+                'device_id': self.device_id,
+                'metrics': metrics,
+                'signature': signature
+            }
+            
+            response = requests.post(
+                self.api_endpoint,
+                json=payload,
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                logger.info(f"✓ Metrics reported successfully. Reward: {result.get('reward_amount', 0)} TEMPO")
+                return True
+            else:
+                logger.error(f"Failed to report metrics: {response.status_code} - {response.text}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error reporting metrics: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Error reporting metrics: {e}")
+            return False
+    
+    def run(self):
+        """Main loop - collect and report metrics"""
+        logger.info(f"Starting Tempo DePIN client (reporting every {self.report_interval}s)")
+        logger.info(f"Press Ctrl+C to stop")
+        
+        try:
+            while True:
+                metrics = self.collect_metrics()
+                if metrics:
+                    self.report_metrics(metrics)
+                else:
+                    logger.warning("Skipping report due to metric collection failure")
+                
+                time.sleep(self.report_interval)
+                
+        except KeyboardInterrupt:
+            logger.info("\\nShutting down client...")
+            sys.exit(0)
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python client.py --config <config.json>")
+        sys.exit(1)
+    
+    if sys.argv[1] != '--config' or len(sys.argv) < 3:
+        print("Usage: python client.py --config <config.json>")
+        sys.exit(1)
+    
+    config_path = sys.argv[2]
+    
+    try:
+        client = TempoDePINClient(config_path)
+        client.run()
+    except FileNotFoundError:
+        logger.error(f"Config file not found: {config_path}")
+        sys.exit(1)
+    except json.JSONDecodeError:
+        logger.error(f"Invalid JSON in config file: {config_path}")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Failed to start client: {e}")
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
+`;
+
+    const blob = new Blob([scriptContent], { type: 'text/x-python' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'client.py';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadRequirements = () => {
+    const requirements = `# Tempo DePIN Client Requirements
+requests>=2.31.0
+psutil>=5.9.0
+PyNaCl>=1.5.0
+`;
+
+    const blob = new Blob([requirements], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'requirements.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -48,10 +232,16 @@ const SetupGuideModal = ({ open, onClose, deviceId }: SetupGuideModalProps) => {
               <div>$ cd depin-client</div>
               <div>$ pip install -r requirements.txt</div>
             </div>
-            <Button variant="outline" size="sm" className="mt-3 gap-2">
-              <Download className="w-4 h-4" />
-              Download Python Script
-            </Button>
+            <div className="flex gap-2 mt-3">
+              <Button variant="outline" size="sm" className="gap-2" onClick={downloadPythonScript}>
+                <Download className="w-4 h-4" />
+                Download client.py
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={downloadRequirements}>
+                <Download className="w-4 h-4" />
+                Download requirements.txt
+              </Button>
+            </div>
           </div>
 
           {/* Step 2 */}
