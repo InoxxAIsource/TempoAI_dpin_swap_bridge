@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Zap, Network, TrendingUp, Lock, Maximize2 } from 'lucide-react';
 import routeOptimizationImage from '@/assets/route-optimization-diagram.png';
+import systemArchitectureImage from '@/assets/system-architecture-diagram.png';
 
 const SwapHowItWorks = () => {
   const routeOptimizationChart = `
@@ -340,7 +341,32 @@ graph TD
         title="Full System Architecture"
         subtitle="How all components work together"
       >
-        <Mermaid chart={architectureChart} />
+        <Dialog>
+          <DialogTrigger asChild>
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow group">
+              <CardContent className="p-6 relative">
+                <img 
+                  src={systemArchitectureImage} 
+                  alt="System Architecture Diagram - Complete flow showing 10 steps from user wallet through Wormhole bridge to destination chain"
+                  className="h-auto"
+                  style={{ width: '1400px', maxWidth: '100%' }}
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-3">
+                    <Maximize2 className="h-6 w-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </DialogTrigger>
+          <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] overflow-auto">
+            <img 
+              src={systemArchitectureImage} 
+              alt="System Architecture Diagram - Full resolution showing complete cross-chain swap flow"
+              className="w-full h-auto"
+            />
+          </DialogContent>
+        </Dialog>
 
         <div className="grid md:grid-cols-2 gap-4 mt-6">
           <Card>
