@@ -1,5 +1,9 @@
 import Mermaid from '@/components/docs/Mermaid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Card, CardContent } from '@/components/ui/card';
+import { Maximize2 } from 'lucide-react';
+import bridgeSwapComparisonImage from '@/assets/bridge-swap-comparison-diagram.png';
 
 const TransactionFlowDiagram = () => {
   const bridgeFlow = `
@@ -133,7 +137,32 @@ graph TD
               Red nodes indicate manual user actions; green nodes are automated processes.
             </p>
           </div>
-          <Mermaid chart={comparisonFlow} />
+          <Dialog>
+            <DialogTrigger asChild>
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow group">
+                <CardContent className="p-6 relative">
+                  <img 
+                    src={bridgeSwapComparisonImage} 
+                    alt="Bridge vs Swap Comparison - Visual diagram showing manual steps (red) vs automated steps (green)"
+                    className="h-auto"
+                    style={{ width: '1200px', maxWidth: '100%' }}
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-3">
+                      <Maximize2 className="h-6 w-6" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </DialogTrigger>
+            <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] overflow-auto">
+              <img 
+                src={bridgeSwapComparisonImage} 
+                alt="Bridge vs Swap Comparison - Full resolution comparison diagram"
+                className="w-full h-auto"
+              />
+            </DialogContent>
+          </Dialog>
           <div className="grid md:grid-cols-2 gap-4 mt-4">
             <div className="bg-muted/50 p-4 rounded-lg text-sm">
               <p className="font-semibold mb-2 text-red-600">Bridge: User Actions Required</p>
