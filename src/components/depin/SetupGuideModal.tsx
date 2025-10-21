@@ -116,7 +116,7 @@ const SetupGuideModal = ({ open, onClose, deviceId }: SetupGuideModalProps) => {
               <pre>{`{
   "device_id": "${deviceId}",
   "public_key": "${publicKey}",
-  "api_endpoint": "https://api.tempo.dev/depin",
+  "api_endpoint": "https://fhmyhvrejofybzdgzxdc.supabase.co/functions/v1/report-device-event",
   "report_interval": 30
 }`}</pre>
             </div>
