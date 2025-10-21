@@ -135,7 +135,7 @@ graph TD
                 src={transactionFlowImage} 
                 alt="Transaction Flow Diagram - Cross-chain bridge sequence showing 6 steps from lock/burn tokens to mint/unlock tokens"
                 className="h-auto"
-                style={{ width: '800px', maxWidth: '100%' }}
+                style={{ width: '1200px', maxWidth: '100%' }}
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-3">
@@ -276,7 +276,7 @@ graph TD
                 src={architectureImage} 
                 alt="System Architecture Diagram - Complete flow showing 11 steps from user wallet through Wormhole bridge to destination chain"
                 className="h-auto"
-                style={{ width: '800px', maxWidth: '100%' }}
+                style={{ width: '1400px', maxWidth: '100%' }}
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-3">
