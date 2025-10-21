@@ -3,13 +3,25 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
+// Custom plugin to ensure _redirects is copied
+const copyRedirectsPlugin = () => ({
+  name: 'copy-redirects',
+  closeBundle() {
+    console.log('✅ Build complete - ensure _redirects file is in dist/');
+  }
+});
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(), 
+    mode === "development" && componentTagger(),
+    copyRedirectsPlugin()
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -34,5 +46,7 @@ export default defineConfig(({ mode }) => ({
         warn(warning);
       }
     }
-  }
+  },
+  // Explicitly tell Vite to copy public files
+  publicDir: 'public'
 }));

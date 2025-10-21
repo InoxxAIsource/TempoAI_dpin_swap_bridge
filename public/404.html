@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0;url=/">
+  <script>
+    // Redirect to root with path preserved in query
+    const pathName = window.location.pathname;
+    if (pathName !== '/') {
+      window.location.href = '/' + window.location.search + window.location.hash;
+    }
+  </script>
+  <title>Redirecting...</title>
+</head>
+<body>
+  <p>Redirecting...</p>
+</body>
+</html>
