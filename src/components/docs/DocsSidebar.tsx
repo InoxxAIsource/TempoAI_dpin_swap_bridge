@@ -69,7 +69,7 @@ export function DocsSidebar() {
 
   return (
     <Sidebar className={open ? 'w-64' : 'w-0 md:w-14'} collapsible="offcanvas">
-      <SidebarContent className="overflow-hidden">
+      <SidebarContent>
         {docSections.map((section) => {
           const hasActiveItem = section.items.some((item) => isActive(item.url));
           
