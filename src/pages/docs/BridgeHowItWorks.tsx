@@ -30,7 +30,7 @@ sequenceDiagram
     DestChain->>User: 6. Mint/Unlock tokens
 `;
 
-  const architectureChart = `
+const architectureChart = `
 graph TD
     A[User Wallet] -->|1. Approve & Transfer| B[Wormhole Bridge Contract]
     B -->|2. Lock/Burn Tokens| C[Source Chain]
@@ -46,6 +46,17 @@ graph TD
     A -->|9. Switch Chain & Claim| I[Destination Chain Contract]
     I -->|10. Verify VAA| J[Unlock/Mint Tokens]
     J -->|11. Transfer to User| A
+    
+    style A fill:#3b82f6,stroke:#1e40af,color:#fff
+    style B fill:#8b5cf6,stroke:#6d28d9,color:#fff
+    style C fill:#eab308,stroke:#ca8a04,color:#000
+    style D fill:#ec4899,stroke:#be185d,color:#fff
+    style E fill:#f97316,stroke:#c2410c,color:#fff
+    style F fill:#10b981,stroke:#059669,color:#fff
+    style G fill:#eab308,stroke:#ca8a04,color:#000
+    style H fill:#06b6d4,stroke:#0891b2,color:#fff
+    style I fill:#8b5cf6,stroke:#6d28d9,color:#fff
+    style J fill:#10b981,stroke:#059669,color:#fff
 `;
 
   return (
