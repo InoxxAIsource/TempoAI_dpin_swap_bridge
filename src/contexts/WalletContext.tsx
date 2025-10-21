@@ -82,6 +82,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       if (session?.user?.user_metadata?.wallet_address) {
         setAuthMethod('wallet');
+        // Clear pending auth on successful wallet authentication
+        localStorage.removeItem('pending_solana_auth');
       } else if (session?.user?.email) {
         setAuthMethod('email');
       } else {
@@ -147,6 +149,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       try {
         localStorage.removeItem('supabase.auth.token');
         localStorage.removeItem('sb-fhmyhvrejofybzdgzxdc-auth-token');
+        localStorage.removeItem('pending_solana_auth'); // Clear pending auth
       } catch (e) {
         // Ignore localStorage errors
       }

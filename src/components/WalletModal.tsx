@@ -6,8 +6,8 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { useWeb3Auth } from '@/hooks/useWeb3Auth';
-import { Loader2, CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Loader2, CheckCircle2, Smartphone } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface WalletModalProps {
   open: boolean;
@@ -16,8 +16,32 @@ interface WalletModalProps {
 
 const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
   const [activeTab, setActiveTab] = useState('evm');
-  const { isEvmConnected, isSolanaConnected, isWalletAuthenticated } = useWalletContext();
+  const { isEvmConnected, isSolanaConnected, isWalletAuthenticated, solanaAddress } = useWalletContext();
   const { authenticateWithSolana, isAuthenticating, authError } = useWeb3Auth();
+  const isMobile = useIsMobile();
+  const [hasTriedAutoAuth, setHasTriedAutoAuth] = useState(false);
+
+  // Auto-authentication when Solana wallet connects
+  useEffect(() => {
+    if (isSolanaConnected && !isWalletAuthenticated && !isAuthenticating && !authError && !hasTriedAutoAuth && open) {
+      console.log('[WalletModal] Auto-triggering Solana authentication on mobile');
+      setHasTriedAutoAuth(true);
+      
+      // Small delay to ensure wallet is fully connected
+      const timer = setTimeout(() => {
+        authenticateWithSolana();
+      }, 800);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isSolanaConnected, isWalletAuthenticated, isAuthenticating, authError, hasTriedAutoAuth, open]);
+
+  // Reset auto-auth flag when modal closes or wallet disconnects
+  useEffect(() => {
+    if (!open || !isSolanaConnected) {
+      setHasTriedAutoAuth(false);
+    }
+  }, [open, isSolanaConnected]);
 
   const handleManualAuth = async () => {
     try {
@@ -65,9 +89,23 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
             </div>
             
             {isAuthenticating && (
-              <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg p-3 sm:p-4">
-                <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
-                <span>Please sign the message in your wallet...</span>
+              <div className="flex flex-col items-center justify-center gap-3 text-xs sm:text-sm text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg p-4 sm:p-5">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                  <span className="font-semibold">Authenticating...</span>
+                </div>
+                {isMobile && (
+                  <div className="flex items-start gap-2 text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-lg p-3 w-full">
+                    <Smartphone className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs">
+                      <p className="font-medium mb-1">Mobile Tip:</p>
+                      <p>After signing in your wallet app, return to this tab. The connection will complete automatically.</p>
+                    </div>
+                  </div>
+                )}
+                {!isMobile && (
+                  <p className="text-center">Please sign the message in your wallet popup...</p>
+                )}
               </div>
             )}
             

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -7,7 +7,33 @@ export const useWeb3Auth = () => {
   const { publicKey, signMessage, connected } = useWallet();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
+
+  // Check for pending authentication on mount (mobile deep link resume)
+  useEffect(() => {
+    const checkPendingAuth = async () => {
+      const pendingAuthStr = localStorage.getItem('pending_solana_auth');
+      if (pendingAuthStr && publicKey) {
+        try {
+          const pendingAuth = JSON.parse(pendingAuthStr);
+          const timeSinceAttempt = Date.now() - pendingAuth.timestamp;
+          
+          // If less than 5 minutes since attempt and wallet matches
+          if (timeSinceAttempt < 5 * 60 * 1000 && 
+              pendingAuth.walletAddress === publicKey.toString()) {
+            console.log('[useWeb3Auth] Detected pending authentication from deep link');
+            // Don't auto-resume - let WalletModal handle it to avoid loops
+          }
+        } catch (error) {
+          console.error('[useWeb3Auth] Error checking pending auth:', error);
+          localStorage.removeItem('pending_solana_auth');
+        }
+      }
+    };
+    
+    checkPendingAuth();
+  }, [publicKey]);
 
   const authenticateWithSolana = async () => {
     if (!publicKey || !signMessage || !connected) {
@@ -23,6 +49,28 @@ export const useWeb3Auth = () => {
 
     setIsAuthenticating(true);
     setAuthError(null);
+
+    // Store pending auth state for mobile deep link recovery
+    const pendingAuthData = {
+      walletAddress: publicKey.toString(),
+      timestamp: Date.now(),
+      attempt: retryCount + 1
+    };
+    localStorage.setItem('pending_solana_auth', JSON.stringify(pendingAuthData));
+
+    // Set up timeout detection (30 seconds)
+    const timeoutId = setTimeout(() => {
+      console.warn('[useWeb3Auth] Authentication timeout - signature request may be stuck');
+      setIsAuthenticating(false);
+      const timeoutError = 'Authentication timed out. Please try again and approve the signature request in your wallet.';
+      setAuthError(timeoutError);
+      toast({
+        title: 'Timeout',
+        description: timeoutError,
+        variant: 'destructive',
+      });
+      localStorage.removeItem('pending_solana_auth');
+    }, 30000);
 
     try {
       const walletAddress = publicKey.toString();
@@ -51,12 +99,15 @@ export const useWeb3Auth = () => {
       try {
         signature = await signMessage(encodedMessage);
         console.log('[useWeb3Auth] ✓ Signature obtained');
+        clearTimeout(timeoutId); // Clear timeout on successful signature
       } catch (signError: any) {
+        clearTimeout(timeoutId); // Clear timeout on error
         console.error('[useWeb3Auth] Signature rejected:', signError);
         const errorMsg = signError.message?.includes('rejected') || signError.message?.includes('denied')
           ? 'Signature request was rejected. Please try again and approve the request.'
           : 'Failed to sign message. Please ensure your wallet is unlocked.';
         setAuthError(errorMsg);
+        localStorage.removeItem('pending_solana_auth');
         throw new Error(errorMsg);
       }
       
@@ -136,6 +187,10 @@ export const useWeb3Auth = () => {
       
       console.log('[useWeb3Auth] ✓ Authentication successful!');
       
+      // Clear pending auth and reset retry count on success
+      localStorage.removeItem('pending_solana_auth');
+      setRetryCount(0);
+      
       toast({
         title: 'Authenticated!',
         description: 'Successfully signed in with your Solana wallet',
@@ -143,6 +198,11 @@ export const useWeb3Auth = () => {
       
     } catch (error: any) {
       console.error('[useWeb3Auth] Authentication error:', error);
+      
+      // Clear pending auth and increment retry count on error
+      localStorage.removeItem('pending_solana_auth');
+      setRetryCount(prev => prev + 1);
+      
       const errorMessage = error.message || 'Failed to authenticate with wallet';
       setAuthError(errorMessage);
       
