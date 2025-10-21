@@ -130,11 +130,11 @@ graph TD
       >
         <Dialog>
           <DialogTrigger asChild>
-            <div className="relative group cursor-pointer my-8 rounded-xl border border-border bg-card/50 overflow-hidden hover:border-primary/50 transition-colors">
+            <div className="relative group cursor-pointer my-8 rounded-xl border-2 border-border bg-card/50 overflow-hidden hover:border-primary/50 transition-colors p-6 min-h-[400px] flex items-center justify-center">
               <img 
                 src={transactionFlowImage} 
                 alt="Transaction Flow Diagram - Cross-chain bridge sequence showing 6 steps from lock/burn tokens to mint/unlock tokens"
-                className="w-full h-auto"
+                className="w-full h-auto max-w-5xl mx-auto"
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-3">
@@ -143,11 +143,11 @@ graph TD
               </div>
             </div>
           </DialogTrigger>
-          <DialogContent className="max-w-6xl w-[95vw]">
+          <DialogContent className="max-w-[90vw] w-full h-[90vh]">
             <img 
               src={transactionFlowImage} 
               alt="Transaction Flow Diagram - Cross-chain bridge sequence showing 6 steps from lock/burn tokens to mint/unlock tokens"
-              className="w-full h-auto"
+              className="w-full h-full object-contain"
             />
           </DialogContent>
         </Dialog>
@@ -270,11 +270,11 @@ graph TD
       >
         <Dialog>
           <DialogTrigger asChild>
-            <div className="relative group cursor-pointer my-8 rounded-xl border border-border bg-card/50 overflow-hidden hover:border-primary/50 transition-colors">
+            <div className="relative group cursor-pointer my-8 rounded-xl border-2 border-border bg-card/50 overflow-hidden hover:border-primary/50 transition-colors p-6 min-h-[400px] flex items-center justify-center">
               <img 
                 src={architectureImage} 
                 alt="System Architecture Diagram - Complete flow showing 11 steps from user wallet through Wormhole bridge to destination chain"
-                className="w-full h-auto"
+                className="w-full h-auto max-w-5xl mx-auto"
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-3">
@@ -283,11 +283,11 @@ graph TD
               </div>
             </div>
           </DialogTrigger>
-          <DialogContent className="max-w-6xl w-[95vw]">
+          <DialogContent className="max-w-[90vw] w-full h-[90vh]">
             <img 
               src={architectureImage} 
               alt="System Architecture Diagram - Complete flow showing 11 steps from user wallet through Wormhole bridge to destination chain"
-              className="w-full h-auto"
+              className="w-full h-full object-contain"
             />
           </DialogContent>
         </Dialog>
