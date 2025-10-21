@@ -64,15 +64,20 @@ const Globe2DPlaceholder = ({ devices = [], onDeviceClick }: Globe2DPlaceholderP
             return (
               <div
                 key={device.id}
-                className="absolute w-3 h-3 bg-green-500 rounded-full cursor-pointer hover:scale-150 transition-transform shadow-lg"
+                className="absolute w-4 h-4 bg-green-500 rounded-full cursor-pointer hover:scale-[2] transition-all shadow-lg hover:shadow-green-500/50 group"
                 style={{
                   left: `calc(50% + ${x}px)`,
                   top: `calc(50% + ${y}px)`,
                   transform: 'translate(-50%, -50%)',
                   animation: `pulse 2s infinite ${index * 0.2}s`,
+                  boxShadow: '0 0 20px rgba(34, 197, 94, 0.6)',
                 }}
                 onClick={() => onDeviceClick?.(device.id)}
-              />
+                title={`${device.device_name} - Click to view earnings`}
+              >
+                {/* Ping ring effect */}
+                <div className="absolute inset-0 rounded-full bg-green-500/30 animate-ping" />
+              </div>
             );
           })}
           

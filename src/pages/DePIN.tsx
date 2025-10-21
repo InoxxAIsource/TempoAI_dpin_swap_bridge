@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Gift, Wallet, Plus, Book } from 'lucide-react';
 import { toast } from 'sonner';
 import PageLayout from '@/components/layout/PageLayout';
 import PageHero from '@/components/layout/PageHero';
@@ -13,9 +12,11 @@ import ClaimTab from '@/components/depin/dashboard/ClaimTab';
 import PortfolioTab from '@/components/depin/dashboard/PortfolioTab';
 import AddDeviceTab from '@/components/depin/dashboard/AddDeviceTab';
 import DocsTab from '@/components/depin/dashboard/DocsTab';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import DePINSidebar from '@/components/depin/DePINSidebar';
+import DeviceDetailsModal from '@/components/depin/DeviceDetailsModal';
 import { Card } from '@/components/ui/card';
 import { useWalletContext } from '@/contexts/WalletContext';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 interface Device {
   id: string;
@@ -44,6 +45,8 @@ const DePIN = () => {
   const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [showBatchClaim, setShowBatchClaim] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [showDeviceDetails, setShowDeviceDetails] = useState(false);
 
   useEffect(() => {
     checkFirstVisit();
@@ -201,8 +204,9 @@ const DePIN = () => {
     }
   }, [session?.user?.id]);
 
-  const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
+  const handleDeviceClick = (deviceId: string) => {
+    setSelectedDeviceId(deviceId);
+    setShowDeviceDetails(true);
   };
 
   const deviceBreakdown = devices.map((device) => ({
@@ -254,99 +258,87 @@ const DePIN = () => {
         />
       )}
 
-      <div className="px-4 md:px-6 lg:px-12 pb-12">
-        <div className="max-w-6xl mx-auto space-y-8">
-          {/* Globe Hero - Always Visible */}
-          <div className="relative">
-            <Globe2DPlaceholder
-              devices={devices}
-              onDeviceClick={(deviceId) => {
-                console.log('Device clicked:', deviceId);
-              }}
-              autoRotate={true}
-            />
+      {showDeviceDetails && (
+        <DeviceDetailsModal
+          deviceId={selectedDeviceId}
+          open={showDeviceDetails}
+          onClose={() => setShowDeviceDetails(false)}
+        />
+      )}
 
-            {/* Stats Overlay */}
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-full max-w-3xl px-4">
-              <Card className="bg-background/95 backdrop-blur-sm border-2 border-primary/20 shadow-xl">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Total Devices</p>
-                    <p className="text-2xl font-bold">{devices.length}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Active</p>
-                    <p className="text-2xl font-bold text-green-500">{activeDevices}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Total Earned</p>
-                    <p className="text-2xl font-bold">{earnings.toFixed(4)} ETH</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Uptime</p>
-                    <p className="text-2xl font-bold">{uptime}%</p>
-                  </div>
-                </div>
-              </Card>
+      <SidebarProvider defaultOpen={true}>
+        <div className="min-h-screen flex w-full">
+          <DePINSidebar activeClaimsCount={activeClaims.length} />
+          
+          <SidebarInset className="flex-1">
+            {/* Sidebar Trigger for mobile/collapsed state */}
+            <div className="flex items-center gap-2 p-4 border-b">
+              <SidebarTrigger />
+              <h2 className="text-lg font-semibold">DePIN Dashboard</h2>
             </div>
-          </div>
 
-          {/* Horizontal Tabs */}
-          <Tabs value={currentTab} onValueChange={handleTabChange}>
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="claim" className="relative">
-                <Gift className="w-4 h-4 mr-2" />
-                Claim
-                {activeClaims.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {activeClaims.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="portfolio">
-                <Wallet className="w-4 h-4 mr-2" />
-                Portfolio
-              </TabsTrigger>
-              <TabsTrigger value="add-device">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Device
-              </TabsTrigger>
-              <TabsTrigger value="docs">
-                <Book className="w-4 h-4 mr-2" />
-                DePIN Docs
-              </TabsTrigger>
-            </TabsList>
+            <div className="p-4 md:p-6 lg:p-8 space-y-8">
+              {/* Globe Visualization */}
+              <div className="space-y-4">
+                <Globe2DPlaceholder
+                  devices={devices}
+                  onDeviceClick={handleDeviceClick}
+                  autoRotate={true}
+                />
 
-            <TabsContent value="claim" className="mt-6">
-              <ClaimTab
-                pendingRewards={earnings}
-                activeClaims={activeClaims}
-                onClaimClick={() => setShowBatchClaim(true)}
-              />
-            </TabsContent>
+                {/* Stats Card - Now separate from globe */}
+                <Card className="bg-background/95 backdrop-blur-sm border-2 border-primary/20 shadow-xl">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Total Devices</p>
+                      <p className="text-2xl font-bold">{devices.length}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Active</p>
+                      <p className="text-2xl font-bold text-green-500">{activeDevices}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Total Earned</p>
+                      <p className="text-2xl font-bold">{earnings.toFixed(4)} ETH</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Uptime</p>
+                      <p className="text-2xl font-bold">{uptime}%</p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
 
-            <TabsContent value="portfolio" className="mt-6">
-              <PortfolioTab
-                earnings={earnings}
-                dailyRate={dailyRate}
-                activeDevices={activeDevices}
-                uptime={uptime}
-              />
-            </TabsContent>
+              {/* Tab Content Based on Current Tab */}
+              {currentTab === 'claim' && (
+                <ClaimTab
+                  pendingRewards={earnings}
+                  activeClaims={activeClaims}
+                  onClaimClick={() => setShowBatchClaim(true)}
+                />
+              )}
 
-            <TabsContent value="add-device" className="mt-6">
-              <AddDeviceTab
-                onDeviceAdded={handleDeviceAdded}
-                onOpenSetupGuide={() => setShowSetupGuide(true)}
-              />
-            </TabsContent>
+              {currentTab === 'portfolio' && (
+                <PortfolioTab
+                  earnings={earnings}
+                  dailyRate={dailyRate}
+                  activeDevices={activeDevices}
+                  uptime={uptime}
+                />
+              )}
 
-            <TabsContent value="docs" className="mt-6">
-              <DocsTab />
-            </TabsContent>
-          </Tabs>
+              {currentTab === 'add-device' && (
+                <AddDeviceTab
+                  onDeviceAdded={handleDeviceAdded}
+                  onOpenSetupGuide={() => setShowSetupGuide(true)}
+                />
+              )}
+
+              {currentTab === 'docs' && <DocsTab />}
+            </div>
+          </SidebarInset>
         </div>
-      </div>
+      </SidebarProvider>
     </PageLayout>
   );
 };
