@@ -25,82 +25,60 @@ const WormholeIntegrationFlow = () => {
     style L fill:#10b981
     style H fill:#f59e0b`;
 
+  const wormholeBridgeFlow = `graph TD
+    A[User Wallet] -->|1. Approve & Transfer| B[Wormhole Bridge Contract]
+    B -->|2. Lock/Burn Tokens| C[Source Chain]
+    C -->|3. Emit Event| D[Guardian Network]
+    D -->|4. Observe & Validate| E{19 Guardians}
+    E -->|5. 13+ Signatures| F[VAA Generated]
+    F -->|6. VAA Available| G[WormholeScan API]
+    G -->|7. Poll for VAA| H[Tempo Monitoring]
+    H -->|8. Display Status| A
+    A -->|9. Switch Chain & Claim| I[Destination Chain Contract]
+    I -->|10. Verify VAA| J[Unlock/Mint Tokens]
+    J -->|11. Transfer to User| A
+    
+    style A fill:#3b82f6,stroke:#1e40af,color:#fff
+    style B fill:#8b5cf6,stroke:#6d28d9,color:#fff
+    style C fill:#eab308,stroke:#ca8a04,color:#000
+    style D fill:#ec4899,stroke:#be185d,color:#fff
+    style E fill:#f97316,stroke:#c2410c,color:#fff
+    style F fill:#10b981,stroke:#059669,color:#fff
+    style G fill:#eab308,stroke:#ca8a04,color:#000
+    style H fill:#06b6d4,stroke:#0891b2,color:#fff
+    style I fill:#8b5cf6,stroke:#6d28d9,color:#fff
+    style J fill:#10b981,stroke:#059669,color:#fff`;
+
   const steps = [
     {
       number: 1,
       title: "Device Reports Metrics",
-      description: "Your device sends data to report-device-event API",
-      code: `// Device client reporting
-await fetch('/api/report-device-event', {
-  method: 'POST',
-  body: JSON.stringify({
-    device_id: "solar_panel_123",
-    metrics: { energy_kwh: 35 },
-    signature: "Ed25519_signature"
-  })
-});`
+      description: "Your device sends data to report-device-event API"
     },
     {
       number: 2,
       title: "Backend Calculates Rewards",
-      description: "Multi-factor formula applies bonuses and multipliers",
-      code: `// Reward calculation
-const reward = 
-  energy_kwh * BASE_RATE * 
-  (verified ? 2 : 1) * 
-  deviceMultiplier * 
-  (uptime > 95 ? 1.5 : 1);`
+      description: "Multi-factor formula applies bonuses and multipliers"
     },
     {
       number: 3,
       title: "Rewards Accumulate",
-      description: "Stored in depin_rewards table until claim threshold reached",
-      code: `// Database insert
-await supabase
-  .from('depin_rewards')
-  .insert({
-    user_id, device_id,
-    amount: reward_amount,
-    status: 'pending'
-  });`
+      description: "Stored in depin_rewards table until claim threshold reached"
     },
     {
       number: 4,
       title: "User Initiates Claim",
-      description: "Select destination chain and confirm bridge",
-      code: `// Create batch claim
-await supabase.functions.invoke(
-  'create-batch-claim',
-  {
-    body: {
-      claimAmount: 100,
-      destinationChain: 'polygon',
-      walletAddress: '0x...'
-    }
-  }
-);`
+      description: "Select destination chain and confirm bridge"
     },
     {
       number: 5,
       title: "Wormhole Bridge Process",
-      description: "Guardian network validates and generates VAA",
-      code: `// VAA polling (automatic)
-const vaa = await fetch(
-  'https://api.wormholescan.io/api/v1/vaas/' +
-  '{chainId}/{emitter}/{sequence}'
-);
-// 19 Guardians sign
-// 13/19 signatures required
-// VAA generated in ~30-60 seconds`
+      description: "Guardian network validates and generates VAA"
     },
     {
       number: 6,
       title: "USDC Arrives on Chain",
-      description: "Destination chain receives and releases funds",
-      code: `// Automatic redemption
-// or manual if needed
-const tx = await redeemOnPolygon(vaa);
-// USDC now in your wallet!`
+      description: "Destination chain receives and releases funds"
     }
   ];
 
@@ -120,6 +98,23 @@ const tx = await redeemOnPolygon(vaa);
           <Mermaid chart={flowDiagram} />
         </div>
 
+        <div className="mb-8">
+          <h3 className="text-2xl font-bold mb-4">Wormhole Bridge Flow</h3>
+          <p className="text-muted-foreground mb-4">
+            Detailed visualization of the cross-chain bridging process from source to destination chain.
+          </p>
+          <div className="bg-muted/30 p-6 rounded-lg">
+            <Mermaid chart={wormholeBridgeFlow} />
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h3 className="text-2xl font-bold mb-2">Step-by-Step Process</h3>
+          <p className="text-muted-foreground">
+            Understanding each stage of the reward claiming journey.
+          </p>
+        </div>
+
         <div className="grid gap-6">
           {steps.map((step, index) => (
             <Card key={index} className="p-6 hover:border-primary/40 transition-colors">
@@ -130,13 +125,7 @@ const tx = await redeemOnPolygon(vaa);
                 
                 <div className="flex-1">
                   <h3 className="text-xl font-bold mb-2">{step.title}</h3>
-                  <p className="text-muted-foreground mb-4">{step.description}</p>
-                  
-                  <Card className="p-4 bg-card border-muted">
-                    <pre className="text-xs overflow-x-auto">
-                      <code>{step.code}</code>
-                    </pre>
-                  </Card>
+                  <p className="text-muted-foreground">{step.description}</p>
                 </div>
               </div>
               
