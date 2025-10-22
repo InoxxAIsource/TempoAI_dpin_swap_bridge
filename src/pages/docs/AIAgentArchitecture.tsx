@@ -1,6 +1,7 @@
 import DocHero from "@/components/docs/DocHero";
 import DocSection from "@/components/docs/DocSection";
 import Mermaid from "@/components/docs/Mermaid";
+import aiArchitectureLayers from "@/assets/ai-architecture-layers.png";
 
 const AIAgentArchitecture = () => {
   return (
@@ -21,35 +22,13 @@ const AIAgentArchitecture = () => {
           make decisions, and execute trades across multiple blockchains.
         </p>
 
-        <Mermaid
-          chart={`
-graph TB
-    subgraph "Layer 1: AI Decision Engine"
-        A[Market Data Ingestion] --> B[AI Model]
-        B --> C[Decision Output]
-        C --> D[Action Plan]
-    end
-    
-    subgraph "Layer 2: Execution Engine"
-        D --> E[Wormhole Bridge]
-        D --> F[Protocol Interactions]
-        E --> G[Cross-Chain Transfer]
-        F --> H[DeFi Operations]
-    end
-    
-    subgraph "Layer 3: Monitoring & Feedback"
-        G --> I[Transaction Monitor]
-        H --> I
-        I --> J[Performance Metrics]
-        J --> K[Feedback Loop]
-        K --> A
-    end
-    
-    style B fill:#8b5cf6
-    style E fill:#3b82f6
-    style I fill:#10b981
-          `}
-        />
+        <div className="my-8 p-6 rounded-xl border border-border bg-card/50">
+          <img 
+            src={aiArchitectureLayers} 
+            alt="AI Agent Architecture - Three layer system showing Decision Engine, Execution Engine, and Monitoring & Feedback" 
+            className="w-full h-auto"
+          />
+        </div>
       </DocSection>
 
       <DocSection title="Layer 1: AI Decision Engine">
