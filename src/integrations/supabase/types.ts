@@ -431,27 +431,86 @@ export type Database = {
       }
       profiles: {
         Row: {
+          auto_claim_threshold: number | null
           avatar_url: string | null
           created_at: string | null
+          gas_alerts_enabled: boolean | null
           id: string
+          notification_preferences: Json | null
+          preferred_chain: string | null
+          total_bridges: number | null
+          total_depin_earnings: number | null
+          total_swaps: number | null
           updated_at: string | null
           username: string | null
         }
         Insert: {
+          auto_claim_threshold?: number | null
           avatar_url?: string | null
           created_at?: string | null
+          gas_alerts_enabled?: boolean | null
           id: string
+          notification_preferences?: Json | null
+          preferred_chain?: string | null
+          total_bridges?: number | null
+          total_depin_earnings?: number | null
+          total_swaps?: number | null
           updated_at?: string | null
           username?: string | null
         }
         Update: {
+          auto_claim_threshold?: number | null
           avatar_url?: string | null
           created_at?: string | null
+          gas_alerts_enabled?: boolean | null
           id?: string
+          notification_preferences?: Json | null
+          preferred_chain?: string | null
+          total_bridges?: number | null
+          total_depin_earnings?: number | null
+          total_swaps?: number | null
           updated_at?: string | null
           username?: string | null
         }
         Relationships: []
+      }
+      user_activity: {
+        Row: {
+          activity_type: string
+          completed_at: string | null
+          created_at: string | null
+          details: Json
+          id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          completed_at?: string | null
+          created_at?: string | null
+          details: Json
+          id?: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          completed_at?: string | null
+          created_at?: string | null
+          details?: Json
+          id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

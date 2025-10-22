@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Wallet, ChevronDown, Moon, Sun, Menu, Layers, CheckCircle2 } from 'lucide-react';
+import { Wallet, ChevronDown, Moon, Sun, Menu, Layers, CheckCircle2, User } from 'lucide-react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,7 @@ import ComingSoonDialog from './footer/ComingSoonDialog';
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [pendingClaimsCount, setPendingClaimsCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
@@ -291,6 +292,13 @@ const Header = () => {
                   )}
                 </DropdownMenuItem>
               )}
+              <DropdownMenuItem 
+                onClick={() => navigate('/profile')}
+                className="cursor-pointer"
+              >
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={handleDisconnectAll}
                 className="text-destructive cursor-pointer"

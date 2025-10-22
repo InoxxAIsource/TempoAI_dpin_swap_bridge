@@ -11,6 +11,7 @@ import Swap from "./pages/Swap";
 import Claim from "./pages/Claim";
 import Transactions from "./pages/Transactions";
 import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
 import DePIN from "./pages/DePIN";
 import NotFound from "./pages/NotFound";
 import DocsLayout from "./pages/DocsLayout";
@@ -54,6 +55,7 @@ const App = () => {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/depin" element={<DePIN />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/profile" element={<Profile />} />
             
             {/* Documentation with Sidebar */}
             <Route path="/docs" element={<DocsLayout />}>
