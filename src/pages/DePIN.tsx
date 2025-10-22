@@ -8,6 +8,7 @@ import Globe2DPlaceholder from '@/components/depin/Globe2DPlaceholder';
 import OnboardingModal from '@/components/depin/OnboardingModal';
 import SetupGuideModal from '@/components/depin/SetupGuideModal';
 import BatchClaimModal from '@/components/depin/BatchClaimModal';
+import ClaimAmountModal from '@/components/depin/ClaimAmountModal';
 import ClaimTab from '@/components/depin/dashboard/ClaimTab';
 import PortfolioTab from '@/components/depin/dashboard/PortfolioTab';
 import AddDeviceTab from '@/components/depin/dashboard/AddDeviceTab';
@@ -45,9 +46,12 @@ const DePIN = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [showBatchClaim, setShowBatchClaim] = useState(false);
+  const [showClaimAmountModal, setShowClaimAmountModal] = useState(false);
+  const [requestedClaimAmount, setRequestedClaimAmount] = useState<number | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [showDeviceDetails, setShowDeviceDetails] = useState(false);
+  const [preferredChain, setPreferredChain] = useState('Solana');
 
   useEffect(() => {
     checkFirstVisit();
@@ -210,6 +214,16 @@ const DePIN = () => {
     setShowDeviceDetails(true);
   };
 
+  const handleClaimClick = () => {
+    setShowClaimAmountModal(true);
+  };
+
+  const handleClaimAmountConfirmed = (amount: number) => {
+    setRequestedClaimAmount(amount);
+    setShowClaimAmountModal(false);
+    setShowBatchClaim(true);
+  };
+
   const deviceBreakdown = devices.map((device) => ({
     deviceId: device.device_id,
     deviceName: device.device_name,
@@ -244,15 +258,33 @@ const DePIN = () => {
         />
       )}
 
+      {showClaimAmountModal && (
+        <ClaimAmountModal
+          open={showClaimAmountModal}
+          onClose={() => {
+            setShowClaimAmountModal(false);
+            setRequestedClaimAmount(null);
+          }}
+          totalAvailable={earnings}
+          preferredChain={preferredChain}
+          onAmountConfirmed={handleClaimAmountConfirmed}
+        />
+      )}
+
       {showBatchClaim && (
         <BatchClaimModal
           open={showBatchClaim}
-          onClose={() => setShowBatchClaim(false)}
+          onClose={() => {
+            setShowBatchClaim(false);
+            setRequestedClaimAmount(null);
+          }}
           deviceBreakdown={deviceBreakdown}
           totalAmount={earnings}
-          requestedAmount={null}
-          preferredChain="Solana"
+          requestedAmount={requestedClaimAmount}
+          preferredChain={preferredChain}
           onSuccess={() => {
+            setShowBatchClaim(false);
+            setRequestedClaimAmount(null);
             fetchEarnings();
             fetchActiveClaims();
           }}
@@ -326,7 +358,7 @@ const DePIN = () => {
                 <ClaimTab
                   pendingRewards={earnings}
                   activeClaims={activeClaims}
-                  onClaimClick={() => setShowBatchClaim(true)}
+                  onClaimClick={handleClaimClick}
                 />
               )}
 
