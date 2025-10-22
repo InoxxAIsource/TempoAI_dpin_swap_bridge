@@ -11,15 +11,18 @@ export const useWeb3Auth = () => {
   const { toast } = useToast();
   const isMountedRef = useRef(true);
   const timeoutRef = useRef<NodeJS.Timeout>();
+  const visibilityListenerRef = useRef<(() => void) | null>(null);
 
-  // Track component mounted state
+  // Track component mounted state and cleanup
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      // Clear any pending timeouts on unmount
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+      }
+      if (visibilityListenerRef.current) {
+        document.removeEventListener('visibilitychange', visibilityListenerRef.current);
       }
     };
   }, []);
@@ -39,33 +42,62 @@ export const useWeb3Auth = () => {
     setIsAuthenticating(true);
     setAuthError(null);
 
-    // Store pending auth state for mobile deep link recovery
+    const walletAddress = publicKey.toString();
+    
+    // Store pending auth state in sessionStorage for mobile recovery
     const pendingAuthData = {
-      walletAddress: publicKey.toString(),
+      walletAddress,
       timestamp: Date.now(),
-      attempt: retryCount + 1
+      attempt: retryCount + 1,
+      isWaitingForSignature: true
     };
+    sessionStorage.setItem('pending_solana_auth', JSON.stringify(pendingAuthData));
     localStorage.setItem('pending_solana_auth', JSON.stringify(pendingAuthData));
 
-    // Set up timeout detection (30 seconds)
+    // Increase timeout to 60s for mobile (users may need to switch apps)
+    const MOBILE_TIMEOUT = 60000;
     timeoutRef.current = setTimeout(() => {
-      if (!isMountedRef.current) return; // Don't update if unmounted
+      if (!isMountedRef.current) return;
       
-      console.warn('[useWeb3Auth] Authentication timeout - signature request may be stuck');
-      setIsAuthenticating(false);
-      const timeoutError = 'Authentication timed out. Please try again and approve the signature request in your wallet.';
-      setAuthError(timeoutError);
-      toast({
-        title: 'Timeout',
-        description: timeoutError,
-        variant: 'destructive',
-      });
+      console.warn('[useWeb3Auth] Authentication timeout after 60s');
+      const timeoutError = 'Signature request timed out. Please try again and approve the request in your wallet app.';
+      
+      if (isMountedRef.current) {
+        setIsAuthenticating(false);
+        setAuthError(timeoutError);
+        toast({
+          title: 'Timeout',
+          description: timeoutError,
+          variant: 'destructive',
+        });
+      }
+      
+      sessionStorage.removeItem('pending_solana_auth');
       localStorage.removeItem('pending_solana_auth');
-    }, 30000);
+    }, MOBILE_TIMEOUT);
+
+    // Add visibility change listener for mobile app switching
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[useWeb3Auth] App became visible - user may have returned from wallet app');
+        
+        // Check if we're still waiting for signature
+        const pending = sessionStorage.getItem('pending_solana_auth');
+        if (pending) {
+          const data = JSON.parse(pending);
+          if (data.isWaitingForSignature && Date.now() - data.timestamp < MOBILE_TIMEOUT) {
+            console.log('[useWeb3Auth] Still waiting for signature, keeping auth state active');
+          }
+        }
+      } else {
+        console.log('[useWeb3Auth] App became hidden - user may have switched to wallet app');
+      }
+    };
+
+    visibilityListenerRef.current = handleVisibilityChange;
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     try {
-      const walletAddress = publicKey.toString();
-      
       // Check if already authenticated
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.user_metadata?.wallet_address === walletAddress) {
@@ -88,19 +120,34 @@ export const useWeb3Auth = () => {
       // Request signature from wallet
       let signature: Uint8Array;
       try {
+        console.log('[useWeb3Auth] Requesting signature (may open wallet app on mobile)...');
         signature = await signMessage(encodedMessage);
-        console.log('[useWeb3Auth] ✓ Signature obtained');
+        console.log('[useWeb3Auth] ✓ Signature obtained successfully');
+        
+        // Clear timeout and visibility listener
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (visibilityListenerRef.current) {
+          document.removeEventListener('visibilitychange', visibilityListenerRef.current);
+          visibilityListenerRef.current = null;
+        }
       } catch (signError: any) {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (visibilityListenerRef.current) {
+          document.removeEventListener('visibilitychange', visibilityListenerRef.current);
+          visibilityListenerRef.current = null;
+        }
         
-        if (!isMountedRef.current) return; // Don't update state if unmounted
+        if (!isMountedRef.current) return;
         
-        console.error('[useWeb3Auth] Signature rejected:', signError);
-        const errorMsg = signError.message?.includes('rejected') || signError.message?.includes('denied')
-          ? 'Signature request was rejected. Please try again and approve the request.'
-          : 'Failed to sign message. Please ensure your wallet is unlocked.';
+        console.error('[useWeb3Auth] Signature rejected or failed:', signError);
+        const errorMsg = signError.message?.includes('rejected') || signError.message?.includes('denied') || signError.message?.includes('User rejected')
+          ? 'You rejected the signature request. Please try again and approve the request in your wallet.'
+          : signError.message?.includes('Ledger')
+          ? 'Ledger wallet connection failed. Please ensure your device is connected and unlocked.'
+          : 'Failed to sign message. Please ensure your wallet is unlocked and try again.';
+        
         setAuthError(errorMsg);
+        sessionStorage.removeItem('pending_solana_auth');
         localStorage.removeItem('pending_solana_auth');
         throw new Error(errorMsg);
       }
@@ -183,9 +230,16 @@ export const useWeb3Auth = () => {
       
       console.log('[useWeb3Auth] ✓ Authentication successful!');
       
-      // Clear pending auth and reset retry count on success
+      // Clear all pending auth states and reset retry count
+      sessionStorage.removeItem('pending_solana_auth');
       localStorage.removeItem('pending_solana_auth');
       setRetryCount(0);
+      
+      // Remove visibility listener
+      if (visibilityListenerRef.current) {
+        document.removeEventListener('visibilitychange', visibilityListenerRef.current);
+        visibilityListenerRef.current = null;
+      }
       
       toast({
         title: 'Authenticated!',
@@ -193,15 +247,22 @@ export const useWeb3Auth = () => {
       });
       
     } catch (error: any) {
-      if (!isMountedRef.current) return; // Don't update state if unmounted
+      if (!isMountedRef.current) return;
       
       console.error('[useWeb3Auth] Authentication error:', error);
       
-      // Clear pending auth and increment retry count on error
+      // Clear all pending auth states
+      sessionStorage.removeItem('pending_solana_auth');
       localStorage.removeItem('pending_solana_auth');
       setRetryCount(prev => prev + 1);
       
-      const errorMessage = error.message || 'Failed to authenticate with wallet';
+      // Remove visibility listener
+      if (visibilityListenerRef.current) {
+        document.removeEventListener('visibilitychange', visibilityListenerRef.current);
+        visibilityListenerRef.current = null;
+      }
+      
+      const errorMessage = error.message || 'Failed to authenticate. Please try again.';
       setAuthError(errorMessage);
       
       toast({

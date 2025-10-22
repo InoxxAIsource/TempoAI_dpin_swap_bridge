@@ -59,8 +59,26 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
   }, [open, isSolanaConnected]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full">
+    <Dialog 
+      open={open} 
+      onOpenChange={onOpenChange}
+      modal={true}
+    >
+      <DialogContent 
+        className="w-full"
+        onPointerDownOutside={(e) => {
+          // Prevent closing on mobile when user might be switching to wallet app
+          if (isMobile && (isAuthenticating || isSolanaConnected)) {
+            e.preventDefault();
+          }
+        }}
+        onEscapeKeyDown={(e) => {
+          // Prevent closing with Escape during authentication
+          if (isAuthenticating) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl sm:text-2xl font-bold">Connect Wallet</DialogTitle>
         </DialogHeader>
@@ -99,19 +117,32 @@ const WalletModal = ({ open, onOpenChange }: WalletModalProps) => {
               <div className="flex flex-col items-center justify-center gap-3 text-xs sm:text-sm text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg p-4 sm:p-5">
                 <div className="flex items-center gap-2">
                   <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                  <span className="font-semibold">Authenticating...</span>
+                  <span className="font-semibold">Waiting for signature...</span>
                 </div>
-                {isMobile && (
-                  <div className="flex items-start gap-2 text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-lg p-3 w-full">
-                    <Smartphone className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs">
-                      <p className="font-medium mb-1">Mobile Tip:</p>
-                      <p>After signing in your wallet app, return to this tab. The connection will complete automatically.</p>
+                {isMobile ? (
+                  <div className="flex flex-col gap-3 w-full">
+                    <div className="flex items-start gap-2 text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-lg p-3">
+                      <Smartphone className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs">
+                        <p className="font-medium mb-1">📱 Mobile Wallet Connection:</p>
+                        <ol className="list-decimal list-inside space-y-1 mt-2">
+                          <li>Your wallet app should open automatically</li>
+                          <li>Approve the signature request in your wallet</li>
+                          <li>Return to this tab - connection completes automatically</li>
+                        </ol>
+                      </div>
                     </div>
+                    <p className="text-center text-xs text-muted-foreground">
+                      Don't close this dialog. Waiting up to 60 seconds for your signature...
+                    </p>
                   </div>
-                )}
-                {!isMobile && (
-                  <p className="text-center">Please sign the message in your wallet popup...</p>
+                ) : (
+                  <div className="text-center space-y-2">
+                    <p>Please sign the message in your wallet popup...</p>
+                    <p className="text-xs text-muted-foreground">
+                      Look for a signature request popup from your wallet extension
+                    </p>
+                  </div>
                 )}
               </div>
             )}
