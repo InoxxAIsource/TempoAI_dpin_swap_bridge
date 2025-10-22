@@ -36,7 +36,7 @@ const DocsLayout = () => {
                 <h1 className="text-lg md:text-xl font-semibold truncate font-inter">Documentation</h1>
               </header>
               
-              <main className="docs-content p-6 sm:p-8 md:p-10 lg:p-12 max-w-5xl mx-auto">
+              <main className="docs-content px-6 py-8 sm:px-8 sm:py-10 md:px-12 md:py-12 lg:px-16 lg:py-14 max-w-[900px] mx-auto">
                 <Outlet />
               </main>
             </div>

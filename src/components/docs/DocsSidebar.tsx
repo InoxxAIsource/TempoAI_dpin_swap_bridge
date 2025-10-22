@@ -67,30 +67,30 @@ export function DocsSidebar() {
   
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive 
-      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium border-l-2 border-[hsl(var(--docs-accent))] pl-3" 
-      : "hover:bg-sidebar-accent/50 transition-colors pl-3.5";
+      ? "bg-[hsl(var(--docs-accent))]/10 text-[hsl(var(--docs-accent))] font-semibold border-l-3 border-[hsl(var(--docs-accent))] pl-2.5 shadow-sm" 
+      : "hover:bg-sidebar-accent/60 hover:text-foreground transition-all pl-3 text-muted-foreground";
 
   return (
     <Sidebar className={open ? "w-64" : "w-0 md:w-14"} collapsible="offcanvas">
       <SidebarContent className="px-2 py-6">
         {open && (
-          <div className="px-3 mb-6">
-            <h2 className="text-sm font-semibold text-sidebar-foreground font-inter">Documentation</h2>
+          <div className="px-3 mb-8">
+            <h2 className="text-lg font-bold text-sidebar-foreground font-inter">Documentation</h2>
           </div>
         )}
         {docSections.map((section) => (
-          <SidebarGroup key={section.label} className="mb-6">
-            <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+          <SidebarGroup key={section.label} className="mb-8">
+            <SidebarGroupLabel className="px-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80 mb-3 letter-spacing-[0.1em]">
               {open ? section.label : '•'}
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-0.5">
+              <SidebarMenu className="space-y-1">
                 {section.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild className="rounded-md">
+                    <SidebarMenuButton asChild className="rounded-md h-9">
                       <NavLink to={item.url} end className={getNavCls}>
                         {item.icon && <item.icon className="h-4 w-4 flex-shrink-0" />}
-                        {open && <span className="text-sm">{item.title}</span>}
+                        {open && <span className="text-[13px] font-medium">{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

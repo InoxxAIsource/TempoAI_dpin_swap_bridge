@@ -41,21 +41,21 @@ const Callout = ({ type = 'info', title, children, className }: CalloutProps) =>
   return (
     <div 
       className={cn(
-        'my-6 rounded-lg border-l-4 p-4 shadow-sm',
+        'not-prose my-6 rounded-lg border-l-[3px] p-5 shadow-md',
         config.className,
         className
       )}
       role="alert"
     >
-      <div className="flex gap-3">
+      <div className="flex gap-3.5">
         <Icon className={cn('h-5 w-5 flex-shrink-0 mt-0.5', config.iconClassName)} />
         <div className="flex-1">
           {title && (
-            <p className="font-semibold mb-1 text-foreground">
+            <p className="font-bold mb-2 text-foreground text-[15px]">
               {title}
             </p>
           )}
-          <div className="text-sm leading-relaxed text-foreground/90">
+          <div className="text-[14px] leading-[1.7] text-foreground/85">
             {children}
           </div>
         </div>

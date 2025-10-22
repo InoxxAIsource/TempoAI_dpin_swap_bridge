@@ -46,27 +46,27 @@ const CodeBlock = ({ code, language = 'typescript', filename }: CodeBlockProps) 
   };
 
   return (
-    <div className="my-6 rounded-lg overflow-hidden border border-border bg-[hsl(var(--docs-code-bg))] shadow-sm">
-      <div className="px-4 py-2.5 bg-muted/50 border-b border-border flex items-center justify-between">
+    <div className="not-prose my-6 rounded-lg overflow-hidden border border-border bg-[hsl(var(--docs-code-bg))] shadow-md hover:shadow-lg transition-shadow">
+      <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-3">
           {filename && (
-            <span className="text-sm font-mono text-foreground font-medium">{filename}</span>
+            <span className="text-[13px] font-mono text-foreground font-semibold tracking-tight">{filename}</span>
           )}
           {!filename && (
-            <span className="text-xs px-2 py-0.5 rounded-md bg-background/50 text-muted-foreground font-medium">
+            <span className="text-[11px] px-2.5 py-1 rounded-md bg-[hsl(var(--docs-accent))]/10 text-[hsl(var(--docs-accent))] font-semibold uppercase tracking-wide border border-[hsl(var(--docs-accent))]/20">
               {languageLabels[language] || language}
             </span>
           )}
         </div>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-background/50 hover:bg-background transition-colors text-muted-foreground hover:text-foreground"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-background hover:bg-[hsl(var(--docs-accent))]/10 transition-all text-muted-foreground hover:text-[hsl(var(--docs-accent))] border border-transparent hover:border-[hsl(var(--docs-accent))]/20"
           aria-label="Copy code"
         >
           {copied ? (
             <>
               <Check className="w-3.5 h-3.5" />
-              <span>Copied!</span>
+              <span>Copied</span>
             </>
           ) : (
             <>
@@ -77,8 +77,8 @@ const CodeBlock = ({ code, language = 'typescript', filename }: CodeBlockProps) 
         </button>
       </div>
       <div className="relative">
-        <pre className="p-4 overflow-x-auto">
-          <code className={`language-${language} text-sm leading-relaxed`}>
+        <pre className="p-5 overflow-x-auto scrollbar-thin">
+          <code className={`language-${language} text-[13px] leading-[1.6]`}>
             {code}
           </code>
         </pre>
