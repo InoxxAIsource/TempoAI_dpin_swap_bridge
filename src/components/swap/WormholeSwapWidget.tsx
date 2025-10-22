@@ -250,6 +250,25 @@ export const WormholeSwapWidget = ({
     const alchemyKey = import.meta.env.VITE_ALCHEMY_API_KEY;
     const useAlchemy = isValidAlchemyKey(alchemyKey);
     
+    // Build bridgeDefaults from props to pre-fill the form
+    const bridgeDefaults: any = {};
+    if (defaultSourceChain) {
+      bridgeDefaults.fromChain = defaultSourceChain;
+    }
+    if (defaultTargetChain) {
+      bridgeDefaults.toChain = defaultTargetChain;
+    }
+    if (defaultSourceToken) {
+      bridgeDefaults.token = defaultSourceToken;
+    }
+    if (defaultAmount) {
+      bridgeDefaults.amount = defaultAmount;
+    }
+    // Set route mode to 'bridge' for native token transfers (like ETH→Solana)
+    if (defaultSourceChain && defaultTargetChain) {
+      bridgeDefaults.route = 'bridge';
+    }
+    
     if (networkMode === 'Testnet') {
       const sepoliaRpc = useAlchemy
         ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
@@ -268,6 +287,7 @@ export const WormholeSwapWidget = ({
           PolygonSepolia: 'https://rpc-amoy.polygon.technology',
         },
         walletConnectProjectId: '7cb724bf60c8e3b1b67fdadd7bafcace',
+        bridgeDefaults: Object.keys(bridgeDefaults).length > 0 ? bridgeDefaults : undefined,
       };
     }
 
@@ -287,8 +307,9 @@ export const WormholeSwapWidget = ({
         Bsc: 'https://bsc.publicnode.com',
       },
       walletConnectProjectId: '7cb724bf60c8e3b1b67fdadd7bafcace',
+      bridgeDefaults: Object.keys(bridgeDefaults).length > 0 ? bridgeDefaults : undefined,
     };
-  }, [networkMode]);
+  }, [networkMode, defaultSourceChain, defaultTargetChain, defaultSourceToken, defaultAmount]);
 
   return (
     <ThemeProvider theme={muiTheme}>
