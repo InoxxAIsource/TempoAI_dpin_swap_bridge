@@ -14,6 +14,7 @@ const Swap = () => {
   const targetChain = searchParams.get('targetChain');
   const sourceToken = searchParams.get('sourceToken');
   const amount = searchParams.get('amount');
+  const claimId = searchParams.get('claimId');
   const testnetFaucets = [
     { name: "Sepolia ETH", url: "https://sepoliafaucet.com" },
     { name: "Solana Devnet", url: "https://solfaucet.com" },
@@ -77,6 +78,7 @@ const Swap = () => {
               defaultTargetChain={targetChain || undefined}
               defaultSourceToken={sourceToken || undefined}
               defaultAmount={amount || undefined}
+              claimId={claimId || undefined}
             />
           </div>
         </div>

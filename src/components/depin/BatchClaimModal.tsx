@@ -202,13 +202,13 @@ const BatchClaimModal = ({
     onSuccess();
     onClose();
 
-    // Redirect to bridge page with Sepolia ETH data
-    navigate(`/bridge?amount=${sepoliaEthAmount.toFixed(6)}&toChain=${preferredChain}&fromChain=Sepolia&token=ETH&claimId=${claimId}`);
+    // Redirect to swap page with Sepolia ETH data
+    navigate(`/swap?sourceChain=Sepolia&targetChain=${preferredChain}&sourceToken=ETH&amount=${sepoliaEthAmount.toFixed(6)}&claimId=${claimId}`);
     
     setTimeout(() => {
       toast({
         title: "Complete Your Claim",
-        description: "Connect your wallet in the bridge widget and confirm the transaction to receive your DePIN rewards.",
+        description: "Connect your wallet in the swap widget and complete the ETH → WETH swap to Solana to receive your DePIN rewards.",
       });
     }, 1000);
   };

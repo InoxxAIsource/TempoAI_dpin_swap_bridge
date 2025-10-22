@@ -14,13 +14,15 @@ interface WormholeSwapWidgetProps {
   defaultTargetChain?: string;
   defaultSourceToken?: string;
   defaultAmount?: string;
+  claimId?: string;
 }
 
 export const WormholeSwapWidget = ({ 
   defaultSourceChain,
   defaultTargetChain,
   defaultSourceToken,
-  defaultAmount
+  defaultAmount,
+  claimId
 }: WormholeSwapWidgetProps) => {
   const [widgetKey, setWidgetKey] = useState(0);
   const [networkMode, setNetworkMode] = useState<'Testnet' | 'Mainnet'>('Testnet');
@@ -48,11 +50,12 @@ export const WormholeSwapWidget = ({
     const handleSwapEvent = async (event: any) => {
       if (event.detail?.type === 'transfer' && event.detail?.txHash) {
         const txData = event.detail;
+        const txHash = txData.txHash;
         const walletAddress = (evmAddress || solanaAddress || '').toLowerCase();
         
         // Store transaction details for modal immediately
         const transactionDetails = {
-          hash: txData.txHash,
+          hash: txHash,
           fromChain: txData.fromChain || 'Unknown',
           toChain: txData.toChain || 'Unknown',
           token: txData.fromToken || 'Unknown',
@@ -64,53 +67,90 @@ export const WormholeSwapWidget = ({
         setShowSuccessModal(true);
         
         // Generate WormholeScan URL
-        const wormholeScanUrl = `https://wormholescan.io/#/tx/${txData.txHash}?network=${networkMode}`;
+        const wormholeScanUrl = `https://wormholescan.io/#/tx/${txHash}?network=${networkMode}`;
         
         try {
-          // Save to database
-          const { error } = await supabase.from('cross_chain_swaps').insert({
-            wallet_address: walletAddress,
-            from_chain: transactionDetails.fromChain,
-            to_chain: transactionDetails.toChain,
-            from_token: transactionDetails.token,
-            to_token: txData.toToken || 'Unknown',
-            from_amount: transactionDetails.amount,
-            estimated_to_amount: txData.estimatedAmount || 0,
-            route_used: txData.route || {},
-            tx_hash: txData.txHash,
-            status: 'pending',
-            network: networkMode,
-          });
-
-          if (error) {
-            console.error('Error saving swap to database:', error);
+          // If claimId exists, UPDATE existing wormhole_transactions record
+          if (claimId) {
+            console.log('[WormholeSwapWidget] Updating Wormhole transaction for DePIN claim:', claimId);
+            
+            const { error: updateError } = await supabase
+              .from('wormhole_transactions')
+              .update({
+                tx_hash: txHash,
+                status: 'pending',
+                wormhole_vaa: txData.vaa || null,
+              })
+              .contains('source_reference_ids', [claimId])
+              .eq('source_type', 'depin_claim');
+            
+            if (updateError) {
+              console.error('Failed to update Wormhole transaction:', updateError);
+              throw updateError;
+            }
+            
+            console.log('✅ DePIN claim Wormhole transaction updated with bridge tx_hash');
+            
+            // Dispatch completion event
+            window.dispatchEvent(new CustomEvent('wormhole-transfer-complete', {
+              detail: { ...txData, claimId }
+            }));
+            
             toast({
-              title: "⚠️ Swap Tracking Failed",
-              description: (
-                <div className="space-y-2">
-                  <p>Swap initiated but couldn't save to history.</p>
-                  <a 
-                    href={wormholeScanUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1"
-                  >
-                    Track on WormholeScan <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              ) as any,
-              variant: "destructive",
+              title: "🎉 Bridge Transaction Started!",
+              description: "Your DePIN rewards are being bridged to Solana. Track progress in the Claim tab.",
             });
+          } else {
+            // Regular swap - save to cross_chain_swaps table
+            const { error } = await supabase.from('cross_chain_swaps').insert({
+              wallet_address: walletAddress,
+              from_chain: transactionDetails.fromChain,
+              to_chain: transactionDetails.toChain,
+              from_token: transactionDetails.token,
+              to_token: txData.toToken || 'Unknown',
+              from_amount: transactionDetails.amount,
+              estimated_to_amount: txData.estimatedAmount || 0,
+              route_used: txData.route || {},
+              tx_hash: txHash,
+              status: 'pending',
+              network: networkMode,
+            });
+
+            if (error) {
+              console.error('Error saving swap to database:', error);
+              toast({
+                title: "⚠️ Swap Tracking Failed",
+                description: (
+                  <div className="space-y-2">
+                    <p>Swap initiated but couldn't save to history.</p>
+                    <a 
+                      href={wormholeScanUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      Track on WormholeScan <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                ) as any,
+                variant: "destructive",
+              });
+            }
           }
         } catch (error) {
           console.error('Error handling swap event:', error);
+          toast({
+            title: "⚠️ Transaction Error",
+            description: "Failed to track transaction. Check WormholeScan.",
+            variant: "destructive",
+          });
         }
       }
     };
 
     window.addEventListener('wormhole-transfer', handleSwapEvent);
     return () => window.removeEventListener('wormhole-transfer', handleSwapEvent);
-  }, [evmAddress, solanaAddress, toast, networkMode]);
+  }, [evmAddress, solanaAddress, toast, networkMode, claimId]);
 
   // Portal Bridge CSS overrides
   const portalStyleOverrides = `
