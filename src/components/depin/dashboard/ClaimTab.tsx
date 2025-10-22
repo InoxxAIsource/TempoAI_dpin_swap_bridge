@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import AuthPrompt from '../AuthPrompt';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Coins, ArrowRight, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import ClaimStatusTracker from '@/components/claim/ClaimStatusTracker';
+import WormholeBridgeStatus from '../WormholeBridgeStatus';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Claim {
   id: string;
@@ -23,6 +26,38 @@ interface ClaimTabProps {
 
 const ClaimTab = ({ pendingRewards, activeClaims, onClaimClick }: ClaimTabProps) => {
   const { isAuthenticated } = useWalletContext();
+  const [wormholeTransactions, setWormholeTransactions] = useState<Record<string, any>>({});
+
+  // Fetch Wormhole transactions for active claims
+  useEffect(() => {
+    const fetchWormholeStatus = async () => {
+      if (!isAuthenticated || activeClaims.length === 0) return;
+      
+      const claimIds = activeClaims.map(c => c.id);
+      
+      const { data, error } = await supabase
+        .from('wormhole_transactions')
+        .select('*')
+        .eq('source_type', 'depin_claim')
+        .contains('source_reference_ids', claimIds);
+      
+      if (error) {
+        console.error('[ClaimTab] Error fetching Wormhole transactions:', error);
+        return;
+      }
+
+      if (data) {
+        const mapped = data.reduce((acc: Record<string, any>, tx: any) => {
+          const claimId = tx.source_reference_ids?.[0];
+          if (claimId) acc[claimId] = tx;
+          return acc;
+        }, {});
+        setWormholeTransactions(mapped);
+      }
+    };
+    
+    fetchWormholeStatus();
+  }, [activeClaims, isAuthenticated]);
 
   if (!isAuthenticated) {
     return <AuthPrompt />;
@@ -96,13 +131,21 @@ const ClaimTab = ({ pendingRewards, activeClaims, onClaimClick }: ClaimTabProps)
                   {getStatusBadge(claim.status)}
                 </div>
               </CardHeader>
-               <CardContent>
+              <CardContent>
                 <ClaimStatusTracker
                   status={claim.status}
                   txHash={claim.eth_transfer_tx}
                   fromChain="Sepolia"
                   toChain={claim.destination_chain}
                 />
+                
+                {/* Show Wormhole bridge status if exists */}
+                {wormholeTransactions[claim.id] && (
+                  <div className="mt-4 p-3 border rounded-lg bg-secondary/20">
+                    <h4 className="font-semibold text-sm mb-2">Wormhole Bridge Status</h4>
+                    <WormholeBridgeStatus transaction={wormholeTransactions[claim.id]} />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

@@ -184,10 +184,41 @@ const BatchClaimModal = ({
     }
   };
 
-  const handleEthClaimed = (ethAmount: number) => {
+  const handleEthClaimed = async (ethAmount: number) => {
     setSepoliaEthAmount(ethAmount);
     setContractPrepared(true);
     setStep('bridge');
+    
+    // Create Wormhole transaction tracking record
+    if (claimData?.eth_transfer_tx && claimId) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        const { error: wormholeError } = await supabase
+          .from('wormhole_transactions')
+          .insert({
+            wallet_address: evmAddress?.toLowerCase() || '',
+            tx_hash: claimData.eth_transfer_tx,
+            from_chain: 'Sepolia',
+            to_chain: preferredChain,
+            from_token: 'ETH',
+            to_token: 'ETH',
+            amount: ethAmount,
+            status: 'pending',
+            user_id: user?.id,
+            source_type: 'depin_claim',
+            source_reference_ids: [claimId],
+          });
+        
+        if (wormholeError) {
+          console.error('[BatchClaimModal] Failed to create Wormhole tracking:', wormholeError);
+        } else {
+          console.log('[BatchClaimModal] Created Wormhole transaction tracking for DePIN claim');
+        }
+      } catch (err) {
+        console.error('[BatchClaimModal] Error creating Wormhole transaction:', err);
+      }
+    }
   };
 
   const handleProceedToBridge = () => {

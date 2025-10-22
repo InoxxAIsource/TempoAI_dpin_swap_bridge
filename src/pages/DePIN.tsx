@@ -10,6 +10,7 @@ import SetupGuideModal from '@/components/depin/SetupGuideModal';
 import BatchClaimModal from '@/components/depin/BatchClaimModal';
 import ClaimAmountModal from '@/components/depin/ClaimAmountModal';
 import ClaimTab from '@/components/depin/dashboard/ClaimTab';
+import { useWormholeVAAPoller } from '@/hooks/useWormholeVAAPoller';
 import PortfolioTab from '@/components/depin/dashboard/PortfolioTab';
 import AddDeviceTab from '@/components/depin/dashboard/AddDeviceTab';
 import DocsTab from '@/components/depin/dashboard/DocsTab';
@@ -35,7 +36,7 @@ interface Device {
 const DePIN = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = searchParams.get('tab') || 'my-devices';
-  const { isAuthenticated, session } = useWalletContext();
+  const { isAuthenticated, session, evmAddress, solanaAddress, walletAuthenticatedAddress } = useWalletContext();
 
   const [devices, setDevices] = useState<Device[]>([]);
   const [earnings, setEarnings] = useState(0);
@@ -52,6 +53,9 @@ const DePIN = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [showDeviceDetails, setShowDeviceDetails] = useState(false);
   const [preferredChain, setPreferredChain] = useState('Solana');
+
+  // Add VAA polling for DePIN claim transactions
+  useWormholeVAAPoller(evmAddress);
 
   useEffect(() => {
     checkFirstVisit();
