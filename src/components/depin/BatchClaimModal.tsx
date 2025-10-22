@@ -422,7 +422,7 @@ const BatchClaimModal = ({
                 <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold mb-2">Contract Prepared Successfully!</h3>
                 <p className="text-muted-foreground mb-4">
-                  Your claim is ready to bridge. Click below to proceed to the bridge interface.
+                  Your claim is ready to swap. Click below to proceed to the swap interface where you'll convert ETH to WETH on Solana.
                 </p>
               </div>
 
@@ -433,7 +433,7 @@ const BatchClaimModal = ({
                   Close
                 </Button>
                 <Button onClick={handleProceedToBridge} className="gap-2">
-                  Proceed to Bridge
+                  Proceed to Swap
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
