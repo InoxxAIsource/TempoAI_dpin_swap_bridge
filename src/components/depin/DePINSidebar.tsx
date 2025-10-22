@@ -1,4 +1,4 @@
-import { Gift, Wallet, Plus, Book } from 'lucide-react';
+import { Gift, Wallet, Plus, Book, Monitor } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Sidebar,
@@ -15,16 +15,23 @@ import { Badge } from '@/components/ui/badge';
 
 interface DePINSidebarProps {
   activeClaimsCount?: number;
+  deviceCount?: number;
 }
 
-const DePINSidebar = ({ activeClaimsCount = 0 }: DePINSidebarProps) => {
+const DePINSidebar = ({ activeClaimsCount = 0, deviceCount = 0 }: DePINSidebarProps) => {
   const { open } = useSidebar();
   const [searchParams, setSearchParams] = useSearchParams();
-  const currentTab = searchParams.get('tab') || 'portfolio';
+  const currentTab = searchParams.get('tab') || 'my-devices';
 
   const navigationItems = [
     {
-      title: 'Claim',
+      title: 'My Devices',
+      value: 'my-devices',
+      icon: Monitor,
+      badge: deviceCount,
+    },
+    {
+      title: 'Claim/Redeem',
       value: 'claim',
       icon: Gift,
       badge: activeClaimsCount,

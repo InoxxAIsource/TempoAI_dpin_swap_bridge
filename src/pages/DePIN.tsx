@@ -12,6 +12,7 @@ import ClaimTab from '@/components/depin/dashboard/ClaimTab';
 import PortfolioTab from '@/components/depin/dashboard/PortfolioTab';
 import AddDeviceTab from '@/components/depin/dashboard/AddDeviceTab';
 import DocsTab from '@/components/depin/dashboard/DocsTab';
+import MyDevicesTab from '@/components/depin/dashboard/MyDevicesTab';
 import DePINSidebar from '@/components/depin/DePINSidebar';
 import DeviceDetailsModal from '@/components/depin/DeviceDetailsModal';
 import { Card } from '@/components/ui/card';
@@ -32,7 +33,7 @@ interface Device {
 
 const DePIN = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const currentTab = searchParams.get('tab') || 'portfolio';
+  const currentTab = searchParams.get('tab') || 'my-devices';
   const { isAuthenticated, session } = useWalletContext();
 
   const [devices, setDevices] = useState<Device[]>([]);
@@ -268,7 +269,10 @@ const DePIN = () => {
 
       <SidebarProvider defaultOpen={true}>
         <div className="min-h-screen flex w-full">
-          <DePINSidebar activeClaimsCount={activeClaims.length} />
+          <DePINSidebar 
+            activeClaimsCount={activeClaims.length}
+            deviceCount={devices.length}
+          />
           
           <SidebarInset className="flex-1">
             {/* Sidebar Trigger for mobile/collapsed state */}
@@ -310,6 +314,14 @@ const DePIN = () => {
               </div>
 
               {/* Tab Content Based on Current Tab */}
+              {currentTab === 'my-devices' && (
+                <MyDevicesTab
+                  devices={devices}
+                  onDeleteDevice={handleDeleteDevice}
+                  onDeviceClick={handleDeviceClick}
+                />
+              )}
+
               {currentTab === 'claim' && (
                 <ClaimTab
                   pendingRewards={earnings}
