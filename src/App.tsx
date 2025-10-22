@@ -32,6 +32,7 @@ import APIBridgeSwap from "./pages/docs/APIBridgeSwap";
 import APIRateLimits from "./pages/docs/APIRateLimits";
 import APISDKReference from "./pages/docs/APISDKReference";
 import DePINGettingStarted from "./pages/docs/DePINGettingStarted";
+import DePINDeviceSetup from "./pages/docs/DePINDeviceSetup";
 import DePINBenefits from "./pages/docs/DePINBenefits";
 import DePINWormhole from "./pages/docs/DePINWormhole";
 import DePINEconomics from "./pages/docs/DePINEconomics";
@@ -84,6 +85,7 @@ const App = () => {
               
               {/* DePIN Network Section */}
               <Route path="depin/getting-started" element={<DePINGettingStarted />} />
+              <Route path="depin/device-setup" element={<DePINDeviceSetup />} />
               <Route path="depin/benefits" element={<DePINBenefits />} />
               <Route path="depin/wormhole" element={<DePINWormhole />} />
               <Route path="depin/economics" element={<DePINEconomics />} />

@@ -1,4 +1,4 @@
-import { Bot, Cpu, Book, Wallet, TrendingUp, Shield, Lightbulb, MessageSquare, Code, Key, User, ArrowLeftRight, DollarSign, Package } from 'lucide-react';
+import { Bot, Cpu, Book, Wallet, TrendingUp, Shield, Lightbulb, MessageSquare, Code, Key, User, ArrowLeftRight, DollarSign, Package, Terminal } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -37,6 +37,7 @@ const docSections = [
     label: 'DePIN Network',
     items: [
       { title: 'Introduction', url: '/docs/depin/getting-started', icon: Book },
+      { title: 'Device Setup Guide', url: '/docs/depin/device-setup', icon: Terminal },
       { title: 'Benefits', url: '/docs/depin/benefits', icon: TrendingUp },
       { title: 'Wormhole Bridge', url: '/docs/depin/wormhole', icon: Shield },
       { title: 'Economics', url: '/docs/depin/economics', icon: Wallet },
