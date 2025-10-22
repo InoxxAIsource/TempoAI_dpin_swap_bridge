@@ -5,6 +5,7 @@ import { Connection, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import { useTokenBalances } from '@/hooks/useTokenBalances';
+import { Loader2 } from 'lucide-react';
 
 interface WalletContextType {
   // EVM
@@ -40,6 +41,8 @@ interface WalletContextType {
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
+  const [isInitialized, setIsInitialized] = useState(false);
+
   // EVM Wallet State
   const { address: evmAddress, isConnected: isEvmConnected, chainId: evmChainId } = useAccount();
   const { data: evmBalanceData } = useBalance({
@@ -163,6 +166,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Mark as initialized once all hooks have run
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInitialized(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Debug logging for wallet state changes
   useEffect(() => {
     console.log('[WalletContext] State Update:', {
@@ -174,6 +183,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       walletAuthenticatedAddress,
     });
   }, [isEvmConnected, isSolanaConnected, isAuthenticated, authMethod, session, walletAuthenticatedAddress]);
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const value: WalletContextType = {
     evmAddress,

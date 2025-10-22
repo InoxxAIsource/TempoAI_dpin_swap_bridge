@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -47,6 +49,25 @@ import SwapHowItWorks from "./pages/docs/SwapHowItWorks";
 import SwapBestPractices from "./pages/docs/SwapBestPractices";
 
 const App = () => {
+  const [providersReady, setProvidersReady] = useState(false);
+
+  useEffect(() => {
+    // Give providers time to initialize
+    const timer = setTimeout(() => setProvidersReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!providersReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+          <p className="text-lg text-muted-foreground">Initializing Tempo...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ThemeProvider>
       <TooltipProvider>

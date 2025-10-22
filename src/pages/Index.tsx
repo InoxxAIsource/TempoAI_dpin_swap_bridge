@@ -15,10 +15,28 @@ import CTASection from '@/components/CTASection';
 import Footer from '@/components/Footer';
 import StartEarningChat from '@/components/StartEarningChat';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [contentReady, setContentReady] = useState(false);
+
+  useEffect(() => {
+    // Show content immediately without delay
+    setContentReady(true);
+  }, []);
+
+  if (!contentReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+          <p className="text-lg text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen">

@@ -36,7 +36,8 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: {
           'wallet': ['@rainbow-me/rainbowkit', 'wagmi', 'viem'],
-          'wormhole': ['@wormhole-foundation/sdk', '@wormhole-foundation/wormhole-connect']
+          'wormhole': ['@wormhole-foundation/sdk', '@wormhole-foundation/wormhole-connect'],
+          'solana': ['@solana/wallet-adapter-react', '@solana/wallet-adapter-wallets', '@solana/web3.js']
         }
       },
       onwarn(warning, warn) {

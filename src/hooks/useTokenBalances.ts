@@ -124,8 +124,8 @@ export const useTokenBalances = (
 
     fetchBalances();
 
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchBalances, 30000);
+    // Refresh every 60 seconds (reduced from 30s to improve performance)
+    const interval = setInterval(fetchBalances, 60000);
     return () => clearInterval(interval);
   }, [walletAddress, chainId]);
 

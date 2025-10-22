@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, Suspense } from "react";
 import { createRoot } from "react-dom/client";
+import { Loader2 } from "lucide-react";
 import App from "./App.tsx";
 import "./index.css";
 import '@rainbow-me/rainbowkit/styles.css';
@@ -23,6 +24,16 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
 import { WalletProvider } from './contexts/WalletContext';
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="text-center space-y-4">
+      <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+      <p className="text-lg text-muted-foreground">Loading Tempo...</p>
+    </div>
+  </div>
+);
 
 // Suppress WalletConnect postMessage errors in iframe context
 const originalError = console.error;
@@ -76,4 +87,8 @@ const RootApp = () => {
   );
 };
 
-createRoot(document.getElementById("root")!).render(<RootApp />);
+createRoot(document.getElementById("root")!).render(
+  <Suspense fallback={<LoadingFallback />}>
+    <RootApp />
+  </Suspense>
+);
