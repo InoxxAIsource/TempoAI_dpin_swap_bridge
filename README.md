@@ -676,6 +676,574 @@ AI analyzes yield opportunities across multiple DeFi protocols and recommends op
 
 ---
 
+## 🔧 DePIN Device Setup
+
+### Prerequisites
+
+To set up a DePIN device and start earning rewards, you'll need:
+
+**Hardware:**
+- Raspberry Pi 3, 4, or 5 (or any Linux-based device)
+- Minimum 512MB RAM, 1GB storage
+- Stable internet connection
+- Power supply (5V/2.5A minimum)
+
+**Software:**
+- Python 3.8 or higher
+- pip package manager
+- Git (optional, for cloning)
+
+**Account:**
+- Registered device on the Tempo platform (register at `/depin` dashboard)
+
+### Quick Setup
+
+1. **Install Python Dependencies**
+
+Create a `requirements.txt` file:
+```txt
+requests>=2.31.0
+psutil>=5.9.0
+PyNaCl>=1.5.0
+```
+
+Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+2. **Create Configuration File**
+
+Create `config.json` with your device settings:
+```json
+{
+  "device_id": "YOUR_DEVICE_ID",
+  "api_endpoint": "https://fhmyhvrejofybzdgzxdc.supabase.co/functions/v1/report-device-event",
+  "private_key_path": "/home/pi/.tempo/device_key",
+  "report_interval": 30,
+  "max_retries": 3,
+  "max_buffer_size": 100
+}
+```
+
+**Configuration Options:**
+- `device_id` (required): Your unique device ID from Tempo dashboard
+- `api_endpoint` (required): Backend API URL for reporting metrics
+- `private_key_path` (optional): Path to Ed25519 private key for cryptographic signing
+- `report_interval` (optional): Seconds between metric reports (default: 30)
+- `max_retries` (optional): Number of retry attempts for failed reports (default: 3)
+- `max_buffer_size` (optional): Maximum number of events to buffer offline (default: 100)
+
+3. **Download Python Client**
+
+Create `client.py` with the following code:
+
+<details>
+<summary>Click to expand full Python client script (395 lines)</summary>
+
+```python
+#!/usr/bin/env python3
+"""
+Tempo DePIN Device Client
+A Python client for reporting device metrics to the Tempo DePIN network.
+Supports cryptographic signing for 2x reward multiplier.
+"""
+
+import json
+import time
+import requests
+import psutil
+import os
+import sys
+import argparse
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, Optional, List
+import logging
+
+# Optional: Ed25519 signing for verified devices (2x rewards)
+try:
+    import nacl.signing
+    import nacl.encoding
+    SIGNING_AVAILABLE = True
+except ImportError:
+    SIGNING_AVAILABLE = False
+    print("⚠️  PyNaCl not installed. Running in unverified mode (1x rewards).")
+    print("   Install with: pip install PyNaCl")
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('tempo_client.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
+class TempoClient:
+    """Main client for reporting device metrics to Tempo DePIN network."""
+    
+    def __init__(self, config_path: str):
+        """Initialize the Tempo client with configuration."""
+        self.config = self._load_config(config_path)
+        self.device_id = self.config['device_id']
+        self.api_endpoint = self.config['api_endpoint']
+        self.report_interval = self.config.get('report_interval', 30)
+        self.max_retries = self.config.get('max_retries', 3)
+        self.max_buffer_size = self.config.get('max_buffer_size', 100)
+        
+        # Initialize signing key if available
+        self.signing_key = None
+        self.verify_key_hex = None
+        if SIGNING_AVAILABLE:
+            self._init_signing_key()
+        
+        # Offline buffer for failed reports
+        self.offline_buffer: List[Dict] = []
+        
+        logger.info(f"✓ Tempo Client initialized for device: {self.device_id}")
+        logger.info(f"✓ Reporting interval: {self.report_interval}s")
+        logger.info(f"✓ API endpoint: {self.api_endpoint}")
+        if self.signing_key:
+            logger.info("✓ Cryptographic signing enabled (2x rewards)")
+        else:
+            logger.info("⚠️  Running in unverified mode (1x rewards)")
+    
+    def _load_config(self, config_path: str) -> Dict:
+        """Load configuration from JSON file."""
+        try:
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+            
+            # Validate required fields
+            required = ['device_id', 'api_endpoint']
+            missing = [field for field in required if field not in config]
+            if missing:
+                raise ValueError(f"Missing required config fields: {missing}")
+            
+            return config
+        except FileNotFoundError:
+            logger.error(f"❌ Config file not found: {config_path}")
+            sys.exit(1)
+        except json.JSONDecodeError as e:
+            logger.error(f"❌ Invalid JSON in config file: {e}")
+            sys.exit(1)
+        except ValueError as e:
+            logger.error(f"❌ Configuration error: {e}")
+            sys.exit(1)
+    
+    def _init_signing_key(self):
+        """Initialize Ed25519 signing key from file or generate new one."""
+        private_key_path = self.config.get('private_key_path', './device_key')
+        key_path = Path(private_key_path)
+        
+        try:
+            if key_path.exists():
+                # Load existing key
+                with open(key_path, 'rb') as f:
+                    seed = f.read()
+                self.signing_key = nacl.signing.SigningKey(seed)
+                logger.info(f"✓ Loaded signing key from: {key_path}")
+            else:
+                # Generate new key
+                self.signing_key = nacl.signing.SigningKey.generate()
+                
+                # Save key securely
+                key_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(key_path, 'wb') as f:
+                    f.write(self.signing_key.encode())
+                
+                # Set secure permissions (Unix only)
+                if os.name != 'nt':  # Not Windows
+                    os.chmod(key_path, 0o600)
+                
+                logger.info(f"✓ Generated new signing key: {key_path}")
+                logger.warning(f"⚠️  IMPORTANT: Backup your key file: {key_path}")
+            
+            # Get verify key (public key)
+            verify_key = self.signing_key.verify_key
+            self.verify_key_hex = verify_key.encode(encoder=nacl.encoding.HexEncoder).decode('utf-8')
+            logger.info(f"✓ Public key: {self.verify_key_hex[:16]}...")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize signing key: {e}")
+            self.signing_key = None
+    
+    def collect_metrics(self) -> Dict:
+        """Collect system metrics from the device."""
+        try:
+            # CPU usage
+            cpu_percent = psutil.cpu_percent(interval=1)
+            
+            # Memory usage
+            memory = psutil.virtual_memory()
+            memory_percent = memory.percent
+            
+            # Disk usage
+            disk = psutil.disk_usage('/')
+            disk_percent = disk.percent
+            
+            # Network stats (basic)
+            net_io = psutil.net_io_counters()
+            
+            # Simulated solar panel metrics (replace with actual sensor readings)
+            # For real deployments, integrate with your specific hardware sensors
+            energy_kwh = round(cpu_percent / 10, 2)  # Placeholder calculation
+            uptime_hours = round(time.time() - psutil.boot_time()) / 3600
+            
+            metrics = {
+                'timestamp': datetime.utcnow().isoformat() + 'Z',
+                'energy_kwh': energy_kwh,
+                'uptime_hours': round(uptime_hours, 2),
+                'cpu_percent': cpu_percent,
+                'memory_percent': memory_percent,
+                'disk_percent': disk_percent,
+                'bytes_sent': net_io.bytes_sent,
+                'bytes_recv': net_io.bytes_recv,
+                'reward_estimate': round(energy_kwh * 0.05, 4)
+            }
+            
+            return metrics
+        except Exception as e:
+            logger.error(f"❌ Failed to collect metrics: {e}")
+            return {}
+    
+    def sign_metrics(self, metrics: Dict) -> Optional[str]:
+        """Sign metrics with Ed25519 private key."""
+        if not self.signing_key:
+            return None
+        
+        try:
+            # Create canonical JSON string for signing
+            message = json.dumps(metrics, sort_keys=True).encode('utf-8')
+            
+            # Sign the message
+            signed = self.signing_key.sign(message)
+            
+            # Return signature as hex string
+            signature_hex = signed.signature.hex()
+            return signature_hex
+        except Exception as e:
+            logger.error(f"❌ Failed to sign metrics: {e}")
+            return None
+    
+    def report_metrics(self, metrics: Dict) -> bool:
+        """Report metrics to the Tempo API."""
+        # Sign metrics if available
+        signature = self.sign_metrics(metrics) if self.signing_key else None
+        
+        # Prepare payload
+        payload = {
+            'device_id': self.device_id,
+            'metrics': metrics,
+            'signature': signature,
+            'public_key': self.verify_key_hex
+        }
+        
+        # Send request
+        for attempt in range(self.max_retries):
+            try:
+                response = requests.post(
+                    self.api_endpoint,
+                    json=payload,
+                    headers={'Content-Type': 'application/json'},
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    verified = data.get('verified', False)
+                    reward = data.get('reward_amount', 0)
+                    
+                    status = "✓ VERIFIED" if verified else "○ UNVERIFIED"
+                    logger.info(f"{status} | Reward: {reward:.4f} ETH | Energy: {metrics['energy_kwh']} kWh")
+                    return True
+                else:
+                    logger.warning(f"⚠️  Report failed (attempt {attempt + 1}/{self.max_retries}): {response.status_code}")
+            
+            except requests.exceptions.Timeout:
+                logger.warning(f"⚠️  Request timeout (attempt {attempt + 1}/{self.max_retries})")
+            except requests.exceptions.ConnectionError:
+                logger.warning(f"⚠️  Connection error (attempt {attempt + 1}/{self.max_retries})")
+            except Exception as e:
+                logger.error(f"❌ Unexpected error: {e}")
+            
+            # Wait before retry (exponential backoff)
+            if attempt < self.max_retries - 1:
+                wait_time = 2 ** attempt
+                time.sleep(wait_time)
+        
+        # All retries failed - add to offline buffer
+        logger.error("❌ All retries failed. Buffering report for later.")
+        self._buffer_report(payload)
+        return False
+    
+    def _buffer_report(self, payload: Dict):
+        """Buffer failed reports for later retry."""
+        if len(self.offline_buffer) < self.max_buffer_size:
+            self.offline_buffer.append(payload)
+            logger.info(f"📦 Buffered report (buffer size: {len(self.offline_buffer)})")
+        else:
+            logger.warning(f"⚠️  Buffer full ({self.max_buffer_size}). Dropping oldest report.")
+            self.offline_buffer.pop(0)
+            self.offline_buffer.append(payload)
+    
+    def flush_buffer(self):
+        """Attempt to send all buffered reports."""
+        if not self.offline_buffer:
+            return
+        
+        logger.info(f"📤 Flushing {len(self.offline_buffer)} buffered reports...")
+        
+        failed = []
+        for payload in self.offline_buffer:
+            try:
+                response = requests.post(
+                    self.api_endpoint,
+                    json=payload,
+                    headers={'Content-Type': 'application/json'},
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    logger.info("✓ Buffered report sent successfully")
+                else:
+                    failed.append(payload)
+            except:
+                failed.append(payload)
+        
+        self.offline_buffer = failed
+        if failed:
+            logger.warning(f"⚠️  {len(failed)} reports still buffered")
+        else:
+            logger.info("✓ All buffered reports sent successfully")
+    
+    def run(self):
+        """Main loop: collect and report metrics at regular intervals."""
+        logger.info("🚀 Starting Tempo DePIN client...")
+        logger.info(f"   Device ID: {self.device_id}")
+        logger.info(f"   Report interval: {self.report_interval}s")
+        logger.info("")
+        
+        try:
+            while True:
+                # Collect metrics
+                metrics = self.collect_metrics()
+                
+                if metrics:
+                    # Report to API
+                    success = self.report_metrics(metrics)
+                    
+                    # Try to flush buffer if we're online
+                    if success and self.offline_buffer:
+                        self.flush_buffer()
+                
+                # Wait for next interval
+                time.sleep(self.report_interval)
+        
+        except KeyboardInterrupt:
+            logger.info("\n🛑 Shutting down gracefully...")
+            if self.offline_buffer:
+                logger.info(f"📦 {len(self.offline_buffer)} reports still buffered")
+            logger.info("✓ Client stopped")
+            sys.exit(0)
+
+
+def main():
+    """Entry point for the Tempo DePIN client."""
+    parser = argparse.ArgumentParser(description='Tempo DePIN Device Client')
+    parser.add_argument(
+        '--config',
+        type=str,
+        default='config.json',
+        help='Path to configuration file (default: config.json)'
+    )
+    args = parser.parse_args()
+    
+    # Create and run client
+    client = TempoClient(args.config)
+    client.run()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+</details>
+
+4. **Run the Client**
+
+```bash
+# Basic usage
+python3 client.py --config config.json
+
+# Run in background (Linux)
+nohup python3 client.py --config config.json &
+
+# Check logs
+tail -f tempo_client.log
+```
+
+### Expected Output
+
+**Verified Device (with cryptographic signing):**
+```
+2025-01-15 10:30:45 - INFO - ✓ Tempo Client initialized for device: rpi-solar-001
+2025-01-15 10:30:45 - INFO - ✓ Cryptographic signing enabled (2x rewards)
+2025-01-15 10:30:46 - INFO - ✓ VERIFIED | Reward: 0.0050 ETH | Energy: 2.34 kWh
+```
+
+**Unverified Device (without signing):**
+```
+2025-01-15 10:30:45 - INFO - ✓ Tempo Client initialized for device: rpi-solar-002
+2025-01-15 10:30:45 - INFO - ⚠️  Running in unverified mode (1x rewards)
+2025-01-15 10:30:46 - INFO - ○ UNVERIFIED | Reward: 0.0025 ETH | Energy: 2.34 kWh
+```
+
+### Running as System Service (Linux)
+
+To run the client automatically on boot, create a systemd service:
+
+```bash
+# Create service file
+sudo nano /etc/systemd/system/tempo-depin.service
+```
+
+Add the following content:
+```ini
+[Unit]
+Description=Tempo DePIN Device Client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/tempo-client
+ExecStart=/usr/bin/python3 /home/pi/tempo-client/client.py --config /home/pi/tempo-client/config.json
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable tempo-depin
+sudo systemctl start tempo-depin
+
+# Check status
+sudo systemctl status tempo-depin
+
+# View logs
+sudo journalctl -u tempo-depin -f
+```
+
+### Troubleshooting
+
+**Network Connection Issues:**
+```bash
+# Test API endpoint
+curl -X POST https://fhmyhvrejofybzdgzxdc.supabase.co/functions/v1/report-device-event \
+  -H "Content-Type: application/json" \
+  -d '{"device_id":"test","metrics":{}}'
+
+# Should return 200 OK
+```
+
+**Permission Errors:**
+```bash
+# Fix key file permissions
+chmod 600 /home/pi/.tempo/device_key
+
+# Fix script permissions
+chmod +x client.py
+```
+
+**Python Dependency Issues:**
+```bash
+# Upgrade pip
+pip install --upgrade pip
+
+# Reinstall dependencies
+pip install --force-reinstall -r requirements.txt
+```
+
+**PyNaCl Installation Issues (Raspberry Pi):**
+```bash
+# Install required system packages
+sudo apt-get update
+sudo apt-get install python3-dev libffi-dev libssl-dev
+
+# Then install PyNaCl
+pip install PyNaCl
+```
+
+### Hardware Recommendations
+
+| Model | Specs | Power Consumption | Ideal For |
+|-------|-------|-------------------|-----------|
+| **Raspberry Pi 5** | 4GB/8GB RAM, Quad-core | 5W-10W | Best performance, multiple devices |
+| **Raspberry Pi 4** | 2GB/4GB/8GB RAM | 3W-7W | Excellent balance, most popular |
+| **Raspberry Pi 3B+** | 1GB RAM | 2.5W-5W | Budget option, single device |
+| **Orange Pi 5** | 4GB/8GB/16GB RAM | 5W-8W | Alternative to Pi 4/5 |
+
+**Minimum Requirements:**
+- 512MB RAM
+- 1GB storage space
+- 10Mbps internet connection
+- 5V/2.5A power supply
+
+### Security Best Practices
+
+1. **Secure Key Storage**
+   ```bash
+   # Store keys in secure location with restricted permissions
+   chmod 600 ~/.tempo/device_key
+   chown $USER:$USER ~/.tempo/device_key
+   ```
+
+2. **Network Security**
+   - Use firewall to restrict outbound connections
+   - Consider VPN for additional privacy
+   - Monitor unusual network activity
+
+3. **Regular Updates**
+   ```bash
+   # Update system packages
+   sudo apt-get update && sudo apt-get upgrade
+   
+   # Update Python dependencies
+   pip install --upgrade -r requirements.txt
+   ```
+
+4. **Backup Your Keys**
+   - Store private keys securely offline
+   - Never share your `device_key` file
+   - Losing your key means losing 2x reward multiplier
+
+### Getting Test ETH
+
+This platform currently runs on **Ethereum Sepolia Testnet**. Get free test ETH:
+
+1. Visit [Sepolia Faucet](https://sepoliafaucet.com/)
+2. Enter your wallet address
+3. Receive 0.5 test ETH
+4. Start earning rewards!
+
+### Support
+
+- **Email**: inoxxprotocol@gmail.com
+- **Documentation**: [/docs/depin/device-setup](/docs/depin/device-setup)
+- **Issues**: Report via email with device logs
+
+---
+
 ## 🤝 Contributing
 
 We welcome contributions from the community! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.

@@ -6,7 +6,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import CodeBlock from '@/components/docs/CodeBlock';
-import DocHero from '@/components/docs/DocHero';
 import Callout from '@/components/docs/Callout';
 import DocSection from '@/components/docs/DocSection';
 import { 
@@ -402,11 +401,19 @@ WantedBy=multi-user.target`;
 
   return (
     <div className="space-y-12">
-      <DocHero
-        title="DePIN Device Setup Guide"
-        description="Complete guide to setting up and running a Tempo DePIN device. Turn your Raspberry Pi or Linux device into an earning node with cryptographic verification for 2x rewards."
-        icon={Terminal}
-      />
+      <div className="mb-12">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-3 rounded-lg bg-primary/10">
+            <Terminal className="h-8 w-8 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold font-playfair">DePIN Device Setup Guide</h1>
+          </div>
+        </div>
+        <p className="text-lg text-muted-foreground max-w-3xl">
+          Complete guide to setting up and running a Tempo DePIN device. Turn your Raspberry Pi or Linux device into an earning node with cryptographic verification for 2x rewards.
+        </p>
+      </div>
 
       <Callout type="info" title="What You'll Build">
         <p>A fully automated DePIN device that collects metrics, signs them cryptographically, and reports to the Tempo network to earn rewards. Verified devices earn 2x rewards!</p>
