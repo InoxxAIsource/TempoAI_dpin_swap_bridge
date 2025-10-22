@@ -15,6 +15,11 @@ const APIOverview = () => {
           Build powerful DeFi applications with Tempo's comprehensive REST APIs. Access user profiles, 
           DePIN rewards, cross-chain bridging, and more.
         </p>
+        
+        <Callout type="warning" title="Development Status" className="mt-6">
+          The Tempo API is currently in active development. Features, endpoints, and response formats may change. 
+          We recommend testing thoroughly and staying updated with our changelog for any breaking changes.
+        </Callout>
       </div>
 
       <DocSection 
