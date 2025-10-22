@@ -15,6 +15,9 @@ export default {
     extend: {
       fontFamily: {
         'archivo': ['Archivo Black', 'sans-serif'],
+        'inter': ['Inter', 'sans-serif'],
+        'mono': ['JetBrains Mono', 'monospace'],
+        'playfair': ['Playfair Display', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",

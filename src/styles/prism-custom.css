@@ -1,14 +1,14 @@
-/* Custom Prism.js Theme for Tempo Docs */
+/* Custom Prism.js Theme for Tempo Docs - GitHub Style */
 
 /* Base code block styling */
 code[class*="language-"],
 pre[class*="language-"] {
-  color: #e8eaed;
+  color: #24292e;
   background: transparent;
   text-shadow: none;
-  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.875rem;
-  line-height: 1.5;
+  line-height: 1.6;
   direction: ltr;
   text-align: left;
   white-space: pre;
@@ -18,10 +18,10 @@ pre[class*="language-"] {
   hyphens: none;
 }
 
-/* Light mode adjustments */
-:root[class="light"] code[class*="language-"],
-:root[class="light"] pre[class*="language-"] {
-  color: #24292f;
+/* Dark mode adjustments */
+.dark code[class*="language-"],
+.dark pre[class*="language-"] {
+  color: #e6edf3;
 }
 
 /* Comments */
@@ -111,44 +111,68 @@ pre[class*="language-"] {
   color: #6f42c1; /* Purple */
 }
 
-/* Light mode color adjustments */
-:root[class="light"] .token.keyword {
-  color: #d73a49;
+/* Inline code */
+:not(pre) > code[class*="language-"] {
+  padding: 0.2em 0.4em;
+  border-radius: 6px;
+  background: hsl(var(--docs-code-bg));
+  color: hsl(var(--foreground));
+  font-size: 0.85em;
 }
 
-:root[class="light"] .token.string {
-  color: #032f62;
+/* Light mode GitHub style */
+.token.keyword {
+  color: #cf222e;
 }
 
-:root[class="light"] .token.function {
-  color: #6f42c1;
+.token.string {
+  color: #0a3069;
 }
 
-:root[class="light"] .token.number {
-  color: #005cc5;
+.token.function {
+  color: #8250df;
 }
 
-:root[class="light"] .token.operator {
-  color: #d73a49;
+.token.number,
+.token.boolean {
+  color: #0550ae;
 }
 
-/* Dark mode enhancements */
-:root[class="dark"] .token.keyword {
+.token.operator {
+  color: #cf222e;
+}
+
+.token.comment {
+  color: #57606a;
+}
+
+/* Dark mode GitHub style */
+.dark .token.keyword {
   color: #ff7b72;
 }
 
-:root[class="dark"] .token.string {
+.dark .token.string {
   color: #a5d6ff;
 }
 
-:root[class="dark"] .token.function {
+.dark .token.function {
   color: #d2a8ff;
 }
 
-:root[class="dark"] .token.number {
+.dark .token.number,
+.dark .token.boolean {
   color: #79c0ff;
 }
 
-:root[class="dark"] .token.operator {
+.dark .token.operator {
   color: #ff7b72;
+}
+
+.dark .token.comment {
+  color: #8b949e;
+}
+
+.dark :not(pre) > code[class*="language-"] {
+  background: hsl(var(--docs-code-bg));
+  color: hsl(var(--foreground));
 }

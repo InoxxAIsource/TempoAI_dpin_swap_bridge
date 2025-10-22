@@ -64,37 +64,41 @@ export function DocsSidebar() {
   const currentPath = location.pathname;
 
   const isActive = (path: string) => currentPath === path;
+  
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? 'bg-primary/10 text-primary font-semibold border-l-2 border-primary' : 'hover:bg-muted/50';
+    isActive 
+      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium border-l-2 border-[hsl(var(--docs-accent))] pl-3" 
+      : "hover:bg-sidebar-accent/50 transition-colors pl-3.5";
 
   return (
-    <Sidebar className={open ? 'w-64' : 'w-0 md:w-14'} collapsible="offcanvas">
-      <SidebarContent>
-        {docSections.map((section) => {
-          const hasActiveItem = section.items.some((item) => isActive(item.url));
-          
-          return (
-            <SidebarGroup key={section.label}>
-              <SidebarGroupLabel className="text-sm font-bold">
-                {open && section.label}
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {section.items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild className="py-2.5 px-3">
-                        <NavLink to={item.url} end className={getNavCls}>
-                          <item.icon className="h-4 w-4" />
-                          {open && <span className="ml-2">{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          );
-        })}
+    <Sidebar className={open ? "w-64" : "w-0 md:w-14"} collapsible="offcanvas">
+      <SidebarContent className="px-2 py-6">
+        {open && (
+          <div className="px-3 mb-6">
+            <h2 className="text-sm font-semibold text-sidebar-foreground font-inter">Documentation</h2>
+          </div>
+        )}
+        {docSections.map((section) => (
+          <SidebarGroup key={section.label} className="mb-6">
+            <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              {open ? section.label : '•'}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-0.5">
+                {section.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild className="rounded-md">
+                      <NavLink to={item.url} end className={getNavCls}>
+                        {item.icon && <item.icon className="h-4 w-4 flex-shrink-0" />}
+                        {open && <span className="text-sm">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
     </Sidebar>
   );

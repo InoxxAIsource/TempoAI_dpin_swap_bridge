@@ -21,6 +21,17 @@ interface CodeBlockProps {
   filename?: string;
 }
 
+const languageLabels: Record<string, string> = {
+  typescript: 'TypeScript',
+  javascript: 'JavaScript',
+  tsx: 'TSX',
+  jsx: 'JSX',
+  python: 'Python',
+  bash: 'Bash',
+  json: 'JSON',
+  solidity: 'Solidity',
+};
+
 const CodeBlock = ({ code, language = 'typescript', filename }: CodeBlockProps) => {
   const [copied, setCopied] = useState(false);
 
@@ -35,27 +46,39 @@ const CodeBlock = ({ code, language = 'typescript', filename }: CodeBlockProps) 
   };
 
   return (
-    <div className="my-6 rounded-xl overflow-hidden border border-border bg-card/50">
-      {filename && (
-        <div className="px-4 py-2 bg-muted/50 border-b border-border flex items-center justify-between">
-          <span className="text-sm font-mono text-muted-foreground">{filename}</span>
-          <span className="text-xs text-muted-foreground">{language}</span>
+    <div className="my-6 rounded-lg overflow-hidden border border-border bg-[hsl(var(--docs-code-bg))] shadow-sm">
+      <div className="px-4 py-2.5 bg-muted/50 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {filename && (
+            <span className="text-sm font-mono text-foreground font-medium">{filename}</span>
+          )}
+          {!filename && (
+            <span className="text-xs px-2 py-0.5 rounded-md bg-background/50 text-muted-foreground font-medium">
+              {languageLabels[language] || language}
+            </span>
+          )}
         </div>
-      )}
-      <div className="relative">
         <button
           onClick={handleCopy}
-          className="absolute top-3 right-3 p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-background/50 hover:bg-background transition-colors text-muted-foreground hover:text-foreground"
           aria-label="Copy code"
         >
           {copied ? (
-            <Check className="w-4 h-4 text-green-400" />
+            <>
+              <Check className="w-3.5 h-3.5" />
+              <span>Copied!</span>
+            </>
           ) : (
-            <Copy className="w-4 h-4 text-muted-foreground" />
+            <>
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy</span>
+            </>
           )}
         </button>
+      </div>
+      <div className="relative">
         <pre className="p-4 overflow-x-auto">
-          <code className={`language-${language} text-sm font-mono`}>
+          <code className={`language-${language} text-sm leading-relaxed`}>
             {code}
           </code>
         </pre>
