@@ -189,36 +189,9 @@ const BatchClaimModal = ({
     setContractPrepared(true);
     setStep('bridge');
     
-    // Create Wormhole transaction tracking record
-    if (claimData?.eth_transfer_tx && claimId) {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        const { error: wormholeError } = await supabase
-          .from('wormhole_transactions')
-          .insert({
-            wallet_address: evmAddress?.toLowerCase() || '',
-            tx_hash: claimData.eth_transfer_tx,
-            from_chain: 'Sepolia',
-            to_chain: preferredChain,
-            from_token: 'ETH',
-            to_token: 'ETH',
-            amount: ethAmount,
-            status: 'pending',
-            user_id: user?.id,
-            source_type: 'depin_claim',
-            source_reference_ids: [claimId],
-          });
-        
-        if (wormholeError) {
-          console.error('[BatchClaimModal] Failed to create Wormhole tracking:', wormholeError);
-        } else {
-          console.log('[BatchClaimModal] Created Wormhole transaction tracking for DePIN claim');
-        }
-      } catch (err) {
-        console.error('[BatchClaimModal] Error creating Wormhole transaction:', err);
-      }
-    }
+    // No need to create Wormhole transaction here - it's already created by create-batch-claim
+    // and updated with tx_hash by transfer-reward-eth edge function
+    console.log('[BatchClaimModal] ETH claimed, Wormhole transaction already tracked by backend');
   };
 
   const handleProceedToBridge = () => {

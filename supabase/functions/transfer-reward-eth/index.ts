@@ -285,17 +285,22 @@ serve(async (req) => {
     
     console.log('✓ Database updated successfully');
 
-    // Update wormhole_transactions status
+    // Update wormhole_transactions with tx_hash and status
     if (claim.wormhole_tx_id) {
+      console.log('Updating Wormhole transaction with tx_hash:', tx.hash);
       const { error: txUpdateError } = await supabase
         .from('wormhole_transactions')
         .update({
+          tx_hash: tx.hash,
+          contract_claim_tx: tx.hash,
           contract_claim_status: 'ready_to_claim',
         })
         .eq('id', claim.wormhole_tx_id);
 
       if (txUpdateError) {
         console.error('Failed to update wormhole transaction:', txUpdateError);
+      } else {
+        console.log('✓ Wormhole transaction updated with tx_hash for VAA polling');
       }
     }
 
