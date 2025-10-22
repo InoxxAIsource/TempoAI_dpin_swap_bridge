@@ -2,6 +2,8 @@ import DocHero from "@/components/docs/DocHero";
 import DocSection from "@/components/docs/DocSection";
 import Mermaid from "@/components/docs/Mermaid";
 import aiArchitectureLayers from "@/assets/ai-architecture-layers.png";
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { ZoomIn } from 'lucide-react';
 
 const AIAgentArchitecture = () => {
   return (
@@ -22,13 +24,27 @@ const AIAgentArchitecture = () => {
           make decisions, and execute trades across multiple blockchains.
         </p>
 
-        <div className="my-8 p-6 rounded-xl border border-border bg-card/50">
-          <img 
-            src={aiArchitectureLayers} 
-            alt="AI Agent Architecture - Three layer system showing Decision Engine, Execution Engine, and Monitoring & Feedback" 
-            className="w-full h-auto"
-          />
-        </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <div className="my-8 p-4 rounded-xl border border-border bg-card/50 cursor-pointer hover:border-primary/50 transition-colors relative group">
+              <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <ZoomIn className="w-5 h-5" />
+              </div>
+              <img 
+                src={aiArchitectureLayers} 
+                alt="AI Agent Architecture - Three layer system showing Decision Engine, Execution Engine, and Monitoring & Feedback" 
+                className="w-full h-auto"
+              />
+            </div>
+          </DialogTrigger>
+          <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-auto">
+            <img 
+              src={aiArchitectureLayers} 
+              alt="AI Agent Architecture - Zoomed" 
+              className="w-full h-auto"
+            />
+          </DialogContent>
+        </Dialog>
       </DocSection>
 
       <DocSection title="Layer 1: AI Decision Engine">
