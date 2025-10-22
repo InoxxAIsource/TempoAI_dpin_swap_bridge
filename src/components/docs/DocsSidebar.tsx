@@ -1,4 +1,4 @@
-import { Bot, Cpu, Book, Wallet, TrendingUp, Shield, Lightbulb, MessageSquare } from 'lucide-react';
+import { Bot, Cpu, Book, Wallet, TrendingUp, Shield, Lightbulb, MessageSquare, Code, Key, User, ArrowLeftRight, DollarSign, Package } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -54,6 +54,18 @@ const docSections = [
       { title: 'Swap: Getting Started', url: '/docs/swap/getting-started', icon: Book },
       { title: 'Swap: How It Works', url: '/docs/swap/how-it-works', icon: Cpu },
       { title: 'Swap: Best Practices', url: '/docs/swap/best-practices', icon: Lightbulb },
+    ]
+  },
+  {
+    label: 'API Documentation',
+    items: [
+      { title: 'API Overview', url: '/docs/api/overview', icon: Code },
+      { title: 'Authentication', url: '/docs/api/authentication', icon: Key },
+      { title: 'User Management', url: '/docs/api/user-management', icon: User },
+      { title: 'DePIN API', url: '/docs/api/depin', icon: Cpu },
+      { title: 'Bridge & Swap', url: '/docs/api/bridge-swap', icon: ArrowLeftRight },
+      { title: 'Rate Limits & Pricing', url: '/docs/api/rate-limits', icon: DollarSign },
+      { title: 'SDK Reference', url: '/docs/api/sdk', icon: Package },
     ]
   }
 ];

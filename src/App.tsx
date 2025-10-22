@@ -24,6 +24,13 @@ import AIAgentGettingStarted from "./pages/docs/AIAgentGettingStarted";
 import AIAgentArchitecture from "./pages/docs/AIAgentArchitecture";
 import AIAgentModels from "./pages/docs/AIAgentModels";
 import AIAgentWormhole from "./pages/docs/AIAgentWormhole";
+import APIOverview from "./pages/docs/APIOverview";
+import APIAuthentication from "./pages/docs/APIAuthentication";
+import APIUserManagement from "./pages/docs/APIUserManagement";
+import APIDePIN from "./pages/docs/APIDePIN";
+import APIBridgeSwap from "./pages/docs/APIBridgeSwap";
+import APIRateLimits from "./pages/docs/APIRateLimits";
+import APISDKReference from "./pages/docs/APISDKReference";
 import DePINGettingStarted from "./pages/docs/DePINGettingStarted";
 import DePINBenefits from "./pages/docs/DePINBenefits";
 import DePINWormhole from "./pages/docs/DePINWormhole";
@@ -93,6 +100,15 @@ const App = () => {
               <Route path="swap/getting-started" element={<SwapGettingStarted />} />
               <Route path="swap/how-it-works" element={<SwapHowItWorks />} />
               <Route path="swap/best-practices" element={<SwapBestPractices />} />
+              
+              {/* API Documentation Section */}
+              <Route path="api/overview" element={<APIOverview />} />
+              <Route path="api/authentication" element={<APIAuthentication />} />
+              <Route path="api/user-management" element={<APIUserManagement />} />
+              <Route path="api/depin" element={<APIDePIN />} />
+              <Route path="api/bridge-swap" element={<APIBridgeSwap />} />
+              <Route path="api/rate-limits" element={<APIRateLimits />} />
+              <Route path="api/sdk" element={<APISDKReference />} />
             </Route>
             
             {/* Redirect old DePIN docs route */}
