@@ -124,7 +124,7 @@ const DePIN = () => {
 
     const { data, error } = await supabase
       .from('depin_reward_claims')
-      .select('*')
+      .select('id, total_amount, status, destination_chain, claimed_at, eth_transfer_tx, contract_prepared_at, sepolia_eth_amount')
       .eq('user_id', session.user.id)
       .in('status', ['pending', 'contract_prepared', 'ready_to_claim']);
 

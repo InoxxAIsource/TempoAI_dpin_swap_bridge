@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Coins, ArrowRight, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import ClaimStatusTracker from '@/components/claim/ClaimStatusTracker';
 import WormholeBridgeStatus from '../WormholeBridgeStatus';
+import DePINClaimInfoCard from '../DePINClaimInfoCard';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Claim {
@@ -16,6 +17,8 @@ interface Claim {
   destination_chain: string;
   claimed_at: string;
   eth_transfer_tx?: string;
+  contract_prepared_at?: string;
+  sepolia_eth_amount?: number;
 }
 
 interface ClaimTabProps {
@@ -31,15 +34,19 @@ const ClaimTab = ({ pendingRewards, activeClaims, onClaimClick }: ClaimTabProps)
   // Fetch Wormhole transactions for active claims
   useEffect(() => {
     const fetchWormholeStatus = async () => {
-      if (!isAuthenticated || activeClaims.length === 0) return;
+      if (!isAuthenticated || activeClaims.length === 0) {
+        console.log('[ClaimTab] Skipping fetch - isAuthenticated:', isAuthenticated, 'claims:', activeClaims.length);
+        return;
+      }
       
       const claimIds = activeClaims.map(c => c.id);
+      console.log('[ClaimTab] Fetching Wormhole status for claim IDs:', claimIds);
       
+      // Fetch all depin_claim transactions and filter in memory
       const { data, error } = await supabase
         .from('wormhole_transactions')
         .select('*')
-        .eq('source_type', 'depin_claim')
-        .contains('source_reference_ids', claimIds);
+        .eq('source_type', 'depin_claim');
       
       if (error) {
         console.error('[ClaimTab] Error fetching Wormhole transactions:', error);
@@ -47,11 +54,22 @@ const ClaimTab = ({ pendingRewards, activeClaims, onClaimClick }: ClaimTabProps)
       }
 
       if (data) {
-        const mapped = data.reduce((acc: Record<string, any>, tx: any) => {
+        console.log('[ClaimTab] Raw Wormhole transactions:', data);
+        
+        // Filter to only include transactions with matching claim IDs
+        const filtered = data.filter(tx => 
+          tx.source_reference_ids?.some((id: string) => claimIds.includes(id))
+        );
+        
+        console.log('[ClaimTab] Filtered transactions:', filtered);
+        
+        const mapped = filtered.reduce((acc: Record<string, any>, tx: any) => {
           const claimId = tx.source_reference_ids?.[0];
           if (claimId) acc[claimId] = tx;
           return acc;
         }, {});
+        
+        console.log('[ClaimTab] Mapped Wormhole transactions:', mapped);
         setWormholeTransactions(mapped);
       }
     };
@@ -138,6 +156,24 @@ const ClaimTab = ({ pendingRewards, activeClaims, onClaimClick }: ClaimTabProps)
                   fromChain="Sepolia"
                   toChain={claim.destination_chain}
                 />
+                
+                {/* Show DePINClaimInfoCard if claim is ready but not yet claimed by user */}
+                {claim.status === 'ready_to_claim' && claim.eth_transfer_tx && (
+                  <div className="mt-4 p-4 border-2 border-primary rounded-lg bg-primary/5">
+                    <div className="mb-3">
+                      <p className="text-sm font-semibold text-primary">✅ Contract Ready</p>
+                      <p className="text-xs text-muted-foreground">Click below to claim ETH to your wallet</p>
+                    </div>
+                    <DePINClaimInfoCard
+                      claimId={claim.id}
+                      sepoliaEthAmount={claim.sepolia_eth_amount}
+                      contractPreparedAt={claim.contract_prepared_at}
+                      onEthClaimedToWallet={() => {
+                        window.location.reload();
+                      }}
+                    />
+                  </div>
+                )}
                 
                 {/* Show Wormhole bridge status if exists */}
                 {wormholeTransactions[claim.id] && (
