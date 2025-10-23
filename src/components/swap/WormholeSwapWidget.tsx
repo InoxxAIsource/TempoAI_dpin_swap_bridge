@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import WormholeConnect, { config, WormholeConnectTheme } from '@wormhole-foundation/wormhole-connect';
@@ -38,6 +38,7 @@ export const WormholeSwapWidget = ({
   const { theme: appTheme } = useTheme();
   const { toast } = useToast();
   const { evmAddress, solanaAddress } = useWalletContext(); // Only for transaction tracking
+  const lastSeenTxHash = useRef<string | null>(null);
 
   // Force remount on initial load
   useEffect(() => {
@@ -191,39 +192,129 @@ export const WormholeSwapWidget = ({
     return () => window.removeEventListener('wormhole-transfer', handleSwapEvent);
   }, [evmAddress, solanaAddress, toast, networkMode, claimId]);
 
-  // Fallback transaction polling for claim flows
+  // Improved transaction polling - detects NEW transactions for specific claim
   useEffect(() => {
     if (!claimId) return;
     
     console.log('[WormholeSwapWidget] Starting transaction polling for claimId:', claimId);
+    
     const pollInterval = setInterval(async () => {
       try {
         const walletAddress = (evmAddress || solanaAddress || '').toLowerCase();
-        const { data: recentTx } = await supabase
+        
+        // Query for THIS specific claim's transaction
+        const { data: claimTx } = await supabase
           .from('wormhole_transactions')
-          .select('tx_hash, id')
+          .select('tx_hash, id, created_at')
           .eq('source_type', 'depin_rewards')
-          .not('tx_hash', 'is', null)
-          .eq('wallet_address', walletAddress)
+          .contains('source_reference_ids', [claimId])
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
         
-        if (recentTx?.tx_hash) {
-          console.log('✅ Found transaction via polling:', recentTx.tx_hash);
+        if (claimTx?.tx_hash && claimTx.tx_hash !== lastSeenTxHash.current) {
+          console.log('✅ NEW transaction detected for this claim:', claimTx.tx_hash);
+          lastSeenTxHash.current = claimTx.tx_hash;
+          
           toast({
-            title: "Transaction Found!",
-            description: "Your bridge transaction has been detected.",
+            title: "✅ Transaction Tracked!",
+            description: `Bridge initiated: ${claimTx.tx_hash.slice(0, 10)}...`,
           });
+          
+          // Open WormholeScan in new tab
+          window.open(
+            `https://wormholescan.io/#/tx/${claimTx.tx_hash}?network=TESTNET`,
+            '_blank'
+          );
+          
           clearInterval(pollInterval);
+        } else {
+          console.log('⏳ Waiting for transaction hash... Current:', claimTx?.tx_hash || 'null');
         }
       } catch (error) {
-        console.log('Polling for transaction...');
+        console.log('⏳ No transaction record found yet for this claim');
       }
     }, 3000);
     
     return () => clearInterval(pollInterval);
   }, [claimId, evmAddress, solanaAddress, toast]);
+
+  // Direct blockchain monitoring - fallback when Wormhole events don't fire
+  useEffect(() => {
+    if (!evmAddress || !claimId || typeof window === 'undefined' || !window.ethereum) return;
+    
+    let isMonitoring = true;
+    let lastTxCount = 0;
+    
+    const monitorWallet = async () => {
+      try {
+        // Get current transaction count (nonce)
+        const response = await fetch(
+          `https://api-sepolia.etherscan.io/api?module=proxy&action=eth_getTransactionCount&address=${evmAddress}&tag=latest&apikey=${import.meta.env.VITE_ETHERSCAN_API_KEY || ''}`
+        );
+        const data = await response.json();
+        
+        if (data.result) {
+          const txCount = parseInt(data.result, 16);
+          
+          if (lastTxCount > 0 && txCount > lastTxCount) {
+            console.log('🔔 NEW transaction detected! Checking recent transactions...');
+            
+            // Fetch the latest transaction
+            const txResponse = await fetch(
+              `https://api-sepolia.etherscan.io/api?module=account&action=txlist&address=${evmAddress}&startblock=0&endblock=99999999&sort=desc&apikey=${import.meta.env.VITE_ETHERSCAN_API_KEY || ''}`
+            );
+            const txData = await txResponse.json();
+            
+            if (txData.result && txData.result[0]) {
+              const latestTx = txData.result[0];
+              console.log('📡 Latest transaction hash:', latestTx.hash);
+              
+              // Check if this transaction hasn't been assigned yet
+              const { data: existingTx } = await supabase
+                .from('wormhole_transactions')
+                .select('id')
+                .eq('tx_hash', latestTx.hash)
+                .limit(1);
+              
+              if (!existingTx || existingTx.length === 0) {
+                // Update the claim's wormhole_transactions record
+                const { error } = await supabase
+                  .from('wormhole_transactions')
+                  .update({
+                    tx_hash: latestTx.hash,
+                    status: 'pending'
+                  })
+                  .eq('source_type', 'depin_rewards')
+                  .contains('source_reference_ids', [claimId])
+                  .is('tx_hash', null);
+                
+                if (!error) {
+                  console.log('✅ Transaction captured via blockchain monitoring!');
+                  toast({
+                    title: "✅ Transaction Captured!",
+                    description: `Hash: ${latestTx.hash.slice(0, 20)}...`
+                  });
+                }
+              }
+            }
+          }
+          
+          lastTxCount = txCount;
+        }
+      } catch (error) {
+        console.error('Wallet monitoring error:', error);
+      }
+      
+      if (isMonitoring) {
+        setTimeout(monitorWallet, 5000); // Check every 5 seconds
+      }
+    };
+    
+    monitorWallet();
+    
+    return () => { isMonitoring = false; };
+  }, [evmAddress, claimId, toast]);
 
   // Portal Bridge CSS overrides
   const portalStyleOverrides = `

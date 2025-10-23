@@ -2,18 +2,23 @@ import PageLayout from "@/components/layout/PageLayout";
 import PageHero from "@/components/layout/PageHero";
 import { WormholeSwapWidget } from "@/components/swap/WormholeSwapWidget";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { TestTube, ExternalLink, ArrowLeftRight, Zap, TrendingUp } from "lucide-react";
+import { TestTube, ExternalLink, ArrowLeftRight, Zap, TrendingUp, AlertCircle, Info, Link2, Code, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Separator } from "@/components/ui/separator";
 import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useWalletContext } from "@/contexts/WalletContext";
 
 const Swap = () => {
   const [searchParams] = useSearchParams();
   const [manualTxHash, setManualTxHash] = useState('');
   const { toast } = useToast();
+  const { evmAddress } = useWalletContext();
   
   // Extract URL params for pre-filling widget
   const sourceChain = searchParams.get('sourceChain');
@@ -127,38 +132,86 @@ const Swap = () => {
           </div>
         </div>
 
-        {/* Manual Transaction Hash Input (only shown if claimId exists) */}
+        {/* Enhanced Manual Transaction Linking UI */}
         {claimId && (
-          <div className="mt-4 p-4 border border-border rounded-lg bg-card/50">
-            <p className="text-sm font-medium mb-2 flex items-center gap-2">
-              <ExternalLink className="h-4 w-4" />
-              Transaction not tracked automatically? Link it manually:
-            </p>
-            <div className="flex gap-2">
-              <Input 
-                placeholder="0x... (Transaction hash from WormholeScan)"
-                value={manualTxHash}
-                onChange={(e) => setManualTxHash(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleManualLinkTransaction}>
-                Link Transaction
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Copy your transaction hash from{" "}
-              <a 
-                href="https://wormholescan.io/?network=TESTNET" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                WormholeScan
-              </a>
-              {" "}and paste it here.
-            </p>
-          </div>
+          <Card className="mt-6 border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-primary" />
+                Transaction Not Showing Up?
+              </CardTitle>
+              <CardDescription>
+                If your bridge completed but isn't tracked, paste the transaction hash from WormholeScan below.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="0x... (from WormholeScan Testnet)"
+                  value={manualTxHash}
+                  onChange={(e) => setManualTxHash(e.target.value)}
+                  className="flex-1 font-mono"
+                />
+                <Button 
+                  onClick={handleManualLinkTransaction}
+                  disabled={!manualTxHash || manualTxHash.length < 66}
+                  size="lg"
+                >
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Link Transaction
+                </Button>
+              </div>
+              
+              <Alert>
+                <Info className="w-4 h-4" />
+                <AlertDescription>
+                  <strong>How to find your transaction hash:</strong>
+                  <ol className="list-decimal ml-4 mt-2 space-y-1">
+                    <li>Complete your bridge in the widget above</li>
+                    <li>Visit <a href="https://wormholescan.io?network=TESTNET" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">WormholeScan Testnet</a></li>
+                    <li>Search for your wallet address: <code className="bg-muted px-1 rounded">{evmAddress?.slice(0, 10)}...</code></li>
+                    <li>Copy the transaction hash (0x...) and paste it above</li>
+                  </ol>
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
         )}
+
+        {/* Debug Panel */}
+        <Collapsible className="mt-4 border rounded-lg">
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-accent transition-colors">
+            <span className="font-semibold flex items-center gap-2">
+              <Code className="w-4 h-4" />
+              Debug Information
+            </span>
+            <ChevronDown className="w-4 h-4" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="p-4 bg-muted/50 font-mono text-xs space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div>Wallet:</div>
+              <div className="text-primary">{evmAddress || 'Not connected'}</div>
+              
+              <div>Claim ID:</div>
+              <div className="text-primary">{claimId || 'None'}</div>
+              
+              <div>Network:</div>
+              <div className="text-primary">Testnet</div>
+            </div>
+            
+            <Separator />
+            
+            <div>
+              <strong>Expected Behavior:</strong>
+              <ul className="list-disc ml-4 mt-1 space-y-1 text-muted-foreground">
+                <li>Polling checks every 3 seconds for new transactions</li>
+                <li>Blockchain monitoring watches for wallet activity</li>
+                <li>Manual linking available if automated tracking fails</li>
+                <li>Check browser console for detailed logs (🎯 prefix)</li>
+              </ul>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Info Cards - Enhanced with gradients and animations */}
         <div className="grid gap-6 md:grid-cols-3">
