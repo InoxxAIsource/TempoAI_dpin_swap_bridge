@@ -415,18 +415,18 @@ const DePINClaimInfoCard = ({
             </a>
           )}
           <div className="text-sm text-green-700 dark:text-green-300 mt-2 font-semibold">
-            🎉 ETH transfer complete! Ready to bridge to Solana.
+            🎉 ETH transfer complete! Ready to swap to Solana.
           </div>
           {/* Add Bridge Button */}
           <Button
             onClick={() => {
-              window.location.href = `/bridge?claimId=${claimId}`;
+              window.location.href = `/swap?claimId=${claimId}&sourceChain=Sepolia&targetChain=Solana&sourceToken=ETH`;
             }}
             className="w-full mt-2"
             size="lg"
           >
             <ArrowRight className="mr-2 h-4 w-4" />
-            Proceed to Wormhole Bridge
+            Proceed to Swap ETH
           </Button>
         </AlertDescription>
       </Alert>
