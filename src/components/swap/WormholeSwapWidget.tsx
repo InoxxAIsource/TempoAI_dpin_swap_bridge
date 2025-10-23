@@ -8,6 +8,8 @@ import { useWalletContext } from '@/contexts/WalletContext';
 import { Button } from '@/components/ui/button';
 import { TransactionSuccessModal } from '@/components/bridge/TransactionSuccessModal';
 import { ExternalLink } from 'lucide-react';
+import { usePublicClient } from 'wagmi';
+import { WormholeErrorBoundary } from './WormholeErrorBoundary';
 
 interface WormholeSwapWidgetProps {
   defaultSourceChain?: string;
@@ -41,6 +43,7 @@ export const WormholeSwapWidget = ({
   const { toast } = useToast();
   const { evmAddress, solanaAddress } = useWalletContext();
   const lastSeenTxHash = useRef<string | null>(null);
+  const publicClient = usePublicClient();
 
   // Force remount on initial load
   useEffect(() => {
@@ -53,38 +56,41 @@ export const WormholeSwapWidget = ({
     Mainnet: ['0x3ee18B2214AFF97000D974cf647E7C347E8fa585', '0xAaDA05BD399372f0b0463744C09113c137636f6a'],
   };
 
-  // PRIMARY DETECTION: Wallet transaction monitoring
+  // PRIMARY DETECTION: Wallet transaction monitoring using wagmi
   const startMonitoring = async () => {
-    if (!evmAddress || !window.ethereum) {
-      console.log('⏸️ Cannot start monitoring: no wallet or ethereum provider');
+    if (!evmAddress || !publicClient) {
+      console.log('⏸️ Cannot start monitoring: no wallet or public client');
       return;
     }
     
     try {
-      const nonceHex = await (window as any).ethereum.request({ 
-        method: 'eth_getTransactionCount', 
-        params: [evmAddress, 'latest'] 
+      const nonce = await publicClient.getTransactionCount({
+        address: evmAddress as `0x${string}`,
+        blockTag: 'latest'
       });
-      const nonce = parseInt(nonceHex, 16);
       setBaselineNonce(nonce);
       setIsMonitoring(true);
       console.log('🔍 Wallet monitoring started. Baseline nonce:', nonce);
     } catch (error) {
       console.error('❌ Failed to start monitoring:', error);
+      toast({
+        title: "⚠️ Monitoring Failed",
+        description: "Could not start transaction monitoring. Please reconnect your wallet.",
+        variant: "destructive"
+      });
     }
   };
 
   const checkForNewTransaction = async () => {
-    if (!evmAddress || baselineNonce === null || !isMonitoring) return;
+    if (!evmAddress || baselineNonce === null || !isMonitoring || !publicClient) return;
 
     try {
       console.log('🔄 Polling for new transactions... (nonce check)');
       
-      const nonceHex = await (window as any).ethereum.request({ 
-        method: 'eth_getTransactionCount', 
-        params: [evmAddress, 'latest'] 
+      const currentNonce = await publicClient.getTransactionCount({
+        address: evmAddress as `0x${string}`,
+        blockTag: 'latest'
       });
-      const currentNonce = parseInt(nonceHex, 16);
 
       if (currentNonce > baselineNonce) {
         console.log('🎯 NEW TX! Nonce increased:', baselineNonce, '->', currentNonce);
@@ -103,11 +109,14 @@ export const WormholeSwapWidget = ({
         if (!response.ok) {
           console.error('❌ Etherscan API error:', response.status, response.statusText);
           if (response.status === 429) {
+            console.log('⏳ Rate limited. Retrying in 3 seconds...');
             toast({ 
               title: "⚠️ Rate Limit Hit", 
-              description: "Add VITE_ETHERSCAN_API_KEY to .env for reliable monitoring",
+              description: "Transaction monitoring slowed. Add VITE_ETHERSCAN_API_KEY to .env for better performance.",
               variant: "destructive"
             });
+            // Retry after delay
+            setTimeout(checkForNewTransaction, 3000);
           }
           return;
         }
@@ -166,10 +175,10 @@ export const WormholeSwapWidget = ({
 
   // Start monitoring when wallet connects
   useEffect(() => {
-    if (evmAddress && !isMonitoring && baselineNonce === null) {
+    if (evmAddress && publicClient && !isMonitoring && baselineNonce === null) {
       startMonitoring();
     }
-  }, [evmAddress]);
+  }, [evmAddress, publicClient]);
 
   // Listen for swap events - multiple event sources and names
   useEffect(() => {
@@ -700,13 +709,24 @@ export const WormholeSwapWidget = ({
           </Button>
         </div>
 
-        {/* Wormhole Widget */}
+        {/* Wormhole Widget with Error Boundary */}
         <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-lg">
-          <WormholeConnect 
-            key={`${networkMode.toLowerCase()}-swap-${widgetKey}`}
-            config={wormholeConfig}
-            theme={customWormholeTheme}
-          />
+          <WormholeErrorBoundary
+            onError={(error) => {
+              console.error('Wormhole Connect crashed:', error);
+              toast({
+                title: "⚠️ Widget Error",
+                description: "The swap widget encountered an error. Try refreshing the page.",
+                variant: "destructive"
+              });
+            }}
+          >
+            <WormholeConnect 
+              key={`${networkMode.toLowerCase()}-swap-${widgetKey}`}
+              config={wormholeConfig}
+              theme={customWormholeTheme}
+            />
+          </WormholeErrorBoundary>
         </div>
 
         {/* Footer */}
