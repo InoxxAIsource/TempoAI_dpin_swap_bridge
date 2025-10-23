@@ -35,9 +35,11 @@ export const WormholeSwapWidget = ({
     amount: number;
     network: 'Mainnet' | 'Testnet';
   } | null>(null);
+  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [baselineNonce, setBaselineNonce] = useState<number | null>(null);
   const { theme: appTheme } = useTheme();
   const { toast } = useToast();
-  const { evmAddress, solanaAddress } = useWalletContext(); // Only for transaction tracking
+  const { evmAddress, solanaAddress } = useWalletContext();
   const lastSeenTxHash = useRef<string | null>(null);
 
   // Force remount on initial load
@@ -45,6 +47,95 @@ export const WormholeSwapWidget = ({
     const timer = setTimeout(() => setWidgetKey(1), 100);
     return () => clearTimeout(timer);
   }, []);
+
+  const WORMHOLE_CONTRACTS_LIST = {
+    Testnet: ['0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78', '0x0591C25ebd0580E0d4F27A82Fc2e24E7489CB5e0'],
+    Mainnet: ['0x3ee18B2214AFF97000D974cf647E7C347E8fa585', '0xAaDA05BD399372f0b0463744C09113c137636f6a'],
+  };
+
+  // PRIMARY DETECTION: Wallet transaction monitoring
+  const startMonitoring = async () => {
+    if (!evmAddress || !window.ethereum) return;
+    
+    try {
+      const provider = new (window as any).ethereum.request({ 
+        method: 'eth_getTransactionCount', 
+        params: [evmAddress, 'latest'] 
+      });
+      const nonce = parseInt(await provider, 16);
+      setBaselineNonce(nonce);
+      setIsMonitoring(true);
+      console.log('🔍 Wallet monitoring started. Baseline nonce:', nonce);
+    } catch (error) {
+      console.error('Failed to start monitoring:', error);
+    }
+  };
+
+  const checkForNewTransaction = async () => {
+    if (!evmAddress || baselineNonce === null || !isMonitoring) return;
+
+    try {
+      const currentNonce = await (window as any).ethereum.request({ 
+        method: 'eth_getTransactionCount', 
+        params: [evmAddress, 'latest'] 
+      }).then((n: string) => parseInt(n, 16));
+
+      if (currentNonce > baselineNonce) {
+        console.log('🎯 NEW TX! Nonce increased:', baselineNonce, '->', currentNonce);
+        
+        const apiUrl = networkMode === 'Testnet' 
+          ? 'https://api-sepolia.etherscan.io/api'
+          : 'https://api.etherscan.io/api';
+        
+        const response = await fetch(
+          `${apiUrl}?module=account&action=txlist&address=${evmAddress}&startblock=0&endblock=99999999&page=1&offset=1&sort=desc`
+        );
+        const data = await response.json();
+        
+        if (data.status === '1' && data.result?.[0]) {
+          const tx = data.result[0];
+          const isWormhole = WORMHOLE_CONTRACTS_LIST[networkMode].some(
+            c => tx.to?.toLowerCase() === c.toLowerCase()
+          );
+
+          if (isWormhole) {
+            console.log('✅ Wormhole TX detected:', tx.hash);
+            
+            // Update database
+            if (claimId) {
+              await supabase
+                .from('wormhole_transactions')
+                .update({ tx_hash: tx.hash, status: 'pending' })
+                .eq('source_type', 'depin_rewards')
+                .is('tx_hash', null)
+                .eq('wallet_address', evmAddress.toLowerCase());
+              
+              toast({ title: "✅ Transaction Captured!", description: `Hash: ${tx.hash.slice(0,16)}...` });
+            }
+            
+            setIsMonitoring(false);
+            setBaselineNonce(null);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking new tx:', error);
+    }
+  };
+
+  // Poll for nonce changes every 2 seconds
+  useEffect(() => {
+    if (!isMonitoring) return;
+    const interval = setInterval(checkForNewTransaction, 2000);
+    return () => clearInterval(interval);
+  }, [isMonitoring, baselineNonce, evmAddress]);
+
+  // Start monitoring when wallet connects
+  useEffect(() => {
+    if (evmAddress && !isMonitoring && baselineNonce === null) {
+      startMonitoring();
+    }
+  }, [evmAddress]);
 
   // Listen for swap events - multiple event sources and names
   useEffect(() => {

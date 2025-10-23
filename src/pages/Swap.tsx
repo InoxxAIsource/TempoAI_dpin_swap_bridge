@@ -153,10 +153,13 @@ const Swap = () => {
                 {detectionStatus.widgetLoaded ? '✅' : '⏳'} Wormhole Widget Loaded
               </div>
               <div className="flex items-center gap-2">
-                {detectionStatus.walletConnected ? '✅' : '❌'} Wallet Connected ({evmAddress ? `${evmAddress.slice(0, 6)}...${evmAddress.slice(-4)}` : 'None'})
+                {detectionStatus.walletConnected ? '✅ Wallet Connected - Monitoring Transactions' : '❌ Wallet Not Connected'}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {evmAddress ? `${evmAddress.slice(0, 6)}...${evmAddress.slice(-4)}` : 'Connect wallet to start monitoring'}
               </div>
               <div className="flex items-center gap-2">
-                {detectionStatus.txDetected ? '✅' : '⏳'} Transaction Detected
+                {detectionStatus.txDetected ? '✅ Transaction Detected & Saved' : '⏳ Awaiting Transaction...'}
               </div>
             </div>
           </CardContent>
