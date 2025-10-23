@@ -156,7 +156,10 @@ serve(async (req) => {
     const balanceInEth = parseFloat(ethers.formatEther(balance));
     console.log(`Deployer balance: ${balanceInEth} ETH`);
 
-    if (balanceInEth < 0.1) {
+    // Critical alert threshold for very low balance
+    if (balanceInEth < 0.05) {
+      console.error(`🚨 CRITICAL ALERT: Deployer balance critically low: ${balanceInEth} ETH - immediate funding required!`);
+    } else if (balanceInEth < 0.1) {
       console.warn(`⚠️ Deployer balance is low: ${balanceInEth} ETH`);
     }
 
@@ -165,13 +168,13 @@ serve(async (req) => {
     const contractBalanceInEth = parseFloat(ethers.formatEther(contractBalance));
     console.log(`Contract balance: ${contractBalanceInEth} ETH`);
 
-    // Auto-fund contract if balance is insufficient (increased threshold)
-    const MIN_CONTRACT_BALANCE = 0.05; // Increased from 0.01
+    // Auto-fund contract if balance is insufficient (Phase 2: Reduced requirements)
+    const MIN_CONTRACT_BALANCE = 0.02; // Reduced from 0.05 to work with lower balances
     if (contractBalanceInEth < Math.max(ethAmountRounded, MIN_CONTRACT_BALANCE)) {
       console.log(`⚠️ Contract balance insufficient (${contractBalanceInEth} < ${MIN_CONTRACT_BALANCE}). Funding contract...`);
       
-      // Transfer more ETH to reduce frequency of auto-funding
-      const fundingAmount = Math.max(ethAmountRounded * 2, 0.1); // At least 0.1 ETH
+      // Transfer more ETH to reduce frequency of auto-funding (Phase 2: Reduced amount)
+      const fundingAmount = Math.max(ethAmountRounded * 2, 0.03); // Reduced from 0.1 to 0.03 ETH
       const fundingAmountRounded = parseFloat(fundingAmount.toFixed(6));
       const fundingAmountInWei = ethers.parseEther(fundingAmountRounded.toString());
       

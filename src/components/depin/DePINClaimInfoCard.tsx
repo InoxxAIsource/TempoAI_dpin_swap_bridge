@@ -177,9 +177,20 @@ const DePINClaimInfoCard = ({
     } catch (error: any) {
       console.error('[DePINClaimInfoCard] Error preparing contract:', error);
       setClaimError(error.message);
+      
+      // Phase 3: Enhanced error handling for insufficient funds
+      const errorMsg = error?.message || 'Failed to prepare contract';
+      let toastDescription = errorMsg;
+      
+      if (errorMsg.includes('insufficient funds') || errorMsg.includes('INSUFFICIENT_FUNDS')) {
+        toastDescription = 'System wallet needs refilling. The deployer wallet is out of test ETH. Please try again later or contact support.';
+      } else if (errorMsg.includes('gas')) {
+        toastDescription = 'Gas estimation failed. The system may need more Sepolia ETH for gas fees.';
+      }
+      
       toast({
         title: "Error",
-        description: error?.message || "Failed to prepare contract",
+        description: toastDescription,
         variant: "destructive",
       });
     } finally {
