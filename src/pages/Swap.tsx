@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { useSearchParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useWalletContext } from "@/contexts/WalletContext";
@@ -19,6 +19,36 @@ const Swap = () => {
   const [manualTxHash, setManualTxHash] = useState('');
   const { toast } = useToast();
   const { evmAddress } = useWalletContext();
+  const [detectionStatus, setDetectionStatus] = useState({
+    widgetLoaded: false,
+    walletConnected: false,
+    awaitingTx: false,
+    txDetected: false
+  });
+
+  // Update wallet connection status
+  useEffect(() => {
+    setDetectionStatus(prev => ({
+      ...prev,
+      widgetLoaded: true,
+      walletConnected: !!evmAddress
+    }));
+  }, [evmAddress]);
+
+  // Listen for transaction detection
+  useEffect(() => {
+    const handleTxDetection = () => {
+      setDetectionStatus(prev => ({ ...prev, txDetected: true }));
+    };
+
+    window.addEventListener('wormhole-transfer', handleTxDetection);
+    window.addEventListener('wormhole-transfer-complete', handleTxDetection);
+    
+    return () => {
+      window.removeEventListener('wormhole-transfer', handleTxDetection);
+      window.removeEventListener('wormhole-transfer-complete', handleTxDetection);
+    };
+  }, []);
   
   // Extract URL params for pre-filling widget
   const sourceChain = searchParams.get('sourceChain');
@@ -108,6 +138,36 @@ const Swap = () => {
                 ))}
               </div>
             </div>
+          </AlertDescription>
+        </Alert>
+
+        {/* Transaction Detection Status Indicator */}
+        <Card className="mb-4 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+          <CardContent className="pt-4">
+            <h4 className="font-semibold mb-2 flex items-center gap-2">
+              <Code className="w-4 h-4" />
+              Transaction Detection Status:
+            </h4>
+            <div className="space-y-1 text-sm">
+              <div className="flex items-center gap-2">
+                {detectionStatus.widgetLoaded ? '✅' : '⏳'} Wormhole Widget Loaded
+              </div>
+              <div className="flex items-center gap-2">
+                {detectionStatus.walletConnected ? '✅' : '❌'} Wallet Connected ({evmAddress ? `${evmAddress.slice(0, 6)}...${evmAddress.slice(-4)}` : 'None'})
+              </div>
+              <div className="flex items-center gap-2">
+                {detectionStatus.txDetected ? '✅' : '⏳'} Transaction Detected
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Console Debugging Instructions */}
+        <Alert className="mb-6">
+          <Code className="w-4 h-4" />
+          <AlertDescription>
+            <strong>Debugging Swap Issues?</strong> Open your browser console (F12) and look for messages starting with 🎯 or 📨. 
+            If you see "Origin not found on Allowlist", the WalletConnect project needs to allow this domain.
           </AlertDescription>
         </Alert>
 

@@ -46,7 +46,7 @@ export const WormholeSwapWidget = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // Listen for swap events
+  // Listen for swap events - multiple event sources and names
   useEffect(() => {
     const handleSwapEvent = async (event: any) => {
       console.log('🎯 Wormhole event received:', event);
@@ -188,9 +188,71 @@ export const WormholeSwapWidget = ({
       }
     };
 
-    window.addEventListener('wormhole-transfer', handleSwapEvent);
-    return () => window.removeEventListener('wormhole-transfer', handleSwapEvent);
+    // Listen to multiple possible event sources and event names
+    const eventTargets = [window, document, window.parent];
+    const eventNames = [
+      'wormhole-transfer',
+      'wormhole-transaction', 
+      'wormholeTransferComplete',
+      'transfer-complete',
+      'bridge-complete'
+    ];
+
+    console.log('🎧 Setting up event listeners for:', eventNames);
+
+    eventTargets.forEach(target => {
+      eventNames.forEach(eventName => {
+        target.addEventListener(eventName, handleSwapEvent as any);
+      });
+    });
+
+    return () => {
+      eventTargets.forEach(target => {
+        eventNames.forEach(eventName => {
+          target.removeEventListener(eventName, handleSwapEvent as any);
+        });
+      });
+    };
   }, [evmAddress, solanaAddress, toast, networkMode, claimId]);
+
+  // PostMessage listener for cross-origin events (Wormhole runs in iframe)
+  useEffect(() => {
+    const handlePostMessage = (event: MessageEvent) => {
+      // Log all messages for debugging
+      console.log('📨 PostMessage received:', event.origin, event.data);
+      
+      // Check if this is a Wormhole transaction message
+      if (event.data?.type === 'wormhole-transaction' || 
+          event.data?.txHash ||
+          event.data?.transaction?.hash) {
+        
+        console.log('🎯 Wormhole transaction detected via postMessage:', event.data);
+        
+        const txHash = event.data.txHash || 
+                       event.data.transaction?.hash || 
+                       event.data.hash;
+        
+        if (txHash) {
+          // Dispatch as a custom event to reuse existing handler
+          const customEvent = new CustomEvent('wormhole-transfer', {
+            detail: { 
+              type: 'transfer',
+              txHash,
+              fromChain: event.data.fromChain || event.data.sourceChain,
+              toChain: event.data.toChain || event.data.targetChain,
+              fromToken: event.data.token || event.data.fromToken,
+              amount: event.data.amount,
+              ...event.data 
+            }
+          });
+          window.dispatchEvent(customEvent);
+        }
+      }
+    };
+    
+    window.addEventListener('message', handlePostMessage);
+    return () => window.removeEventListener('message', handlePostMessage);
+  }, []);
 
   // Improved transaction polling - detects NEW transactions for specific claim
   useEffect(() => {
@@ -426,12 +488,10 @@ export const WormholeSwapWidget = ({
       bridgeDefaults.token = defaultSourceToken;
     }
     if (defaultAmount) {
-      bridgeDefaults.amount = defaultAmount;
+      bridgeDefaults.amount = String(defaultAmount); // Ensure it's a string
     }
-    // Set route mode to 'bridge' for native token transfers (like ETH→Solana)
-    if (defaultSourceChain && defaultTargetChain) {
-      bridgeDefaults.route = 'bridge';
-    }
+    // Note: Removed route='bridge' to prevent "Can't call setAmount" errors
+    // The widget will auto-detect the appropriate route type
     
     if (networkMode === 'Testnet') {
       const sepoliaRpc = useAlchemy
