@@ -39,6 +39,7 @@ export const WormholeSwapWidget = ({
   } | null>(null);
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [baselineNonce, setBaselineNonce] = useState<number | null>(null);
+  const [monitoringStartTime, setMonitoringStartTime] = useState<number | null>(null);
   const { theme: appTheme } = useTheme();
   const { toast } = useToast();
   const { evmAddress, solanaAddress } = useWalletContext();
@@ -70,6 +71,7 @@ export const WormholeSwapWidget = ({
       });
       setBaselineNonce(nonce);
       setIsMonitoring(true);
+      setMonitoringStartTime(Date.now());
       console.log('🔍 Wallet monitoring started. Baseline nonce:', nonce);
     } catch (error) {
       console.error('❌ Failed to start monitoring:', error);
@@ -151,16 +153,50 @@ export const WormholeSwapWidget = ({
     try {
       console.log('🔄 Polling for new transactions... (nonce check)');
       
+      // Check both latest and pending nonces for faster detection
       const currentNonce = await publicClient.getTransactionCount({
         address: evmAddress as `0x${string}`,
         blockTag: 'latest'
       });
 
-      if (currentNonce > baselineNonce) {
-        console.log('🎯 NEW TX! Nonce increased:', baselineNonce, '->', currentNonce);
+      const pendingNonce = await publicClient.getTransactionCount({
+        address: evmAddress as `0x${string}`,
+        blockTag: 'pending'
+      });
+
+      // Watchdog timer - alert if monitoring for >2 minutes without detection
+      if (monitoringStartTime && Date.now() - monitoringStartTime > 120000) {
+        if (claimId) {
+          const { data: claim } = await supabase
+            .from('wormhole_transactions')
+            .select('tx_hash')
+            .eq('source_type', 'depin_rewards')
+            .eq('wallet_address', evmAddress.toLowerCase())
+            .is('tx_hash', null)
+            .limit(1)
+            .single();
+          
+          if (claim && !claim.tx_hash) {
+            console.warn('⚠️ Transaction not detected after 2 minutes');
+            toast({
+              title: "⚠️ Transaction Not Detected",
+              description: "Please check your wallet activity and manually enter the transaction hash if needed.",
+              variant: "destructive"
+            });
+            setIsMonitoring(false);
+            setMonitoringStartTime(null);
+            return;
+          }
+        }
+      }
+
+      if (pendingNonce > baselineNonce || currentNonce > baselineNonce) {
+        const detectedNonce = Math.max(currentNonce, pendingNonce);
+        console.log('🎯 NEW TX! Nonce increased:', baselineNonce, '->', detectedNonce);
         
         // Update baseline immediately to prevent duplicate detections
-        setBaselineNonce(currentNonce);
+        setBaselineNonce(detectedNonce);
+        setMonitoringStartTime(null);
         
         // Show initial feedback
         toast({ 
@@ -356,10 +392,10 @@ export const WormholeSwapWidget = ({
     }
   };
 
-  // Poll for nonce changes every 2 seconds
+  // Poll for nonce changes every 1 second for faster detection
   useEffect(() => {
     if (!isMonitoring) return;
-    const interval = setInterval(checkForNewTransaction, 2000);
+    const interval = setInterval(checkForNewTransaction, 1000);
     return () => clearInterval(interval);
   }, [isMonitoring, baselineNonce, evmAddress]);
 
@@ -369,6 +405,26 @@ export const WormholeSwapWidget = ({
       startMonitoring();
     }
   }, [evmAddress, publicClient]);
+
+  // Immediate post-wallet-confirmation check
+  useEffect(() => {
+    const handleTransactionConfirmed = () => {
+      if (isMonitoring) {
+        console.log('💫 Wallet event detected - checking for new transaction immediately');
+        setTimeout(checkForNewTransaction, 500);
+      }
+    };
+    
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', handleTransactionConfirmed);
+      window.ethereum.on('chainChanged', handleTransactionConfirmed);
+      
+      return () => {
+        window.ethereum.removeListener('accountsChanged', handleTransactionConfirmed);
+        window.ethereum.removeListener('chainChanged', handleTransactionConfirmed);
+      };
+    }
+  }, [isMonitoring, checkForNewTransaction]);
 
   // Listen for swap events - multiple event sources and names
   useEffect(() => {
