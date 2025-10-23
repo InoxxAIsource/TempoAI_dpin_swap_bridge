@@ -164,8 +164,8 @@ export const WormholeSwapWidget = ({
         blockTag: 'pending'
       });
 
-      // Watchdog timer - alert if monitoring for >2 minutes without detection
-      if (monitoringStartTime && Date.now() - monitoringStartTime > 120000) {
+      // Watchdog timer - alert if monitoring for >5 minutes without detection
+      if (monitoringStartTime && Date.now() - monitoringStartTime > 300000) {
         if (claimId) {
           const { data: claim } = await supabase
             .from('wormhole_transactions')
@@ -177,11 +177,12 @@ export const WormholeSwapWidget = ({
             .single();
           
           if (claim && !claim.tx_hash) {
-            console.warn('⚠️ Transaction not detected after 2 minutes');
+            console.warn('⚠️ Transaction not detected after 5 minutes');
             toast({
               title: "⚠️ Transaction Not Detected",
-              description: "Please check your wallet activity and manually enter the transaction hash if needed.",
-              variant: "destructive"
+              description: "Transaction monitoring timed out. Please check the Claim tab to manually enter your transaction hash.",
+              variant: "destructive",
+              duration: 10000
             });
             setIsMonitoring(false);
             setMonitoringStartTime(null);

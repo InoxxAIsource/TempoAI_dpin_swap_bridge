@@ -4,10 +4,11 @@ import AuthPrompt from '../AuthPrompt';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Coins, ArrowRight, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Coins, ArrowRight, CheckCircle, Clock, AlertCircle, Link as LinkIcon } from 'lucide-react';
 import ClaimStatusTracker from '@/components/claim/ClaimStatusTracker';
 import WormholeBridgeStatus from '../WormholeBridgeStatus';
 import DePINClaimInfoCard from '../DePINClaimInfoCard';
+import { ManualTransactionLink } from '../ManualTransactionLink';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Claim {
@@ -28,8 +29,9 @@ interface ClaimTabProps {
 }
 
 const ClaimTab = ({ pendingRewards, activeClaims, onClaimClick }: ClaimTabProps) => {
-  const { isAuthenticated } = useWalletContext();
+  const { isAuthenticated, evmAddress } = useWalletContext();
   const [wormholeTransactions, setWormholeTransactions] = useState<Record<string, any>>({});
+  const [showManualLink, setShowManualLink] = useState<Record<string, boolean>>({});
 
   // Fetch Wormhole transactions for active claims
   useEffect(() => {
@@ -149,13 +151,52 @@ const ClaimTab = ({ pendingRewards, activeClaims, onClaimClick }: ClaimTabProps)
                   {getStatusBadge(claim.status)}
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <ClaimStatusTracker
                   status={claim.status}
                   txHash={claim.eth_transfer_tx}
                   fromChain="Sepolia"
                   toChain={claim.destination_chain}
                 />
+                
+                {/* Show manual transaction link if no tx_hash */}
+                {!wormholeTransactions[claim.id]?.tx_hash && claim.status === 'contract_prepared' && (
+                  <div className="space-y-3">
+                    <div className="p-3 border border-yellow-500/50 rounded-lg bg-yellow-500/5">
+                      <div className="flex items-start gap-2 mb-2">
+                        <Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">
+                            Waiting for Transaction Detection
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Your bridge transaction should be detected automatically. If not detected after 5 minutes, you can manually link it below.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {showManualLink[claim.id] ? (
+                      <ManualTransactionLink
+                        claimId={claim.id}
+                        walletAddress={evmAddress || ''}
+                        onSuccess={() => {
+                          window.location.reload();
+                        }}
+                      />
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowManualLink(prev => ({ ...prev, [claim.id]: true }))}
+                        className="w-full"
+                      >
+                        <LinkIcon className="w-4 h-4 mr-2" />
+                        Manually Link Transaction
+                      </Button>
+                    )}
+                  </div>
+                )}
                 
                 {/* Show DePINClaimInfoCard if claim is ready but not yet claimed by user */}
                 {claim.status === 'ready_to_claim' && claim.eth_transfer_tx && (
@@ -176,7 +217,7 @@ const ClaimTab = ({ pendingRewards, activeClaims, onClaimClick }: ClaimTabProps)
                 )}
                 
                 {/* Show Wormhole bridge status if exists */}
-                {wormholeTransactions[claim.id] && (
+                {wormholeTransactions[claim.id] && wormholeTransactions[claim.id].tx_hash && (
                   <div className="mt-4 p-3 border rounded-lg bg-secondary/20">
                     <h4 className="font-semibold text-sm mb-2">Wormhole Bridge Status</h4>
                     <WormholeBridgeStatus transaction={wormholeTransactions[claim.id]} />
