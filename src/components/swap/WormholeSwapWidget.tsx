@@ -187,9 +187,10 @@ export const WormholeSwapWidget = ({
           if (isWormhole) {
             console.log('✅ Wormhole TX detected:', tx.hash);
             
-            // Update database
+            // Update database - dual mode based on flow type
             if (claimId) {
-              console.log('💾 Updating database with tx_hash...');
+              // ===== DEPIN FLOW: Update existing record =====
+              console.log('💾 [DePIN] Updating existing claim record...');
               const { error } = await supabase
                 .from('wormhole_transactions')
                 .update({ tx_hash: tx.hash, status: 'pending' })
@@ -198,24 +199,51 @@ export const WormholeSwapWidget = ({
                 .eq('wallet_address', evmAddress.toLowerCase());
               
               if (error) {
-                console.error('❌ Database update failed:', error);
+                console.error('❌ [DePIN] Database update failed:', error);
                 toast({ 
                   title: "⚠️ Update Failed", 
-                  description: "Could not save transaction. Please check WormholeScan.",
+                  description: "Could not save claim transaction.",
                   variant: "destructive"
                 });
               } else {
-                console.log('✅ Database updated successfully!');
+                console.log('✅ [DePIN] Claim record updated!');
                 toast({ 
-                  title: "✅ Transaction Captured!", 
-                  description: `Hash: ${tx.hash.slice(0,16)}...`
+                  title: "✅ Claim Transaction Captured!", 
+                  description: `Your DePIN reward is being bridged: ${tx.hash.slice(0,16)}...`
                 });
               }
             } else {
-              toast({ 
-                title: "✅ Transaction Captured!", 
-                description: `Hash: ${tx.hash.slice(0,16)}...`
-              });
+              // ===== REGULAR SWAP FLOW: Insert new record =====
+              console.log('💾 [SWAP] Creating new swap record...');
+              const { error } = await supabase
+                .from('wormhole_transactions')
+                .insert({
+                  wallet_address: evmAddress.toLowerCase(),
+                  tx_hash: tx.hash,
+                  status: 'pending',
+                  source_type: 'user_transfer',
+                  // Placeholder values - will be enriched by VAA poller
+                  from_chain: 'Unknown',
+                  to_chain: 'Unknown',
+                  from_token: 'Unknown',
+                  to_token: 'Unknown',
+                  amount: 0
+                });
+              
+              if (error) {
+                console.error('❌ [SWAP] Failed to record transaction:', error);
+                toast({ 
+                  title: "⚠️ Recording Failed", 
+                  description: "Transaction completed but not saved. Check WormholeScan.",
+                  variant: "destructive"
+                });
+              } else {
+                console.log('✅ [SWAP] Transaction recorded!');
+                toast({ 
+                  title: "✅ Swap Transaction Recorded!", 
+                  description: `Track your swap: ${tx.hash.slice(0,16)}...`
+                });
+              }
             }
             
             setIsMonitoring(false);
@@ -255,22 +283,50 @@ export const WormholeSwapWidget = ({
                   c => latestTx.to?.toLowerCase() === c.toLowerCase()
                 );
                 
-                if (isWormhole && claimId) {
-                  const { error } = await supabase
-                    .from('wormhole_transactions')
-                    .update({ tx_hash: latestTx.hash, status: 'pending' })
-                    .eq('source_type', 'depin_rewards')
-                    .is('tx_hash', null)
-                    .eq('wallet_address', evmAddress.toLowerCase());
-                  
-                  if (!error) {
-                    console.log('✅ Transaction captured via wallet provider!');
-                    toast({ 
-                      title: "✅ Transaction Captured!", 
-                      description: `Hash: ${latestTx.hash.slice(0,16)}...`
-                    });
-                    setIsMonitoring(false);
-                    return;
+                if (isWormhole) {
+                  if (claimId) {
+                    // ===== DEPIN FLOW: Update =====
+                    const { error } = await supabase
+                      .from('wormhole_transactions')
+                      .update({ tx_hash: latestTx.hash, status: 'pending' })
+                      .eq('source_type', 'depin_rewards')
+                      .is('tx_hash', null)
+                      .eq('wallet_address', evmAddress.toLowerCase());
+                    
+                    if (!error) {
+                      console.log('✅ [DePIN] Claim captured via provider!');
+                      toast({ 
+                        title: "✅ Claim Transaction Captured!", 
+                        description: `Hash: ${latestTx.hash.slice(0,16)}...`
+                      });
+                      setIsMonitoring(false);
+                      return;
+                    }
+                  } else {
+                    // ===== REGULAR SWAP FLOW: Insert =====
+                    const { error } = await supabase
+                      .from('wormhole_transactions')
+                      .insert({
+                        wallet_address: evmAddress.toLowerCase(),
+                        tx_hash: latestTx.hash,
+                        status: 'pending',
+                        source_type: 'user_transfer',
+                        from_chain: 'Unknown',
+                        to_chain: 'Unknown',
+                        from_token: 'Unknown',
+                        to_token: 'Unknown',
+                        amount: 0
+                      });
+                    
+                    if (!error) {
+                      console.log('✅ [SWAP] Transaction recorded via provider!');
+                      toast({ 
+                        title: "✅ Swap Recorded!", 
+                        description: `Hash: ${latestTx.hash.slice(0,16)}...`
+                      });
+                      setIsMonitoring(false);
+                      return;
+                    }
                   }
                 }
               }
