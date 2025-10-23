@@ -51,6 +51,7 @@ const BridgeAdvanced = lazy(() => import("./pages/docs/BridgeAdvanced"));
 const SwapGettingStarted = lazy(() => import("./pages/docs/SwapGettingStarted"));
 const SwapHowItWorks = lazy(() => import("./pages/docs/SwapHowItWorks"));
 const SwapBestPractices = lazy(() => import("./pages/docs/SwapBestPractices"));
+const WormholeMetrics = lazy(() => import("./pages/WormholeMetrics"));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -99,6 +100,7 @@ const App = () => {
               <Route path="/depin" element={<DePIN />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/wormhole-metrics" element={<WormholeMetrics />} />
               
               {/* Documentation with Sidebar */}
               <Route path="/docs" element={<DocsLayout />}>
