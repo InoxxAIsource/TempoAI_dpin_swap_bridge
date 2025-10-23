@@ -182,7 +182,30 @@ Deno.serve(async (req) => {
     // Create the batch claim record
     const batchClaimId = crypto.randomUUID();
 
-    // Create wormhole transaction record for the bridge (Sepolia -> destination)
+    // First create the claim record to get the claim ID
+    const tempClaimId = crypto.randomUUID();
+    
+    const { data: claimRecord, error: claimError } = await supabase
+      .from('depin_reward_claims')
+      .insert({
+        id: tempClaimId,
+        user_id: user.id,
+        device_ids: selectedDeviceIds,
+        total_amount: totalAmount,
+        destination_chain: destinationChain,
+        status: 'pending_approval',
+      })
+      .select()
+      .single();
+
+    if (claimError) {
+      console.error('Error creating claim record:', claimError);
+      throw claimError;
+    }
+
+    console.log(`✅ Claim record created: ${claimRecord.id}`);
+
+    // Now create wormhole transaction record with claim ID in source_reference_ids
     const { data: wormholeTx, error: txError } = await supabase
       .from('wormhole_transactions')
       .insert({
@@ -195,7 +218,7 @@ Deno.serve(async (req) => {
         amount: totalAmount, // USD amount, will be converted to ETH in transfer-reward-eth
         status: 'pending',
         source_type: 'depin_rewards',
-        source_reference_ids: deviceIds,
+        source_reference_ids: [claimRecord.id], // Store claim ID for tracking
         contract_address: '0xb90bb7616bc138a177bec31a4571f4fd8fe113a1',
         contract_claim_status: 'pending',
       })
@@ -209,18 +232,11 @@ Deno.serve(async (req) => {
 
     console.log(`✅ Wormhole transaction created: ${wormholeTx.id}`);
 
-    const { data: claimRecord, error: claimError } = await supabase
+    // Update claim record with wormhole_tx_id
+    await supabase
       .from('depin_reward_claims')
-      .insert({
-        user_id: user.id,
-        device_ids: selectedDeviceIds,
-        total_amount: totalAmount,
-        destination_chain: destinationChain,
-        status: 'pending_approval',
-        wormhole_tx_id: wormholeTx.id,
-      })
-      .select()
-      .single();
+      .update({ wormhole_tx_id: wormholeTx.id })
+      .eq('id', claimRecord.id);
 
     if (claimError) {
       console.error('Error creating claim record:', claimError);

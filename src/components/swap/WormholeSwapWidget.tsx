@@ -73,23 +73,51 @@ export const WormholeSwapWidget = ({
           // If claimId exists, UPDATE existing wormhole_transactions record
           if (claimId) {
             console.log('[WormholeSwapWidget] Updating Wormhole transaction for DePIN claim:', claimId);
+            console.log('[WormholeSwapWidget] Looking for source_type=depin_rewards with null tx_hash for wallet:', walletAddress);
             
-            const { error: updateError } = await supabase
+            const { data: updateData, error: updateError } = await supabase
               .from('wormhole_transactions')
               .update({
                 tx_hash: txHash,
                 status: 'pending',
                 wormhole_vaa: txData.vaa || null,
               })
-              .contains('source_reference_ids', [claimId])
-              .eq('source_type', 'depin_claim');
+              .eq('source_type', 'depin_rewards')
+              .is('tx_hash', null)
+              .eq('wallet_address', walletAddress)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .select();
             
             if (updateError) {
-              console.error('Failed to update Wormhole transaction:', updateError);
+              console.error('❌ Failed to update Wormhole transaction:', updateError);
               throw updateError;
             }
             
-            console.log('✅ DePIN claim Wormhole transaction updated with bridge tx_hash');
+            console.log('[WormholeSwapWidget] Update result:', updateData);
+            
+            if (!updateData || updateData.length === 0) {
+              console.error('❌ No wormhole_transactions record was updated with tx_hash');
+              toast({
+                title: "⚠️ Transaction Tracking Issue",
+                description: (
+                  <div className="space-y-2">
+                    <p>Bridge started but tracking failed. Check WormholeScan.</p>
+                    <a 
+                      href={`https://wormholescan.io/#/tx/${txHash}?network=${networkMode}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      Track on WormholeScan <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                ) as any,
+                variant: "destructive"
+              });
+            } else {
+              console.log('✅ DePIN claim Wormhole transaction updated with bridge tx_hash:', updateData[0].id);
+            }
             
             // Dispatch completion event
             window.dispatchEvent(new CustomEvent('wormhole-transfer-complete', {
