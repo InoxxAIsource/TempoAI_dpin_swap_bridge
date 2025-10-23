@@ -55,19 +55,22 @@ export const WormholeSwapWidget = ({
 
   // PRIMARY DETECTION: Wallet transaction monitoring
   const startMonitoring = async () => {
-    if (!evmAddress || !window.ethereum) return;
+    if (!evmAddress || !window.ethereum) {
+      console.log('⏸️ Cannot start monitoring: no wallet or ethereum provider');
+      return;
+    }
     
     try {
-      const provider = new (window as any).ethereum.request({ 
+      const nonceHex = await (window as any).ethereum.request({ 
         method: 'eth_getTransactionCount', 
         params: [evmAddress, 'latest'] 
       });
-      const nonce = parseInt(await provider, 16);
+      const nonce = parseInt(nonceHex, 16);
       setBaselineNonce(nonce);
       setIsMonitoring(true);
       console.log('🔍 Wallet monitoring started. Baseline nonce:', nonce);
     } catch (error) {
-      console.error('Failed to start monitoring:', error);
+      console.error('❌ Failed to start monitoring:', error);
     }
   };
 
@@ -75,10 +78,13 @@ export const WormholeSwapWidget = ({
     if (!evmAddress || baselineNonce === null || !isMonitoring) return;
 
     try {
-      const currentNonce = await (window as any).ethereum.request({ 
+      console.log('🔄 Polling for new transactions... (nonce check)');
+      
+      const nonceHex = await (window as any).ethereum.request({ 
         method: 'eth_getTransactionCount', 
         params: [evmAddress, 'latest'] 
-      }).then((n: string) => parseInt(n, 16));
+      });
+      const currentNonce = parseInt(nonceHex, 16);
 
       if (currentNonce > baselineNonce) {
         console.log('🎯 NEW TX! Nonce increased:', baselineNonce, '->', currentNonce);
@@ -87,13 +93,31 @@ export const WormholeSwapWidget = ({
           ? 'https://api-sepolia.etherscan.io/api'
           : 'https://api.etherscan.io/api';
         
+        const etherscanKey = import.meta.env.VITE_ETHERSCAN_API_KEY || '';
+        console.log('📡 Fetching latest transaction from Etherscan...');
+        
         const response = await fetch(
-          `${apiUrl}?module=account&action=txlist&address=${evmAddress}&startblock=0&endblock=99999999&page=1&offset=1&sort=desc`
+          `${apiUrl}?module=account&action=txlist&address=${evmAddress}&startblock=0&endblock=99999999&page=1&offset=1&sort=desc&apikey=${etherscanKey}`
         );
+
+        if (!response.ok) {
+          console.error('❌ Etherscan API error:', response.status, response.statusText);
+          if (response.status === 429) {
+            toast({ 
+              title: "⚠️ Rate Limit Hit", 
+              description: "Add VITE_ETHERSCAN_API_KEY to .env for reliable monitoring",
+              variant: "destructive"
+            });
+          }
+          return;
+        }
+        
         const data = await response.json();
         
         if (data.status === '1' && data.result?.[0]) {
           const tx = data.result[0];
+          console.log('📝 Latest transaction:', tx.hash, 'to:', tx.to);
+          
           const isWormhole = WORMHOLE_CONTRACTS_LIST[networkMode].some(
             c => tx.to?.toLowerCase() === c.toLowerCase()
           );
@@ -103,23 +127,33 @@ export const WormholeSwapWidget = ({
             
             // Update database
             if (claimId) {
-              await supabase
+              console.log('💾 Updating database with tx_hash...');
+              const { error } = await supabase
                 .from('wormhole_transactions')
                 .update({ tx_hash: tx.hash, status: 'pending' })
                 .eq('source_type', 'depin_rewards')
                 .is('tx_hash', null)
                 .eq('wallet_address', evmAddress.toLowerCase());
               
-              toast({ title: "✅ Transaction Captured!", description: `Hash: ${tx.hash.slice(0,16)}...` });
+              if (error) {
+                console.error('❌ Database update failed:', error);
+              } else {
+                console.log('✅ Database updated successfully!');
+                toast({ title: "✅ Transaction Captured!", description: `Hash: ${tx.hash.slice(0,16)}...` });
+              }
             }
             
             setIsMonitoring(false);
             setBaselineNonce(null);
+          } else {
+            console.log('ℹ️ Transaction is not a Wormhole transaction');
           }
+        } else {
+          console.log('⚠️ No transaction data returned from Etherscan');
         }
       }
     } catch (error) {
-      console.error('Error checking new tx:', error);
+      console.error('❌ Error checking new tx:', error);
     }
   };
 
@@ -569,17 +603,27 @@ export const WormholeSwapWidget = ({
     
     // Build bridgeDefaults from props to pre-fill the form
     const bridgeDefaults: any = {};
+    
+    // Set chains first
     if (defaultSourceChain) {
       bridgeDefaults.fromChain = defaultSourceChain;
     }
     if (defaultTargetChain) {
       bridgeDefaults.toChain = defaultTargetChain;
     }
-    if (defaultSourceToken) {
+    
+    // Only set token and amount AFTER chains are configured
+    if (defaultSourceToken && defaultSourceChain && defaultTargetChain) {
       bridgeDefaults.token = defaultSourceToken;
     }
-    if (defaultAmount) {
-      bridgeDefaults.amount = String(defaultAmount); // Ensure it's a string
+    if (defaultAmount && defaultSourceChain && defaultTargetChain) {
+      bridgeDefaults.amount = String(defaultAmount);
+      console.log('✅ Pre-filled widget with:', { 
+        from: defaultSourceChain, 
+        to: defaultTargetChain, 
+        token: defaultSourceToken, 
+        amount: defaultAmount 
+      });
     }
     // Note: Removed route='bridge' to prevent "Can't call setAmount" errors
     // The widget will auto-detect the appropriate route type
