@@ -81,6 +81,70 @@ export const WormholeSwapWidget = ({
     }
   };
 
+  // Retry function with exponential backoff
+  const fetchTransactionWithRetry = async (
+    apiUrl: string,
+    evmAddress: string,
+    etherscanKey: string,
+    attempt: number = 1,
+    maxAttempts: number = 4
+  ): Promise<any | null> => {
+    const delays = [5000, 10000, 15000, 20000]; // 5s, 10s, 15s, 20s
+    
+    try {
+      const response = await fetch(
+        `${apiUrl}?module=account&action=txlist&address=${evmAddress}&startblock=0&endblock=99999999&page=1&offset=1&sort=desc&apikey=${etherscanKey}`
+      );
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          console.log('⏳ Rate limited. Waiting before retry...');
+          toast({ 
+            title: "⚠️ Rate Limit Hit", 
+            description: "Waiting for API cooldown...",
+            variant: "destructive"
+          });
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          if (attempt < maxAttempts) {
+            return fetchTransactionWithRetry(apiUrl, evmAddress, etherscanKey, attempt + 1, maxAttempts);
+          }
+        }
+        return null;
+      }
+      
+      const data = await response.json();
+      
+      if (data.status === '1' && data.result?.[0]) {
+        return data.result[0];
+      }
+      
+      // No data yet - retry with backoff
+      if (attempt < maxAttempts) {
+        const delay = delays[attempt - 1];
+        console.log(`⏳ No data yet. Retrying in ${delay/1000}s... (Attempt ${attempt}/${maxAttempts})`);
+        
+        if (attempt === 1) {
+          toast({ 
+            title: "⏳ Waiting for Network Confirmation", 
+            description: "Transaction detected! Waiting for blockchain indexing..."
+          });
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchTransactionWithRetry(apiUrl, evmAddress, etherscanKey, attempt + 1, maxAttempts);
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`❌ Fetch error (attempt ${attempt}):`, error);
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, delays[attempt - 1]));
+        return fetchTransactionWithRetry(apiUrl, evmAddress, etherscanKey, attempt + 1, maxAttempts);
+      }
+      return null;
+    }
+  };
+
   const checkForNewTransaction = async () => {
     if (!evmAddress || baselineNonce === null || !isMonitoring || !publicClient) return;
 
@@ -95,37 +159,26 @@ export const WormholeSwapWidget = ({
       if (currentNonce > baselineNonce) {
         console.log('🎯 NEW TX! Nonce increased:', baselineNonce, '->', currentNonce);
         
+        // Update baseline immediately to prevent duplicate detections
+        setBaselineNonce(currentNonce);
+        
+        // Show initial feedback
+        toast({ 
+          title: "🔍 Transaction Detected!", 
+          description: "Fetching transaction details..."
+        });
+        
         const apiUrl = networkMode === 'Testnet' 
           ? 'https://api-sepolia.etherscan.io/api'
           : 'https://api.etherscan.io/api';
         
         const etherscanKey = import.meta.env.VITE_ETHERSCAN_API_KEY || '';
-        console.log('📡 Fetching latest transaction from Etherscan...');
         
-        const response = await fetch(
-          `${apiUrl}?module=account&action=txlist&address=${evmAddress}&startblock=0&endblock=99999999&page=1&offset=1&sort=desc&apikey=${etherscanKey}`
-        );
-
-        if (!response.ok) {
-          console.error('❌ Etherscan API error:', response.status, response.statusText);
-          if (response.status === 429) {
-            console.log('⏳ Rate limited. Retrying in 3 seconds...');
-            toast({ 
-              title: "⚠️ Rate Limit Hit", 
-              description: "Transaction monitoring slowed. Add VITE_ETHERSCAN_API_KEY to .env for better performance.",
-              variant: "destructive"
-            });
-            // Retry after delay
-            setTimeout(checkForNewTransaction, 3000);
-          }
-          return;
-        }
+        // Fetch with retry logic
+        const tx = await fetchTransactionWithRetry(apiUrl, evmAddress, etherscanKey);
         
-        const data = await response.json();
-        
-        if (data.status === '1' && data.result?.[0]) {
-          const tx = data.result[0];
-          console.log('📝 Latest transaction:', tx.hash, 'to:', tx.to);
+        if (tx) {
+          console.log('📝 Transaction found:', tx.hash, 'to:', tx.to);
           
           const isWormhole = WORMHOLE_CONTRACTS_LIST[networkMode].some(
             c => tx.to?.toLowerCase() === c.toLowerCase()
@@ -146,23 +199,50 @@ export const WormholeSwapWidget = ({
               
               if (error) {
                 console.error('❌ Database update failed:', error);
+                toast({ 
+                  title: "⚠️ Update Failed", 
+                  description: "Could not save transaction. Please check WormholeScan.",
+                  variant: "destructive"
+                });
               } else {
                 console.log('✅ Database updated successfully!');
-                toast({ title: "✅ Transaction Captured!", description: `Hash: ${tx.hash.slice(0,16)}...` });
+                toast({ 
+                  title: "✅ Transaction Captured!", 
+                  description: `Hash: ${tx.hash.slice(0,16)}...`
+                });
               }
+            } else {
+              toast({ 
+                title: "✅ Transaction Captured!", 
+                description: `Hash: ${tx.hash.slice(0,16)}...`
+              });
             }
             
             setIsMonitoring(false);
-            setBaselineNonce(null);
           } else {
             console.log('ℹ️ Transaction is not a Wormhole transaction');
+            toast({ 
+              title: "ℹ️ Non-Wormhole Transaction", 
+              description: "Continuing to monitor for Wormhole transactions..."
+            });
           }
         } else {
-          console.log('⚠️ No transaction data returned from Etherscan');
+          console.log('⚠️ Could not fetch transaction after retries');
+          toast({ 
+            title: "⚠️ Transaction Not Found", 
+            description: "Unable to fetch transaction details. Check WormholeScan manually.",
+            variant: "destructive"
+          });
+          setIsMonitoring(false);
         }
       }
     } catch (error) {
       console.error('❌ Error checking new tx:', error);
+      toast({ 
+        title: "❌ Monitoring Error", 
+        description: "Transaction monitoring encountered an error.",
+        variant: "destructive"
+      });
     }
   };
 
