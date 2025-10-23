@@ -48,6 +48,11 @@ export const WormholeSwapWidget = ({
   // Listen for swap events
   useEffect(() => {
     const handleSwapEvent = async (event: any) => {
+      console.log('🎯 Wormhole event received:', event);
+      console.log('🎯 Event detail:', event.detail);
+      console.log('🎯 Event type:', event.detail?.type);
+      console.log('🎯 Transaction hash:', event.detail?.txHash);
+      
       if (event.detail?.type === 'transfer' && event.detail?.txHash) {
         const txData = event.detail;
         const txHash = txData.txHash;
@@ -173,12 +178,52 @@ export const WormholeSwapWidget = ({
             variant: "destructive",
           });
         }
+      } else {
+        console.warn('⚠️ Wormhole event missing required data:', {
+          type: event.detail?.type,
+          txHash: event.detail?.txHash,
+          fullDetail: event.detail
+        });
       }
     };
 
     window.addEventListener('wormhole-transfer', handleSwapEvent);
     return () => window.removeEventListener('wormhole-transfer', handleSwapEvent);
   }, [evmAddress, solanaAddress, toast, networkMode, claimId]);
+
+  // Fallback transaction polling for claim flows
+  useEffect(() => {
+    if (!claimId) return;
+    
+    console.log('[WormholeSwapWidget] Starting transaction polling for claimId:', claimId);
+    const pollInterval = setInterval(async () => {
+      try {
+        const walletAddress = (evmAddress || solanaAddress || '').toLowerCase();
+        const { data: recentTx } = await supabase
+          .from('wormhole_transactions')
+          .select('tx_hash, id')
+          .eq('source_type', 'depin_rewards')
+          .not('tx_hash', 'is', null)
+          .eq('wallet_address', walletAddress)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (recentTx?.tx_hash) {
+          console.log('✅ Found transaction via polling:', recentTx.tx_hash);
+          toast({
+            title: "Transaction Found!",
+            description: "Your bridge transaction has been detected.",
+          });
+          clearInterval(pollInterval);
+        }
+      } catch (error) {
+        console.log('Polling for transaction...');
+      }
+    }, 3000);
+    
+    return () => clearInterval(pollInterval);
+  }, [claimId, evmAddress, solanaAddress, toast]);
 
   // Portal Bridge CSS overrides
   const portalStyleOverrides = `

@@ -4,10 +4,16 @@ import { WormholeSwapWidget } from "@/components/swap/WormholeSwapWidget";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TestTube, ExternalLink, ArrowLeftRight, Zap, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Swap = () => {
   const [searchParams] = useSearchParams();
+  const [manualTxHash, setManualTxHash] = useState('');
+  const { toast } = useToast();
   
   // Extract URL params for pre-filling widget
   const sourceChain = searchParams.get('sourceChain');
@@ -15,6 +21,44 @@ const Swap = () => {
   const sourceToken = searchParams.get('sourceToken');
   const amount = searchParams.get('amount');
   const claimId = searchParams.get('claimId');
+
+  const handleManualLinkTransaction = async () => {
+    if (!manualTxHash || !claimId) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a transaction hash and ensure you came from a claim flow.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('wormhole_transactions')
+        .update({ 
+          tx_hash: manualTxHash, 
+          status: 'pending' 
+        })
+        .eq('source_type', 'depin_rewards')
+        .is('tx_hash', null)
+        .limit(1);
+
+      if (error) throw error;
+
+      toast({
+        title: "Transaction Linked! ✅",
+        description: "Your transaction has been manually linked to your claim.",
+      });
+      setManualTxHash('');
+    } catch (error: any) {
+      console.error('Error linking transaction:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to link transaction",
+        variant: "destructive",
+      });
+    }
+  };
   const testnetFaucets = [
     { name: "Sepolia ETH", url: "https://sepoliafaucet.com" },
     { name: "Solana Devnet", url: "https://solfaucet.com" },
@@ -82,6 +126,39 @@ const Swap = () => {
             />
           </div>
         </div>
+
+        {/* Manual Transaction Hash Input (only shown if claimId exists) */}
+        {claimId && (
+          <div className="mt-4 p-4 border border-border rounded-lg bg-card/50">
+            <p className="text-sm font-medium mb-2 flex items-center gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Transaction not tracked automatically? Link it manually:
+            </p>
+            <div className="flex gap-2">
+              <Input 
+                placeholder="0x... (Transaction hash from WormholeScan)"
+                value={manualTxHash}
+                onChange={(e) => setManualTxHash(e.target.value)}
+                className="flex-1"
+              />
+              <Button onClick={handleManualLinkTransaction}>
+                Link Transaction
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Copy your transaction hash from{" "}
+              <a 
+                href="https://wormholescan.io/?network=TESTNET" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                WormholeScan
+              </a>
+              {" "}and paste it here.
+            </p>
+          </div>
+        )}
 
         {/* Info Cards - Enhanced with gradients and animations */}
         <div className="grid gap-6 md:grid-cols-3">

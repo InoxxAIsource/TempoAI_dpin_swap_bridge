@@ -420,7 +420,7 @@ const DePINClaimInfoCard = ({
           {/* Add Bridge Button */}
           <Button
             onClick={() => {
-              window.location.href = `/swap?claimId=${claimId}&sourceChain=Sepolia&targetChain=Solana&sourceToken=ETH`;
+              window.location.href = `/swap?claimId=${claimId}&sourceChain=Sepolia&targetChain=Solana&sourceToken=ETH&amount=${ethAmount.toFixed(6)}`;
             }}
             className="w-full mt-2"
             size="lg"
