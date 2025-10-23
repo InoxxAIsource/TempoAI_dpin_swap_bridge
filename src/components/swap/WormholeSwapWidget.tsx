@@ -227,11 +227,65 @@ export const WormholeSwapWidget = ({
             });
           }
         } else {
-          console.log('⚠️ Could not fetch transaction after retries');
+          // All retries failed - try to get transaction from wallet provider as fallback
+          console.log('⚠️ Etherscan failed. Trying wallet provider fallback...');
+          
+          try {
+            const block = await publicClient.getBlock({ blockTag: 'latest' });
+            const blockNumber = block.number;
+            
+            // Get recent transactions from the last few blocks
+            for (let i = 0; i < 5; i++) {
+              const blockToCheck = blockNumber - BigInt(i);
+              const blockWithTxs = await publicClient.getBlock({
+                blockNumber: blockToCheck,
+                includeTransactions: true
+              });
+              
+              // Find transactions from our wallet
+              const userTxs = (blockWithTxs.transactions as any[]).filter(
+                (tx: any) => tx.from?.toLowerCase() === evmAddress.toLowerCase()
+              );
+              
+              if (userTxs.length > 0) {
+                const latestTx = userTxs[0];
+                console.log('📝 Found transaction via provider:', latestTx.hash);
+                
+                const isWormhole = WORMHOLE_CONTRACTS_LIST[networkMode].some(
+                  c => latestTx.to?.toLowerCase() === c.toLowerCase()
+                );
+                
+                if (isWormhole && claimId) {
+                  const { error } = await supabase
+                    .from('wormhole_transactions')
+                    .update({ tx_hash: latestTx.hash, status: 'pending' })
+                    .eq('source_type', 'depin_rewards')
+                    .is('tx_hash', null)
+                    .eq('wallet_address', evmAddress.toLowerCase());
+                  
+                  if (!error) {
+                    console.log('✅ Transaction captured via wallet provider!');
+                    toast({ 
+                      title: "✅ Transaction Captured!", 
+                      description: `Hash: ${latestTx.hash.slice(0,16)}...`
+                    });
+                    setIsMonitoring(false);
+                    return;
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error('❌ Wallet provider fallback failed:', error);
+          }
+          
+          // Final fallback - show manual input option
+          console.log('⚠️ Could not fetch transaction after all attempts');
           toast({ 
-            title: "⚠️ Transaction Not Found", 
-            description: "Unable to fetch transaction details. Check WormholeScan manually.",
-            variant: "destructive"
+            title: "⚠️ Manual Input Required", 
+            description: "Could not auto-detect transaction. Please navigate to the Claim tab to manually input your transaction hash.",
+            variant: "destructive",
+            duration: 10000
           });
           setIsMonitoring(false);
         }
