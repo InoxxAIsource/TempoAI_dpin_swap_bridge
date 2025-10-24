@@ -137,10 +137,10 @@ const profile = await callAPIWithRetry('user-profile', {
       <DocSection 
         id="usage-tiers" 
         title="Usage Tiers"
-        subtitle="Lovable Cloud pricing based on actual usage"
+        subtitle="Tempo backend usage-based pricing"
       >
         <p className="text-[16px] text-foreground/90 leading-[1.8] mb-6">
-          Tempo runs on Lovable Cloud with usage-based pricing. You only pay for what you use, with generous free tier limits.
+          Tempo uses a usage-based pricing model. You only pay for what you use, with generous free tier limits.
         </p>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -339,7 +339,7 @@ const profile = await callAPIWithRetry('user-profile', {
             <div>
               <h3 className="font-semibold text-[17px] mb-2">Monitor Your Usage</h3>
               <p className="text-[15px] text-muted-foreground leading-[1.7]">
-                Track your API usage through the Lovable Cloud dashboard to identify optimization opportunities.
+                Track your API usage through the backend monitoring interface to identify optimization opportunities.
               </p>
             </div>
           </div>
@@ -351,7 +351,7 @@ const profile = await callAPIWithRetry('user-profile', {
         title="Usage Monitoring"
       >
         <p className="text-[16px] text-foreground/90 leading-[1.8] mb-6">
-          Monitor your API usage and costs in real-time through the Lovable Cloud backend interface.
+          Monitor your API usage and costs in real-time through the backend monitoring interface.
         </p>
 
         <div className="border border-border/50 rounded-lg p-6 bg-card/30">

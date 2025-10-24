@@ -29,7 +29,7 @@ const APIOverview = () => {
       >
         <p className="text-[16px] text-foreground/90 leading-[1.8]">
           Tempo provides a suite of RESTful APIs that enable developers to integrate DeFi functionality 
-          into their applications. Our APIs are built on top of Lovable Cloud and provide secure, scalable 
+          into their applications. Our APIs are built on Tempo's backend infrastructure and provide secure, scalable 
           access to user data, DePIN networks, and cross-chain operations.
         </p>
 
