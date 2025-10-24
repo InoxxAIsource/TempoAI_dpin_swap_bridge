@@ -570,7 +570,19 @@ export const WormholeSwapWidget = ({
     };
 
     // Listen to multiple possible event sources and event names
-    const eventTargets = [window, document, window.parent];
+    // Safely build eventTargets array, avoiding cross-origin issues
+    const eventTargets: (Window | Document)[] = [window, document];
+    
+    // Only add window.parent if it's accessible (not cross-origin)
+    try {
+      if (window !== window.parent && window.parent.addEventListener) {
+        eventTargets.push(window.parent);
+      }
+    } catch (e) {
+      // Cross-origin access denied - this is expected when embedded in iframe
+      console.log('ℹ️ window.parent not accessible (cross-origin) - skipping');
+    }
+    
     const eventNames = [
       'wormhole-transfer',
       'wormhole-transaction', 
@@ -583,14 +595,22 @@ export const WormholeSwapWidget = ({
 
     eventTargets.forEach(target => {
       eventNames.forEach(eventName => {
-        target.addEventListener(eventName, handleSwapEvent as any);
+        try {
+          target.addEventListener(eventName, handleSwapEvent as any);
+        } catch (e) {
+          console.warn(`Could not add listener ${eventName} to target:`, e);
+        }
       });
     });
 
     return () => {
       eventTargets.forEach(target => {
         eventNames.forEach(eventName => {
-          target.removeEventListener(eventName, handleSwapEvent as any);
+          try {
+            target.removeEventListener(eventName, handleSwapEvent as any);
+          } catch (e) {
+            // Silently ignore cleanup errors
+          }
         });
       });
     };
