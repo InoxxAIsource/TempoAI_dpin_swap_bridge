@@ -7,6 +7,7 @@ import MessageContent from './MessageContent';
 import WalletModal from '@/components/WalletModal';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -314,25 +315,15 @@ export default function ChatInterface() {
     if (isAnyWalletConnected && (isPortfolioQuery || !portfolioContext)) {
       console.log('🔍 Fetching portfolio for query:', textToSend);
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const portfolioUrl = `${supabaseUrl}/functions/v1/wormhole-portfolio-fetcher`;
-        
-        const portResponse = await fetch(portfolioUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseKey}`,
-          },
-          body: JSON.stringify({ 
+        const { data, error } = await supabase.functions.invoke('wormhole-portfolio-fetcher', {
+          body: { 
             evmAddress, 
             solanaAddress,
             includeTestnets: true 
-          }),
+          }
         });
         
-        if (portResponse.ok) {
-          const data = await portResponse.json();
+        if (!error && data) {
           console.log('✅ FULL PORTFOLIO DATA:', JSON.stringify(data, null, 2));
           
           // Enhanced client-side logging
@@ -361,13 +352,11 @@ export default function ChatInterface() {
           setPortfolioContext(data);
           setPrePrompts(generatePrePrompts(data));
         } else {
-          // HTTP error
-          const errorText = await portResponse.text();
-          console.error('❌ Portfolio fetch HTTP error:', portResponse.status, errorText);
+          console.error('❌ Portfolio fetch error:', error);
           
           toast({
             title: "❌ Portfolio Fetch Failed",
-            description: errorText || `HTTP ${portResponse.status} error. Check edge function logs.`,
+            description: error?.message || 'Unable to fetch portfolio. Check edge function logs.',
             variant: "destructive",
           });
         }
@@ -412,14 +401,8 @@ export default function ChatInterface() {
     setIsThinking(true);
 
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      
-      if (!supabaseUrl) {
-        throw new Error('VITE_SUPABASE_URL is not configured');
-      }
-      
-      const url = `${supabaseUrl}/functions/v1/ai-defi-assistant`;
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://fhmyhvrejofybzdgzxdc.supabase.co';
+      const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZobXlodnJlam9meWJ6ZGd6eGRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MTg4ODYsImV4cCI6MjA3NTQ5NDg4Nn0.vM1R0J-jpGcPU3Q9-u7tbdSgTvrfQYNYrAF5vmt-UZg';
       
       const currentMessages = chats.find(c => c.id === chatId)?.messages || [];
       const allMessages = [...currentMessages, userMessage];
@@ -431,11 +414,11 @@ export default function ChatInterface() {
         walletConnected: isAnyWalletConnected
       });
 
-      const response = await fetch(url, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-defi-assistant`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
         },
         body: JSON.stringify({
           messages: allMessages.map(m => ({
