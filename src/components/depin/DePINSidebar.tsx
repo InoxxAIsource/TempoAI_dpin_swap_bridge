@@ -1,4 +1,4 @@
-import { Gift, Wallet, Plus, Book, Monitor } from 'lucide-react';
+import { Gift, Monitor } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Sidebar,
@@ -35,21 +35,6 @@ const DePINSidebar = ({ activeClaimsCount = 0, deviceCount = 0 }: DePINSidebarPr
       value: 'claim',
       icon: Gift,
       badge: activeClaimsCount,
-    },
-    {
-      title: 'Portfolio',
-      value: 'portfolio',
-      icon: Wallet,
-    },
-    {
-      title: 'Add Device',
-      value: 'add-device',
-      icon: Plus,
-    },
-    {
-      title: 'DePIN Docs',
-      value: 'docs',
-      icon: Book,
     },
   ];
 

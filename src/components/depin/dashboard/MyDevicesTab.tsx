@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, Filter, Monitor } from 'lucide-react';
+import { Search, Filter, Monitor, Plus } from 'lucide-react';
 import DeviceCard from '@/components/depin/DeviceCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -30,10 +30,11 @@ interface MyDevicesTabProps {
   devices: Device[];
   onDeleteDevice: (deviceId: string) => Promise<void>;
   onDeviceClick?: (deviceId: string) => void;
+  onAddDevice?: () => void;
   isLoading?: boolean;
 }
 
-const MyDevicesTab = ({ devices, onDeleteDevice, onDeviceClick, isLoading }: MyDevicesTabProps) => {
+const MyDevicesTab = ({ devices, onDeleteDevice, onDeviceClick, onAddDevice, isLoading }: MyDevicesTabProps) => {
   const { isAuthenticated } = useWalletContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -81,14 +82,12 @@ const MyDevicesTab = ({ devices, onDeleteDevice, onDeviceClick, isLoading }: MyD
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center">
-          <Button onClick={() => {
-            const url = new URL(window.location.href);
-            url.searchParams.set('tab', 'add-device');
-            window.history.pushState({}, '', url);
-            window.dispatchEvent(new PopStateEvent('popstate'));
-          }}>
-            Add Your First Device
-          </Button>
+          {onAddDevice && (
+            <Button onClick={onAddDevice}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Your First Device
+            </Button>
+          )}
         </CardContent>
       </Card>
     );
@@ -96,6 +95,17 @@ const MyDevicesTab = ({ devices, onDeleteDevice, onDeviceClick, isLoading }: MyD
 
   return (
     <div className="space-y-6">
+      {/* Header with Add Device Button */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">My Devices</h2>
+        {onAddDevice && (
+          <Button onClick={onAddDevice}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Device
+          </Button>
+        )}
+      </div>
+
       {/* Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>

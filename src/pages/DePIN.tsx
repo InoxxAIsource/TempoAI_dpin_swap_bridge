@@ -11,10 +11,8 @@ import BatchClaimModal from '@/components/depin/BatchClaimModal';
 import ClaimAmountModal from '@/components/depin/ClaimAmountModal';
 import ClaimTab from '@/components/depin/dashboard/ClaimTab';
 import { useWormholeVAAPoller } from '@/hooks/useWormholeVAAPoller';
-import PortfolioTab from '@/components/depin/dashboard/PortfolioTab';
-import AddDeviceTab from '@/components/depin/dashboard/AddDeviceTab';
-import DocsTab from '@/components/depin/dashboard/DocsTab';
 import MyDevicesTab from '@/components/depin/dashboard/MyDevicesTab';
+import AddDeviceModal from '@/components/depin/AddDeviceModal';
 import DePINSidebar from '@/components/depin/DePINSidebar';
 import DeviceDetailsModal from '@/components/depin/DeviceDetailsModal';
 import { Card } from '@/components/ui/card';
@@ -53,6 +51,7 @@ const DePIN = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [showDeviceDetails, setShowDeviceDetails] = useState(false);
   const [preferredChain, setPreferredChain] = useState('Solana');
+  const [showAddDevice, setShowAddDevice] = useState(false);
 
   // Add VAA polling for DePIN claim transactions
   useWormholeVAAPoller(evmAddress);
@@ -303,6 +302,15 @@ const DePIN = () => {
         />
       )}
 
+      {showAddDevice && (
+        <AddDeviceModal
+          open={showAddDevice}
+          onClose={() => setShowAddDevice(false)}
+          onDeviceAdded={handleDeviceAdded}
+          onOpenSetupGuide={() => setShowSetupGuide(true)}
+        />
+      )}
+
       <SidebarProvider defaultOpen={true}>
         <div className="min-h-screen flex w-full">
           <DePINSidebar 
@@ -355,6 +363,7 @@ const DePIN = () => {
                   devices={devices}
                   onDeleteDevice={handleDeleteDevice}
                   onDeviceClick={handleDeviceClick}
+                  onAddDevice={() => setShowAddDevice(true)}
                 />
               )}
 
@@ -365,24 +374,6 @@ const DePIN = () => {
                   onClaimClick={handleClaimClick}
                 />
               )}
-
-              {currentTab === 'portfolio' && (
-                <PortfolioTab
-                  earnings={earnings}
-                  dailyRate={dailyRate}
-                  activeDevices={activeDevices}
-                  uptime={uptime}
-                />
-              )}
-
-              {currentTab === 'add-device' && (
-                <AddDeviceTab
-                  onDeviceAdded={handleDeviceAdded}
-                  onOpenSetupGuide={() => setShowSetupGuide(true)}
-                />
-              )}
-
-              {currentTab === 'docs' && <DocsTab />}
             </div>
           </SidebarInset>
         </div>
